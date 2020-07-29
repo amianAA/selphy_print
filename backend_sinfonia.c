@@ -492,6 +492,7 @@ int sinfonia_getfwinfo(struct sinfonia_usbdev *usbh)
 	struct sinfonia_fwinfo_resp resp;
 	int num = 0;
 	int i;
+	int last = FWINFO_TARGET_PRINT_TABLES2;
 
 	cmd.hdr.cmd = cpu_to_le16(SINFONIA_CMD_FWINFO);
 	cmd.hdr.len = cpu_to_le16(1);
@@ -500,7 +501,10 @@ int sinfonia_getfwinfo(struct sinfonia_usbdev *usbh)
 
 	INFO("FW Information:\n");
 
-	for (i = FWINFO_TARGET_MAIN_BOOT ; i <= FWINFO_TARGET_PRINT_TABLES2 ; i++) {
+	if (usbh->type == P_SHINKO_S6145) last = FWINFO_TARGET_PRINT_TABLES;
+	if (usbh->type == P_SHINKO_S2245) last = FWINFO_TARGET_DSP;
+
+	for (i = FWINFO_TARGET_MAIN_BOOT ; i <= last ; i++) {
 		int ret;
 		cmd.target = i;
 		resp.major = 0;
@@ -560,6 +564,7 @@ int sinfonia_geterrorlog(struct sinfonia_usbdev *usbh)
 		     resp.items[i].major, resp.items[i].minor,
 		     usbh->error_codes(resp.items[i].major, resp.items[i].minor));
 	}
+
 	return CUPS_BACKEND_OK;
 }
 

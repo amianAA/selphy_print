@@ -24,7 +24,7 @@
  *
  */
 
-#define LIBSINFONIA_VER "0.13"
+#define LIBSINFONIA_VER "0.14"
 
 #define SINFONIA_HDR1_LEN 0x10
 #define SINFONIA_HDR2_LEN 0x64
@@ -226,6 +226,12 @@ struct sinfonia_errorlog_resp {
 	struct sinfonia_error_item items[10];  /* Not all necessarily used */
 } __attribute__((packed));
 
+
+struct sinfonia_errorlog2_cmd {
+	struct sinfonia_cmd_hdr hdr;
+	uint16_t index;  /* 0 is latest */
+} __attribute__((packed));
+
 struct sinfonia_mediainfo_item {
 	uint8_t  code;
 	uint16_t columns;
@@ -290,6 +296,38 @@ struct sinfonia_getprintidstatus_resp {
 #define IDSTATUS_PRINTING  0x0100
 #define IDSTATUS_COMPLETED 0x0200
 #define IDSTATUS_ERROR     0xFFFF
+
+struct sinfonia_status_resp {
+	struct sinfonia_status_hdr hdr;
+	uint32_t count_lifetime;
+	uint32_t count_maint;
+	uint32_t count_paper;
+	uint32_t count_cutter;
+	uint32_t count_head;
+	uint32_t count_ribbon_left;
+	uint32_t reserved;
+
+	uint8_t  bank1_printid;
+	uint16_t bank1_remaining;
+	uint16_t bank1_finished;
+	uint16_t bank1_specified;
+	uint8_t  bank1_status;
+
+	uint8_t  bank2_printid;
+	uint16_t bank2_remaining;
+	uint16_t bank2_finished;
+	uint16_t bank2_specified;
+	uint8_t  bank2_status;
+
+	uint8_t  reserved2[16];
+	uint8_t  tonecurve_status;
+	uint8_t  reserved3[6];
+} __attribute__((packed));
+
+struct sinfonia_geteeprom_resp {
+	struct sinfonia_status_hdr hdr;
+	uint8_t data[256];
+} __attribute__((packed));
 
 struct sinfonia_button_cmd {
 	struct sinfonia_cmd_hdr hdr;
@@ -384,9 +422,10 @@ struct sinfonia_printcmd28_hdr {
 	uint16_t rows;
 	uint8_t  media;
 	uint8_t  reserved[7];
-	uint8_t  options;
-	uint8_t  method;
-	uint8_t  reserved2[11];
+	uint8_t  options;   // XXX guess  (passed into imagecorr fetch!)
+	uint8_t  method;    // XXX guess  could be image_avg
+	uint8_t  image_avg; // XXX guess  could be matte?
+	uint8_t  reserved2[10];
 } __attribute__((packed));
 
 struct kodak701x_backprint {
