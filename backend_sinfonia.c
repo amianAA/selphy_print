@@ -280,8 +280,8 @@ int sinfonia_raw28_read_parse(int data_fd, struct sinfonia_printjob *job)
 	job->jp.rows = le16_to_cpu(hdr.rows);
 	job->jp.columns = le16_to_cpu(hdr.columns);
 	job->jp.media = hdr.media;
-	job->jp.oc_mode = hdr.options & 0x03;
-	job->jp.quality = hdr.options & 0x08;
+	job->jp.oc_mode = hdr.options & SINFONIA_PRINT28_OC_MASK;
+	job->jp.quality = hdr.options & SINFONIA_PRINT28_OPTIONS_HQ;
 	job->jp.method = hdr.method;
 
 	/* Allocate buffer */

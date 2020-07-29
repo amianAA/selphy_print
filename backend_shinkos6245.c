@@ -142,17 +142,6 @@ static const struct sinfonia_param s6245_params[] =
 #define PARAM_SLEEP_120MIN  0x00000004
 #define PARAM_SLEEP_240MIN  0x00000005
 
-struct s6245_settime_cmd {
-	struct sinfonia_cmd_hdr hdr;
-	uint8_t enable;  /* 0 or 1 */
-	uint8_t second;
-	uint8_t minute;
-	uint8_t hour;
-	uint8_t day;
-	uint8_t month;
-	uint8_t year;
-} __attribute__((packed));
-
 static const char *s6245_error_codes(uint8_t major, uint8_t minor)
 {
 	switch(major) {
@@ -1174,13 +1163,13 @@ static int shinkos6245_main_loop(void *vctx, const void *vjob) {
 
 	/* Send Set Time */
 	if (ctx->dev.type != P_KODAK_8810) {
-		struct s6245_settime_cmd *settime = (struct s6245_settime_cmd *)cmdbuf;
+		struct sinfonia_settime_cmd *settime = (struct sinfonia_settime_cmd *)cmdbuf;
 		time_t now = time(NULL);
 		struct tm *cur = localtime(&now);
 
 		memset(cmdbuf, 0, CMDBUF_LEN);
 		cmd->cmd = cpu_to_le16(SINFONIA_CMD_SETTIME);
-		cmd->len = cpu_to_le16(0);
+		cmd->len = cpu_to_le16(sizeof(*settime)-sizeof(settime->hdr));
 		settime->enable = 1;
 		settime->second = cur->tm_sec;
 		settime->minute = cur->tm_min;
@@ -1479,7 +1468,7 @@ static const char *shinkos6245_prefixes[] = {
 
 struct dyesub_backend shinkos6245_backend = {
 	.name = "Sinfonia CHC-S6245 / Kodak 8810",
-	.version = "0.34" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.35" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6245_prefixes,
 	.cmdline_usage = shinkos6245_cmdline,
 	.cmdline_arg = shinkos6245_cmdline_arg,

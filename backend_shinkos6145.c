@@ -517,8 +517,6 @@ static const char *s6145_error_codes(uint8_t major, uint8_t minor)
 	}
 }
 
-/* XXX these are generally assumed to be the same as S6145, but
-   at least the "user error" category is known to be different. */
 static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 {
 	switch(major) {
@@ -531,9 +529,9 @@ static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 		case 0x0C:
 			return "Controller: Print Parameter Table Mismatch";
 		case 0x0F:
-			return "Controller: Main FW Checksum";
+			return "Controller: Main FW Data Error";
 		case 0x10:
-			return "Controller: Flash Write Failed";
+			return "Controller: Main FW Write Failed";
 		case 0x13:
 			return "Controller: Print Parameter Table Checksum";
 		case 0x14:
@@ -542,14 +540,8 @@ static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 			return "Controller: User Tone Curve Write Failed";
 		case 0x16:
 			return "Controller: MSP Communication";
-		case 0x17:
-			return "Controller: THV Autotuning";
-		case 0x18:
-			return "Controller: THV Value Out of Range";
 		case 0x19:
 			return "Controller: Thermal Head";
-		case 0x1A:
-			return "Controller: Wake from Power Save Failed";
 		default:
 			return "Controller: Unknown";
 		}
@@ -563,39 +555,39 @@ static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 			return "Mechanical: Pinch Head (position 2)";
 		case 0x04:
 			return "Mechanical: Pinch Head (position 3)";
-		case 0x0B:
-			return "Mechanical: Cutter (Right)";
-		case 0x0C:
-			return "Mechanical: Cutter (Left)";
+		case 0x05:
+			return "Mechanical: Pinch Head (position 4)";
+		case 0x14:
+			return "Mechanical: Cutter (Left-Right)";
+		case 0x15:
+			return "Mechanical: Cutter (Right-Left)";
 		default:
 			return "Mechanical: Unknown";
 		}
 	case 0x03: /* "Sensor Error" */
 		switch (minor) {
 		case 0x01:
-			return "Sensor: Head Up";
-		case 0x02:
-			return "Sensor: Head Down";
-		case 0x0B:
-			return "Sensor: Cutter Left";
-		case 0x0C:
-			return "Sensor: Cutter Right";
-		case 0x0D:
 			return "Sensor: Cutter Left+Right";
-		case 0x15:
-			return "Sensor: Head Up Unstable";
-		case 0x16:
-			return "Sensor: Head Down Unstable";
-		case 0x17:
-			return "Sensor: Cutter Left Unstable";
-		case 0x18:
-			return "Sensor: Cutter Right Unstable";
-		case 0x19:
-			return "Sensor: Cover Open Unstable";
+		case 0x02:
+			return "Sensor: Cutter Left drove";
+		case 0x03:
+			return "Sensor: Cutter Right drove";
 		case 0x1E:
-			return "Sensor: Ribbon Mark (Cyan)";
+			return "Sensor: Left Front Lock";
 		case 0x1F:
-			return "Sensor: Ribbon Mark (OC)";
+			return "Sensor: Right Front Lock";
+		case 0x20:
+			return "Sensor: Cutter Left";
+		case 0x21:
+			return "Sensor: Cutter Right";
+		case 0x22:
+			return "Sensor: Left Head/Pinch";
+		case 0x23:
+			return "Sensor: Right Head/Pinch";
+		case 0x24:
+			return "Sensor: Head/Pinch Encoder";
+		case 0x25:
+			return "Sensor: Supply Ribbon Encoder";
 		default:
 			return "Sensor: Unknown";
 		}
@@ -619,93 +611,60 @@ static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 	case 0x5: /* "Paper Jam" */
 		switch (minor) {
 		case 0x01:
-			return "Paper Jam: Loading Paper Top On";
+			return "Paper Jam: Paper Not Detected";
 		case 0x02:
-			return "Paper Jam: Loading Print Position On";
-		case 0x03:
-			return "Paper Jam: Loading Print Position Off";
-		case 0x04:
-			return "Paper Jam: Loading Paper Top Off";
-		case 0x05:
-			return "Paper Jam: Loading Cut Print Position Off";
-		case 0x0C:
-			return "Paper Jam: Initializing Print Position Off";
-		case 0x0D:
-			return "Paper Jam: Initializing Print Position On";
-		case 0x15:
-			return "Paper Jam: Printing Print Position Off";
-		case 0x16:
-			return "Paper Jam: Printing Paper Top On";
-		case 0x17:
-			return "Paper Jam: Printing Paper Top Off";
-		case 0x1F:
-			return "Paper Jam: Precut Print Position Off";
-		case 0x20:
-			return "Paper Jam: Precut Print Position On";
-
-		case 0x29:
-			return "Paper Jam: Printing Paper Top On";
-		case 0x2A:
-			return "Paper Jam: Printing Pre-Yellow Print Position Off";
-		case 0x2B:
-			return "Paper Jam: Printing Yellow Print Position Off";
-		case 0x2C:
-			return "Paper Jam: Printing Yellow Print Position On";
-		case 0x2D:
-			return "Paper Jam: Printing Pre-Magenta Print Position Off";
-		case 0x2E:
-			return "Paper Jam: Printing Magenta Print Position On";
-		case 0x2F:
-			return "Paper Jam: Printing Magenta Print Position Off";
+			return "Paper Jam: Pinch Roller Fail";
+		case 0x10:
+			return "Paper Jam: Print Position Sensor on";
+		case 0x11:
+			return "Paper Jam: Print Position Sensor off";
+		case 0x12:
+			return "Paper Jam: Paper End Sensor on";
+		case 0x13:
+			return "Paper Jam: Paper Cut";
 		case 0x30:
-			return "Paper Jam: Printing Pre-Cyan Print Position Off";
+			return "Paper Jam: Print Position Sensor early";
 		case 0x31:
-			return "Paper Jam: Printing Cyan Print Position On";
+			return "Paper Jam: Print Position Sensor on";
 		case 0x32:
-			return "Paper Jam: Printing Cyan Print Position Off";
-		case 0x33:
-			return "Paper Jam: Printing Pre-OC Print Position Off";
-		case 0x34:
-			return "Paper Jam: Printing OC Print Position On";
-		case 0x35:
-			return "Paper Jam: Printing OC Print Position Off";
-		case 0x36:
-			return "Paper Jam: Cut Print Position Off";
-		case 0x37:
-			return "Paper Jam: Home Position Off";
-		case 0x38:
-			return "Paper Jam: Paper Top Off";
-		case 0x39:
-			return "Paper Jam: Print Position On";
-
+			return "Paper Jam: Print Position Sensor off";
+		case 0x40:
+			return "Paper Jam: Cutter Left-Right";
+		case 0x41:
+			return "Paper Jam: Cutter Right-Left";
 		case 0x51:
-			return "Paper Jam: Paper Empty On, Top On, Position On";
+			return "Paper Jam: Paper End On, Position Off";
 		case 0x52:
-			return "Paper Jam: Paper Empty On, Top On, Position Off";
-		case 0x54:
-			return "Paper Jam: Paper Empty On, Top Off, Position Off";
-		case 0x60:
-			return "Paper Jam: Cutter Right";
-		case 0x61:
-			return "Paper Jam: Cutter Left";
-
+			return "Paper Jam: Paper End Off, Position On";
+		case 0x53:
+			return "Paper Jam: Paper End On, Position On";
 		default:
 			return "Paper Jam: Unknown";
 		}
 	case 0x06: /* User Error */
 		switch (minor) {
 		case 0x01:
-			return "Drawer Unit Open";
+			return "Cover Open";
 		case 0x02:
+			return "Cover Not Closed";
+		case 0x03:
 			return "Incorrect Ribbon";
 		case 0x04:
-			return "Ribbon Empty";
+			return "Ribbon End";
 		case 0x07:
-			return "UKNOWN USER ERROR 0x07";
-		case 0x08:
 			return "No Paper";
-		case 0x0C:
+		case 0x08:
 			return "Paper End";
+		case 0x0D:
+			return "No Ribbon";
+		case 0x0E:
+			return "Ribbon Rewind Failure";
+		case 0x0F:
+			return "Ribbon Sense Failure";
+		case 0x20:
+			return "THV Tuning";
+		case 0x21:
+			return "THV Not Tuned";
 		default:
 			return "Unknown";
 		}
@@ -772,6 +731,8 @@ struct s2245_imagecorr_req {
 	uint8_t  null[10];
 } __attribute__((packed));
 
+#define S2245_IMAGECORR_FLAG_CONTOUR_ENH 0x01
+
 struct s2245_imagecorr_resp {
 	struct sinfonia_status_hdr hdr;
 	uint32_t total_size;
@@ -810,7 +771,8 @@ struct shinkos6145_ctx {
 	uint16_t corrdatalen;
 };
 
-static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t options, uint8_t flags);
+static const char *s2245_drivermodes(uint8_t val);
+static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t options);
 static int shinkos6145_get_imagecorr(struct shinkos6145_ctx *ctx);
 static int shinkos6145_get_eeprom(struct shinkos6145_ctx *ctx);
 
@@ -901,12 +863,15 @@ static int get_status(struct shinkos6145_ctx *ctx)
 		}
 		INFO("Paper Preserve mode: %s\n", (val ? "On" : "Off"));
 	}
-
 	if ((ret = sinfonia_getparam(&ctx->dev, PARAM_DRIVER_MODE, &val))) {
 		ERROR("Failed to execute command\n");
 		return ret;
 	}
-	INFO("Driver mode:         %s\n", (val ? "On" : "Off"));
+	if (ctx->dev.type != P_SHINKO_S2245) {
+		INFO("Driver mode:         %s\n", s2245_drivermodes(val));
+	} else {
+		INFO("Driver mode:         %s\n", (val ? "On" : "Off"));
+	}
 
 	if ((ret = sinfonia_getparam(&ctx->dev, PARAM_PAPER_MODE, &val))) {
 		ERROR("Failed to execute command\n");
@@ -962,7 +927,7 @@ static int shinkos6145_dump_corrdata(struct shinkos6145_ctx *ctx, char *fname)
 	int ret;
 
 	if (ctx->dev.type == P_SHINKO_S2245) {
-		ret = shinkos2245_get_imagecorr(ctx, 0x0a, 0x01); // XXX have to supply something..
+		ret = shinkos2245_get_imagecorr(ctx, 0x0a); // XXX have to supply something..  this is HQ matte.
 	} else {
 		ret = shinkos6145_get_imagecorr(ctx);
 	}
@@ -1080,7 +1045,7 @@ done:
 // XXX this is bogus, corrdata is 10224 bytes vs the 12432 bytes of the S6145!
 // However they use the same image processing DLL so the S2245 data must be
 // transforamble somehow.  Or is it?
-static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t options, uint8_t flags)
+static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t options)
 {
 	struct s2245_imagecorr_req cmd;
 	struct s2245_imagecorr_resp resp;
@@ -1090,7 +1055,7 @@ static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t option
 	cmd.hdr.cmd = cpu_to_le16(SINFONIA_CMD_GETCORR);
 	cmd.hdr.len = sizeof(cmd) - sizeof(cmd.hdr);
 	cmd.options = options;
-	cmd.flags = flags;
+	cmd.flags = S2245_IMAGECORR_FLAG_CONTOUR_ENH; // XXX make configurable?
 
 	if (ctx->corrdata) {
 		free(ctx->corrdata);
@@ -1171,6 +1136,21 @@ static int shinkos6145_get_eeprom(struct shinkos6145_ctx *ctx)
 
 done:
 	return ret;
+}
+
+static const char *s2245_drivermodes(uint8_t val)
+{
+	switch(val) {
+	case 0x00:
+		return "-Class/-iSerial";
+	case 0x01:
+		return "-Class/+iSerial";
+	case 0x02:
+		return "+Class/-iSerial";
+	case 0x03:
+		return "+Class/+iSerial";
+	}
+	return "Unknown";
 }
 
 static int s2245_get_errorlog(struct sinfonia_usbdev *usbh)
@@ -1736,12 +1716,42 @@ static int shinkos6145_main_loop(void *vctx, const void *vjob) {
 
 	// XXX check copies against remaining media?
 
-	/* Query printer mode */
-	ret = sinfonia_getparam(&ctx->dev, PARAM_OC_PRINT, &cur_mode);
-	if (ret) {
-		ERROR("Failed to execute command\n");
-		return ret;
+	if (ctx->dev.type != P_SHINKO_S2245) {
+		/* Query printer mode */
+		ret = sinfonia_getparam(&ctx->dev, PARAM_OC_PRINT, &cur_mode);
+		if (ret) {
+			ERROR("Failed to execute command\n");
+			return ret;
+		}
 	}
+
+	/* Send Set Time */
+	if (ctx->dev.type == P_SHINKO_S2245) {
+		struct sinfonia_settime_cmd settime;
+		time_t now = time(NULL);
+		struct tm *cur = localtime(&now);
+
+		memset(&settime, 0, sizeof(settime));
+		settime.hdr.cmd = cpu_to_le16(SINFONIA_CMD_SETTIME);
+		settime.hdr.len = cpu_to_le16(sizeof(settime)-sizeof(settime.hdr));
+		settime.enable = 1;
+		settime.second = cur->tm_sec;
+		settime.minute = cur->tm_min;
+		settime.hour = cur->tm_hour;
+		settime.day = cur->tm_mday;
+		settime.month = cur->tm_mon;
+		settime.year = cur->tm_year + 1900 - 2000;
+
+		if ((ret = sinfonia_docmd(&ctx->dev,
+					  (uint8_t*)&settime, sizeof(settime),
+					  (uint8_t*)&sts, sizeof(sts),
+					  &num))) {
+			return CUPS_BACKEND_FAILED;
+		}
+		if (sts.hdr.result != RESULT_SUCCESS)
+			return CUPS_BACKEND_FAILED;
+	}
+
 
 top:
 	if (state != last_state) {
@@ -1797,29 +1807,28 @@ top:
 		uint32_t oc_mode = job->jp.oc_mode;
 		uint32_t updated = 0;
 
-		// XXX 2245 mode different?
+		if (ctx->dev.type == P_SHINKO_S2245) {
+			if (!oc_mode) /* if nothing set, default to glossy */
+				oc_mode = PARAM_OC_PRINT_GLOSS;
 
-		if (!oc_mode) /* if nothing set, default to glossy */
-			oc_mode = PARAM_OC_PRINT_GLOSS;
+			if (cur_mode != oc_mode) {
+				/* If cur_mode is not the same as desired oc_mode,
+				   change it -- but we have to wait until the printer
+				   is COMPLETELY idle */
+				if (sts.bank1_status != BANK_STATUS_FREE ||
+				    sts.bank2_status != BANK_STATUS_FREE) {
+					INFO("Need to switch overcoat mode, waiting for printer idle\n");
+					sleep(1);
+					goto top;
+				}
 
-		if (cur_mode != oc_mode) {
-			/* If cur_mode is not the same as desired oc_mode,
-			   change it -- but we have to wait until the printer
-			   is COMPLETELY idle */
-			if (sts.bank1_status != BANK_STATUS_FREE ||
-			    sts.bank2_status != BANK_STATUS_FREE) {
-				INFO("Need to switch overcoat mode, waiting for printer idle\n");
-				sleep(1);
-				goto top;
-			}
-			if (ctx->dev.type == P_SHINKO_S2245) {
 				ret = sinfonia_setparam(&ctx->dev, PARAM_OC_PRINT, oc_mode);
 				if (ret) {
 					ERROR("Failed to execute command\n");
 					return ret;
 				}
+				updated = 1;
 			}
-			updated = 1;
 		}
 
 		ret = shinkos6145_get_eeprom(ctx);
@@ -1828,11 +1837,11 @@ top:
 			return ret;
 		}
 
-		/* Get image correction parameters if necessary */
-		if (updated || !ctx->corrdata || !ctx->corrdatalen) {
-			if (ctx->dev.type == P_SHINKO_S2245) {
-				ret = shinkos2245_get_imagecorr(ctx, (job->jp.oc_mode & 0x3) | 0x08, 0x01); // XXX 0x08 pull from job, oc_mode! 0x01??
-			} else {
+		if (ctx->dev.type == P_SHINKO_S2245) {
+			ret = shinkos2245_get_imagecorr(ctx, (job->jp.oc_mode & SINFONIA_PRINT28_OC_MASK) | (job->jp.quality ? SINFONIA_PRINT28_OPTIONS_HQ : 0));
+		} else {
+			/* Get image correction parameters if necessary */
+			if (updated || !ctx->corrdata || !ctx->corrdatalen) {
 				ret = shinkos6145_get_imagecorr(ctx);
 			}
 			if (ret) {
@@ -1913,10 +1922,10 @@ top:
 			print.options = job->jp.oc_mode & 0x3;
 			if (job->jp.quality)
 				print.options |= 0x08;
-			print.media = job->jp.media;
+			print.media = 0;  /* ignore job->jp.media! */
 
-			print.image_avg = ctx->image_avg[2]; /* Cyan level */
-			print.method = cpu_to_le32(job->jp.method);
+			print.ipp = SINFONIA_PRINT28_IPP_CONTOUR;
+			print.method = cpu_to_le32(job->jp.method | SINFONIA_PRINT28_METHOD_ERR_RECOVERY | SINFONIA_PRINT28_METHOD_ERR_PREHEAT);
 
 			if ((ret = sinfonia_docmd(&ctx->dev,
 						  (uint8_t*)&print, sizeof(print),
@@ -2131,7 +2140,7 @@ static const char *shinkos6145_prefixes[] = {
 
 struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.49" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.40" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
