@@ -142,7 +142,7 @@ sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w288h432
 sinfonia-chcs2245,0x10ce,0x0039,1,PageSize=w288h432-div2
 sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w432h432
 sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w432h576
-sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w432h576-w432h432_w432h144
+sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w432h576-div4
 sinfonia-chcs2245,0x10ce,0x0039,4,PageSize=w432h576-div2
 sinfonia-chcs2245,0x10ce,0x0039,5,PageSize=w432h648
 sinfonia-chcs2245,0x10ce,0x0039,3,PageSize=w360h360
@@ -150,6 +150,8 @@ sinfonia-chcs2245,0x10ce,0x0039,3,PageSize=w360h504
 sinfonia-chcs2245,0x10ce,0x0039,3,PageSize=w360h504;StpLamination=None
 sinfonia-chcs2245,0x10ce,0x0039,3,PageSize=w360h504;StpLamination=Glossy
 sinfonia-chcs2245,0x10ce,0x0039,3,PageSize=w360h504;StpLamination=Matte
+sinfonia-chcs2245,0x10ce,0x0039,1,PageSize=w288h432;StpPrintQuality=High
+sinfonia-chcs2245,0x10ce,0x0039,1,PageSize=w288h432;StpPrintQuality=Standard
 #
 ciaat-brava-21,0x10ce,0x001e,4,PageSize=w288h432
 #
