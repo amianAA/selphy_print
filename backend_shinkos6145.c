@@ -906,6 +906,7 @@ static int shinkos6145_get_imagecorr(struct shinkos6145_ctx *ctx)
 	ctx->corrdatalen = le16_to_cpu(resp.total_size);
 	INFO("Fetching %u bytes of image correction data\n", ctx->corrdatalen);
 
+	/* We need a little extra to pass arguments to the library */
 	ctx->corrdata = malloc(ctx->corrdatalen + S6145_CORRDATA_EXTRA_LEN);
 	if (!ctx->corrdata) {
 		ERROR("Memory allocation failure\n");
@@ -931,7 +932,6 @@ static int shinkos6145_get_imagecorr(struct shinkos6145_ctx *ctx)
 			DEBUG("correction block transferred (%u/%u total)\n", total, ctx->corrdatalen);
 
 	}
-	ctx->corrdatalen += S6145_CORRDATA_EXTRA_LEN;
 
 done:
 	return ret;
