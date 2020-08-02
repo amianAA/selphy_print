@@ -290,7 +290,7 @@ static  int32_t g_piTankParam[128];   // should be struct tankParam[4]
 static  int32_t g_pulRandomTable[32]; // should be u32
 
 static uint8_t  *g_pucInputImageBuf;
-struct imageCorrParam *g_pSPrintParam;
+static struct imageCorrParam *g_pSPrintParam;
 static uint16_t *g_pusOutputImageBuf;
 
 static uint8_t  g_ucRandomBaseLevel[4];
