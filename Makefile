@@ -64,10 +64,12 @@ BACKEND_NAME ?= gutenprint5X+usb
 # Libraries:
 LIBS6145_NAME = lib6145/libS6145ImageReProcess.$(LIB_SUFFIX)
 LIBS6145_SOURCES = lib6145/libS6145ImageReProcess.c
+LIBS2245_NAME = lib2245/libS2245ImageReProcess.$(LIB_SUFFIX)
+LIBS2245_SOURCES = lib2245/libS2245ImageReProcess.c
 LIB70X_NAME ?= lib70x/libMitsuD70ImageReProcess.$(LIB_SUFFIX)
 LIB70X_SOURCES = lib70x/libMitsuD70ImageReProcess.c
 
-LIBRARIES = $(LIBS6145_NAME) $(LIB70X_NAME)
+LIBRARIES = $(LIBS6145_NAME) $(LIB70X_NAME) $(LIBS2245_NAME)
 
 # Tools
 CC ?= $(CROSS_COMPILE)gcc
@@ -90,7 +92,8 @@ E=true
 endif
 
 # Flags
-CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
+CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOU
+RCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
 LDFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --libs libusb-1.0)
 CPPFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --cflags libusb-1.0)
 # CPPFLAGS += -DLIBUSB_PRE_1_0_10
@@ -245,5 +248,9 @@ $(LIB70X_NAME):  $(LIB70X_SOURCES:.c=.o)
 	$(Q)$(CC) $(LIBLDFLAGS) -o $@ $^
 
 $(LIBS6145_NAME):  $(LIBS6145_SOURCES:.c=.o)
+	@$(E) "    CCLD  " $@
+	$(Q)$(CC) $(LIBLDFLAGS) -o $@ $^
+
+$(LIBS2245_NAME):  $(LIBS2245_SOURCES:.c=.o)
 	@$(E) "    CCLD  " $@
 	$(Q)$(CC) $(LIBLDFLAGS) -o $@ $^
