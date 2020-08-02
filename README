@@ -710,48 +710,45 @@
 
    *** VERY IMPORTANT ***
 
-     In order to generate usable output, the Sinfonia CHC-S6145 printer
-     (and its siblings listed above) require the input data to be
+     In order to generate usable output, the Sinfonia CHC-S6145 and CHC-S2245
+     printers (and their siblings listed above) require the input data to be
      transformed using specific image processing algorithms.
 
      The library that implements this processing is dynamically loaded
      at runtime. There are three options:
 
-       * libS6145ImageProcess -- Supported by Sinfonia, this is a proprietary
-         library only available for x86 and x86_64 linux targets. It can be
-	 obtained by politely contacting your local Sinfonia distributor.
+       * libS6145ImageProcess and S2245IP -- Supported by Sinfonia, these
+         are proprietary libraries.  They can be obtained by politely
+	 contacting your local Sinfonia distributor.
 
-         If you have the appropriate permission fron Sinfonia and its
-	 technical and legal limitations are acceptible to you, we recommend
-         you use the supported libS6145ImageProcess library, as it will
-	 generate the highest quality output.
+         If you have the appropriate permission fron Sinfonia and their
+	 technical and legal limitations are acceptible to you, we
+	 recommend you use these official supported libraries.
 
-       * libS6145ImageReProcess -- GPL'd re-implementation of the Sinfonia
-         algorithms, available as source.  It is a drop-in replacement
-	 that appears to generate identical output to the proprietary
-	 Sinfonia library.
+       * libS6145ImageReProcess and libS2245ImageReProocess -- GPL'd
+         re-implementations of the Sinfonia algorithms, available as
+         source.  They are drop-in replacement that appears to generate
+         identical output to the proprietary Sinfonia libraries.
 
 	 DISCLAIMER: Sinfonia Inc was not involved in the creation of
-	 libS6145ImageReProcess and is not responsible in any way for any
+	 these libraries and is not responsible in any way for any
 	 deficiencies in its output. They will provide no support if it is
 	 used.
 
          Do *NOT* contact Sinfonia for support if you are using
-	 libS6146ImageReProcess!
+	 libS6146ImageReProcess or libS2245ImageReProcess!
 
-	    (Please see the full disclaimer in libS6145ImageReProcess.c)
-
-       * If neither of the above libraries are found, the backend will
-         fall back to a very crude algorithm that generates low-quality
-	 results not suitable for photographic output
+	    (Please see the full disclaimer in libS6145ImageReProcess.c and
+             libS2245ImageReProcess.c)
 
      As selphy_print is released under the terms of the GPL, it cannot
      normally be combined with proprietary libraries.
 
-     Therefore, the authors of selphy_print grant its users an additional
-     permission (under section 7 of the GPLv3) to combine and/or redistribute
-     it with the libS6145ImageProcess library.  For the full text of this
-     license exception, please see the header of backend_shinkos6145.c
+     Therefore, the authors of selphy_print grant its users an
+     additional permission (under section 7 of the GPLv3) to combine
+     and/or redistribute it with the proprietart libS6145ImageProcess
+     and/or S2245IP libraries. For the full text of this license
+     exception, please see the header of backend_shinkos6145.c
 
    Valid commands:
 
@@ -1139,7 +1136,7 @@
     DNP DS620 / DS620A (aka Citizen CX-02)
     DNP DS820 / DS820A (aka Citizen CX-02W)
     DNP DS-RX1 / DNP DS-RX1HS (aka Citizen CY and CY-02)
-    DNP DS-QW410 
+    DNP DS-QW410
 
    Theoretically supported printers:  (Untested)
 

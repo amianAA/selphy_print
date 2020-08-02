@@ -24,11 +24,11 @@
  *
  *   An additional permission is granted, under the GPLv3 section 7, to combine
  *   and/or redistribute this program with the proprietary libS6145ImageProcess
- *   library, providing you have *written permission* from Sinfonia Technology
- *   Co. LTD to use and/or redistribute that library.
+ *   and S2245IP libraries, providing you have *written permission* from Sinfonia
+ *   Technology Co. LTD to use and/or redistribute that library.
  *
  *   You must still adhere to all other terms of the license to this program
- *   (ie GPLv3) and the license of the libS6145ImageProcess library.
+ *   (ie GPLv3) and the license of the libS6145ImageProcess/S2245IP libraries.
  *
  *   SPDX-License-Identifier: GPL-3.0+ with special exception
  *
@@ -40,6 +40,7 @@
 #include "backend_sinfonia.h"
 
 #include <time.h>
+#include <stdbool.h>
 
 #ifndef WITH_DYNAMIC
 #warning "No dynamic loading support!"
@@ -49,8 +50,24 @@
 typedef int (*ImageProcessingFN)(unsigned char *, unsigned short *, void *);
 typedef int (*ImageAvrCalcFN)(unsigned char *, unsigned short, unsigned short, unsigned char *);
 
-#define LIB_NAME    "libS6145ImageProcess" DLL_SUFFIX    // Official library
-#define LIB_NAME_RE "libS6145ImageReProcess" DLL_SUFFIX // Reimplemented library
+#define LIB6145_NAME    "libS6145ImageProcess" DLL_SUFFIX    // Official library
+#define LIB6145_NAME_RE "libS6145ImageReProcess" DLL_SUFFIX // Reimplemented library
+
+#define S6145_CORRDATA_HEADDOTS_OFFSET  8834
+#define S6145_CORRDATA_WIDTH_OFFSET     12432
+#define S6145_CORRDATA_HEIGHT_OFFSET    12434
+#define S6145_CORRDATA_EXTRA_LEN        4
+
+
+typedef bool (*ip_imageProcFN)(uint16_t *destData, uint8_t *srcInRgb,
+			       uint16_t width, uint16_t height, void *srcIpp);
+typedef bool (*ip_checkIppFN)(uint16_t width, uint16_t height, void *srcIpp);
+typedef bool (*ip_getMemorySizeFN)(uint32_t *szMemory,
+				   uint16_t width, uint16_t height,
+				   void *srcIpp);
+
+#define LIB2245_NAME    "libS2245ImageProcess" DLL_SUFFIX    // Official library
+#define LIB2245_NAME_RE "libS2245ImageReProcess" DLL_SUFFIX // Reimplemented library
 
 enum {
 	S_IDLE = 0,
@@ -58,132 +75,6 @@ enum {
 	S_PRINTER_SENT_DATA,
 	S_FINISHED,
 };
-
-/* "Image Correction Parameter" File */
-// 128 bytes total, apparently an array of 32-bit values
-struct tankParamTable {
-	uint32_t trdTankSize;
-	uint32_t sndTankSize;
-	uint32_t fstTankSize;
-	uint32_t trdTankIniEnergy;
-	uint32_t sndTankIniEnergy;
-	uint32_t fstTankIniEnergy;
-	uint32_t trdTrdConductivity;
-	uint32_t sndSndConductivity;
-	uint32_t fstFstConductivity;
-	uint32_t outTrdConductivity;
-	uint32_t trdSndConductivity;
-	uint32_t sndFstConductivity;
-	uint32_t fstOutConductivity;
-	uint32_t plusMaxEnergy;
-	uint32_t minusMaxEnergy;
-	uint32_t plusMaxEnergyPreRead;
-	uint32_t minusMaxEnergyPreRead;
-	uint32_t preReadLevelDiff;
-	uint32_t rsvd[14]; // null?
-} __attribute__((packed));
-
-struct shinkos6145_correctionparam {
-	uint16_t pulseTransTable_Y[256];   // @0
-	uint16_t pulseTransTable_M[256];   // @512
-	uint16_t pulseTransTable_C[256];   // @1024
-	uint16_t pulseTransTable_O[256];   // @1536
-
-	uint16_t lineHistCoefTable_Y[256]; // @2048
-	uint16_t lineHistCoefTable_M[256]; // @2560
-	uint16_t lineHistCoefTable_C[256]; // @3072
-	uint16_t lineHistCoefTable_O[256]; // @3584
-
-	uint16_t lineCorrectEnvA_Y;        // @4096
-	uint16_t lineCorrectEnvA_M;        // @4098
-	uint16_t lineCorrectEnvA_C;        // @4100
-	uint16_t lineCorrectEnvA_O;        // @4102
-
-	uint16_t lineCorrectEnvB_Y;        // @4104
-	uint16_t lineCorrectEnvB_M;        // @4106
-	uint16_t lineCorrectEnvB_C;        // @4108
-	uint16_t lineCorrectEnvB_O;        // @4110
-
-	uint16_t lineCorrectEnvC_Y;        // @4112
-	uint16_t lineCorrectEnvC_M;        // @4114
-	uint16_t lineCorrectEnvC_C;        // @4116
-	uint16_t lineCorrectEnvC_O;        // @4118
-
-	uint32_t lineCorrectSlice_Y;       // @4120
-	uint32_t lineCorrectSlice_M;       // @4124
-	uint32_t lineCorrectSlice_C;       // @4128
-	uint32_t lineCorrectSlice_O;       // @4132
-
-	uint32_t lineCorrectSlice1Line_Y;  // @4136
-	uint32_t lineCorrectSlice1Line_M;  // @4140
-	uint32_t lineCorrectSlice1Line_C;  // @4144
-	uint32_t lineCorrectSlice1Line_O;  // @4148
-
-	uint32_t lineCorrectPulseMax_Y;    // @4152 [array]
-	uint32_t lineCorrectPulseMax_M;    // @4156 [array]
-	uint32_t lineCorrectPulseMax_C;    // @4160 [array]
-	uint32_t lineCorrectPulseMax_O;    // @4164 [array]
-
-	struct tankParamTable tableTankParam_Y; // @4168
-	struct tankParamTable tableTankParam_M; // @4296
-	struct tankParamTable tableTankParam_C; // @4424
-	struct tankParamTable tableTankParam_O; // @4552
-
-	uint16_t tankPlusMaxEnergyTable_Y[256]; // @4680
-	uint16_t tankPlusMaxEnergyTable_M[256]; // @5192
-	uint16_t tankPlusMaxEnergyTable_C[256]; // @5704
-	uint16_t tankPlusMaxEnergyTable_O[256]; // @6216
-
-	uint16_t tankMinusMaxEnergy_Y[256];     // @6728
-	uint16_t tankMinusMaxEnergy_M[256];     // @7240
-	uint16_t tankMinusMaxEnergy_C[256];     // @7752
-	uint16_t tankMinusMaxEnergy_O[256];     // @8264
-
-	uint16_t printMaxPulse_Y; // @8776
-	uint16_t printMaxPulse_M; // @8778
-	uint16_t printMaxPulse_C; // @8780
-	uint16_t printMaxPulse_O; // @8782
-
-	uint16_t mtfWeightH_Y;    // @8784
-	uint16_t mtfWeightH_M;    // @8786
-	uint16_t mtfWeightH_C;    // @8788
-	uint16_t mtfWeightH_O;    // @8790
-
-	uint16_t mtfWeightV_Y;    // @8792
-	uint16_t mtfWeightV_M;    // @8794
-	uint16_t mtfWeightV_C;    // @8796
-	uint16_t mtfWeightV_O;    // @8798
-
-	uint16_t mtfSlice_Y;      // @8800
-	uint16_t mtfSlice_M;      // @8802
-	uint16_t mtfSlice_C;      // @8804
-	uint16_t mtfSlice_O;      // @8806
-
-	uint16_t val_1;           // @8808 // 1 enables linepreprintprocess
-	uint16_t val_2;		  // @8810 // 1 enables ctankprocess
-	uint16_t printOpLevel;    // @8812
-	uint16_t matteMode;	  // @8814 // 1 for matte
-
-	uint16_t randomBase[4];   // @8816 [use lower byte of each]
-
-	uint16_t matteSize;       // @8824
-	uint16_t matteGloss;      // @8826
-	uint16_t matteDeglossBlk; // @8828
-	uint16_t matteDeglossWht; // @8830
-
-	uint16_t printSideOffset; // @8832
-	uint16_t headDots;        // @8834 [always 0x0780, ie 1920. print width
-
-	uint16_t SideEdgeCoefTable[128];   // @8836
-	uint8_t  rsvd_2[256];              // @9092, null?
-	uint16_t SideEdgeLvCoefTable[256]; // @9348
-	uint8_t  rsvd_3[2572];             // @9860, null?
-
-	/* User-supplied data */
-	uint16_t width;           // @12432
-	uint16_t height;          // @12434
-	uint8_t  pad[3948];       // @12436, null.
-} __attribute__((packed)); /* 16384 bytes */
 
 /* Structs for printer */
 struct s6145_print_cmd {
@@ -738,7 +629,6 @@ struct s2245_imagecorr_resp {
 	uint32_t total_size;
 } __attribute__((packed));
 
-
 struct s6145_imagecorr_data {
 	uint8_t  remain_pkt;
 	uint8_t  return_size; /* Always 0x10 */
@@ -764,10 +654,15 @@ struct shinkos6145_ctx {
 	size_t eepromlen;
 
 	void *dl_handle;
+
 	ImageProcessingFN ImageProcessing;
 	ImageAvrCalcFN ImageAvrCalc;
 
-	struct shinkos6145_correctionparam *corrdata;
+	ip_imageProcFN ip_imageProc;
+	ip_checkIppFN  ip_checkIpp;
+	ip_getMemorySizeFN ip_getMemorySize;
+
+	void *corrdata;  /* Correction table */
 	uint16_t corrdatalen;
 };
 
@@ -944,7 +839,7 @@ static int shinkos6145_dump_corrdata(struct shinkos6145_ctx *ctx, char *fname)
 			return fd;
 		}
 
-		ret = write(fd, ctx->corrdata, sizeof(struct shinkos6145_correctionparam));
+		ret = write(fd, ctx->corrdata, ctx->corrdatalen);
 		close(fd);
 	}
 
@@ -1011,13 +906,13 @@ static int shinkos6145_get_imagecorr(struct shinkos6145_ctx *ctx)
 	ctx->corrdatalen = le16_to_cpu(resp.total_size);
 	INFO("Fetching %u bytes of image correction data\n", ctx->corrdatalen);
 
-	ctx->corrdata = malloc(sizeof(struct shinkos6145_correctionparam));
+	ctx->corrdata = malloc(ctx->corrdatalen + S6145_CORRDATA_EXTRA_LEN);
 	if (!ctx->corrdata) {
 		ERROR("Memory allocation failure\n");
 		ret = CUPS_BACKEND_FAILED;
 		goto done;
 	}
-	memset(ctx->corrdata, 0, sizeof(struct shinkos6145_correctionparam));
+	memset(ctx->corrdata, 0, ctx->corrdatalen);
 	total = 0;
 
 	while (total < ctx->corrdatalen) {
@@ -1036,15 +931,12 @@ static int shinkos6145_get_imagecorr(struct shinkos6145_ctx *ctx)
 			DEBUG("correction block transferred (%u/%u total)\n", total, ctx->corrdatalen);
 
 	}
-
+	ctx->corrdatalen += S6145_CORRDATA_EXTRA_LEN;
 
 done:
 	return ret;
 }
 
-// XXX this is bogus, corrdata is 10224 bytes vs the 12432 bytes of the S6145!
-// However they use the same image processing DLL so the S2245 data must be
-// transforamble somehow.  Or is it?
 static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t options)
 {
 	struct s2245_imagecorr_req cmd;
@@ -1055,7 +947,7 @@ static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t option
 	cmd.hdr.cmd = cpu_to_le16(SINFONIA_CMD_GETCORR);
 	cmd.hdr.len = sizeof(cmd) - sizeof(cmd.hdr);
 	cmd.options = options;
-	cmd.flags = S2245_IMAGECORR_FLAG_CONTOUR_ENH; // XXX make configurable?
+	cmd.flags = S2245_IMAGECORR_FLAG_CONTOUR_ENH; // XXX make configurable?  or key off a flag in the job?
 
 	if (ctx->corrdata) {
 		free(ctx->corrdata);
@@ -1072,13 +964,13 @@ static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t option
 	ctx->corrdatalen = le16_to_cpu(resp.total_size);
 	INFO("Fetching %u bytes of image correction data\n", ctx->corrdatalen);
 
-	ctx->corrdata = malloc(sizeof(struct shinkos6145_correctionparam));
+	ctx->corrdata = malloc(ctx->corrdatalen);
 	if (!ctx->corrdata) {
 		ERROR("Memory allocation failure\n");
 		ret = CUPS_BACKEND_FAILED;
 		goto done;
 	}
-	memset(ctx->corrdata, 0, sizeof(struct shinkos6145_correctionparam));
+	memset(ctx->corrdata, 0, ctx->corrdatalen);
 	total = 0;
 
 	while (total < ctx->corrdatalen) {
@@ -1098,11 +990,9 @@ static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t option
 
 	}
 
-
 done:
 	return ret;
 }
-
 
 static int shinkos6145_get_eeprom(struct shinkos6145_ctx *ctx)
 {
@@ -1336,34 +1226,55 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 		ctx->dev.params = s2245_params;
 		ctx->dev.params_count = s2245_params_num;
 		ctx->dev.error_codes = &s2245_error_codes;
+
+#if defined(WITH_DYNAMIC)
+		INFO("Attempting to load image processing library\n");
+		ctx->dl_handle = DL_OPEN(LIB2245_NAME); /* Try the Sinfonia one first */
+		if (!ctx->dl_handle)
+			ctx->dl_handle = DL_OPEN(LIB2245_NAME_RE); /* Then the RE one */
+		if (ctx->dl_handle) {
+			ctx->ip_imageProc = DL_SYM(ctx->dl_handle, "ip_ImageProc");
+			ctx->ip_checkIpp = DL_SYM(ctx->dl_handle, "ip_checkIpp");
+			ctx->ip_getMemorySize = DL_SYM(ctx->dl_handle, "ip_getMemorySize");
+			if (!ctx->ip_imageProc || !ctx->ip_checkIpp || !ctx->ip_getMemorySize) {
+				WARNING("Problem resolving symbols in imaging processing library\n");
+				DL_CLOSE(ctx->dl_handle);
+				ctx->dl_handle = NULL;
+			} else {
+				INFO("Image processing library successfully loaded\n");
+			}
+		}
+#endif
 	} else if (type == P_SHINKO_S6145 ||
 		   type == P_SHINKO_S6145D) {
 		ctx->dev.params = s6145_params;
 		ctx->dev.params_count = s6145_params_num;
 		ctx->dev.error_codes = &s6145_error_codes;
+
+#if defined(WITH_DYNAMIC)
+		INFO("Attempting to load image processing library\n");
+		ctx->dl_handle = DL_OPEN(LIB6145_NAME); /* Try the Sinfonia one first */
+		if (!ctx->dl_handle)
+			ctx->dl_handle = DL_OPEN(LIB6145_NAME_RE); /* Then the RE one */
+		if (ctx->dl_handle) {
+			ctx->ImageProcessing = DL_SYM(ctx->dl_handle, "ImageProcessing");
+			ctx->ImageAvrCalc = DL_SYM(ctx->dl_handle, "ImageAvrCalc");
+			if (!ctx->ImageProcessing || !ctx->ImageAvrCalc) {
+				WARNING("Problem resolving symbols in imaging processing library\n");
+				DL_CLOSE(ctx->dl_handle);
+				ctx->dl_handle = NULL;
+			} else {
+				INFO("Image processing library successfully loaded\n");
+			}
+		}
+#endif
 	}
 
-	/* Attempt to open the library */
 #if defined(WITH_DYNAMIC)
-	INFO("Attempting to load image processing library\n");
-	ctx->dl_handle = DL_OPEN(LIB_NAME); /* Try the Sinfonia one first */
 	if (!ctx->dl_handle)
-		ctx->dl_handle = DL_OPEN(LIB_NAME_RE); /* Then the RE one */
-	if (!ctx->dl_handle)
-		WARNING("Image processing library not found, using internal fallback code\n");
-	if (ctx->dl_handle) {
-		ctx->ImageProcessing = DL_SYM(ctx->dl_handle, "ImageProcessing");
-		ctx->ImageAvrCalc = DL_SYM(ctx->dl_handle, "ImageAvrCalc");
-		if (!ctx->ImageProcessing || !ctx->ImageAvrCalc) {
-			WARNING("Problem resolving symbols in imaging processing library\n");
-			DL_CLOSE(ctx->dl_handle);
-			ctx->dl_handle = NULL;
-		} else {
-			INFO("Image processing library successfully loaded\n");
-		}
-	}
+		WARNING("Image processing library not found; will NOT be able to print!\n");
 #else
-	WARNING("Dynamic library support not enabled, using internal fallback code\n");
+	WARNING("Image processing library cannot be loaded; will NOT be able to print!e\n");
 #endif
 
 	/* Ensure jobid is sane */
@@ -1410,98 +1321,6 @@ static void shinkos6145_teardown(void *vctx) {
 	DL_EXIT();
 
 	free(ctx);
-}
-
-static void lib6145_calc_avg(struct shinkos6145_ctx *ctx,
-			     const struct sinfonia_printjob *job,
-			     uint16_t rows, uint16_t cols)
-{
-	uint32_t plane, i, planelen;
-	planelen = rows * cols;
-
-	for (plane = 0 ; plane < 3 ; plane++) {
-		uint64_t sum = 0;
-
-		for (i = 0 ; i < planelen ; i++) {
-			sum += job->databuf[(planelen * plane) + i];
-		}
-		ctx->image_avg[plane] = (sum / planelen);
-	}
-}
-
-static void lib6145_process_image(uint8_t *src, uint16_t *dest,
-				  struct shinkos6145_correctionparam *corrdata,
-				  uint8_t oc_mode)
-{
-	uint32_t in, out;
-
-	uint16_t pad_l, pad_r, row_lim;
-	uint16_t row, col;
-
-	row_lim = le16_to_cpu(corrdata->headDots);
-	pad_l = (row_lim - le16_to_cpu(corrdata->width)) / 2;
-	pad_r = pad_l + le16_to_cpu(corrdata->width);
-	out = 0;
-	in = 0;
-
-	/* Convert YMC 8-bit to 16-bit, and pad appropriately to full stripe */
-	for (row = 0 ; row < le16_to_cpu(corrdata->height) ; row++) {
-		for (col = 0 ; col < row_lim; col++) {
-			uint16_t val;
-			if (col < pad_l) {
-				val = 0;
-			} else if (col < pad_r) {
-				val = corrdata->pulseTransTable_Y[src[in++]];
-			} else {
-				val = 0;
-			}
-			dest[out++] = val;
-		}
-	}
-	for (row = 0 ; row < le16_to_cpu(corrdata->height) ; row++) {
-		for (col = 0 ; col < row_lim; col++) {
-			uint16_t val;
-			if (col < pad_l) {
-				val = 0;
-			} else if (col < pad_r) {
-				val = corrdata->pulseTransTable_M[src[in++]];
-			} else {
-				val = 0;
-			}
-			dest[out++] = val;
-		}
-	}
-	for (row = 0 ; row < le16_to_cpu(corrdata->height) ; row++) {
-		for (col = 0 ; col < row_lim; col++) {
-			uint16_t val;
-			if (col < pad_l) {
-				val = 0;
-			} else if (col < pad_r) {
-				val = corrdata->pulseTransTable_C[src[in++]];
-			} else {
-				val = 0;
-			}
-			dest[out++] = val;
-		}
-	}
-
-	/* Generate lamination plane, if desired */
-	if (oc_mode > PRINT_MODE_NO_OC) {
-		// XXX matters if we're using glossy/matte...
-		for (row = 0 ; row < le16_to_cpu(corrdata->height) ; row++) {
-			for (col = 0 ; col < row_lim; col++) {
-				uint16_t val;
-				if (col < pad_l) {
-					val = 0;
-				} else if (col < pad_r) {
-					val = corrdata->pulseTransTable_O[corrdata->printOpLevel];
-				} else {
-					val = 0;
-				}
-				dest[out++] = val;
-			}
-		}
-	}
 }
 
 static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, int copies) {
@@ -1850,38 +1669,68 @@ top:
 			}
 		}
 
-		/* Set up library transform... */
-		uint32_t newlen = le16_to_cpu(ctx->corrdata->headDots) *
-			job->jp.rows * sizeof(uint16_t) * 4;
-		uint16_t *databuf2 = malloc(newlen);
+		if (ctx->dev.type == P_SHINKO_S2245) {
+			uint32_t bufSize = 0;
+			uint16_t *newbuf;
 
-		/* Set the size in the correctiondata */
-		ctx->corrdata->width = cpu_to_le16(job->jp.columns);
-		ctx->corrdata->height = cpu_to_le16(job->jp.rows);
-
-
-		/* Perform the actual library transform */
-		if (ctx->dl_handle) {
-			INFO("Calling image processing library...\n");
-
-			if (ctx->ImageAvrCalc(job->databuf, job->jp.columns, job->jp.rows, ctx->image_avg)) {
-				free(databuf2);
-				ERROR("Library returned error!\n");
+			if (!ctx->ip_checkIpp(job->jp.columns, job->jp.rows, ctx->corrdata)) {
+				ERROR("ip_checkIPP Failed!\n");
 				return CUPS_BACKEND_FAILED;
 			}
-			ctx->ImageProcessing(job->databuf, databuf2, ctx->corrdata);
+			if (!ctx->ip_getMemorySize(&bufSize, job->jp.columns, job->jp.rows, ctx->corrdata)) {
+				ERROR("ip_getMemorySize Failed!\n");
+				return CUPS_BACKEND_FAILED;
+			}
+			newbuf = malloc(bufSize);
+			if (!newbuf) {
+				ERROR("Memory Allocation failure!\n");
+				return CUPS_BACKEND_RETRY;
+			}
+			if (ctx->ip_imageProc(newbuf, job->databuf, job->jp.columns, job->jp.rows, ctx->corrdata)) {
+				ERROR("ip_imageProc Failed!\n");
+				free(newbuf);
+				return CUPS_BACKEND_FAILED;
+			}
+			free(job->databuf);
+			job->databuf = (uint8_t*)newbuf;
+			job->datalen = bufSize;
 		} else {
-			WARNING("Utilizing fallback internal image processing code\n");
-			WARNING(" *** Output quality will be poor! *** \n");
+			uint16_t tmp;
+			memcpy(&tmp, (uint8_t*)ctx->corrdata + S6145_CORRDATA_HEADDOTS_OFFSET, sizeof(tmp));
+			tmp = le16_to_cpu(tmp);
 
-			lib6145_calc_avg(ctx, job, job->jp.columns, job->jp.rows);
-			lib6145_process_image(job->databuf, databuf2, ctx->corrdata, oc_mode);
+			/* Set up library transform... */
+			uint32_t newlen = tmp * job->jp.rows * sizeof(uint16_t) * 4;
+			uint16_t *databuf2 = malloc(newlen);
+			if (!databuf2) {
+				ERROR("Memory Allocation failure!\n");
+				return CUPS_BACKEND_RETRY;
+			}
+			/* Set the size in the correctiondata */
+			tmp = cpu_to_le16(job->jp.columns);
+			memcpy((uint8_t*)ctx->corrdata + S6145_CORRDATA_WIDTH_OFFSET, &tmp, sizeof(tmp));
+			tmp = cpu_to_le16(job->jp.rows);
+			memcpy((uint8_t*)ctx->corrdata + S6145_CORRDATA_HEIGHT_OFFSET, &tmp, sizeof(tmp));
+
+			/* Perform the actual library transform */
+			if (ctx->dl_handle) {
+				INFO("Calling image processing library...\n");
+
+				if (ctx->ImageAvrCalc(job->databuf, job->jp.columns, job->jp.rows, ctx->image_avg)) {
+					free(databuf2);
+					ERROR("Library returned error!\n");
+					return CUPS_BACKEND_FAILED;
+				}
+				ctx->ImageProcessing(job->databuf, databuf2, ctx->corrdata);
+			} else {
+				ERROR("Image processing library not found!  Cannot print!\n");
+				return CUPS_BACKEND_FAILED;
+			}
+
+			free(job->databuf);
+			job->databuf = (uint8_t*) databuf2;
+			job->datalen = newlen;
 		}
-
-		free(job->databuf);
-		job->databuf = (uint8_t*) databuf2;
-		job->datalen = newlen;
-
 
 		INFO("Sending print job (internal id %u)\n", ctx->jobid);
 
@@ -1924,7 +1773,7 @@ top:
 				print.options |= 0x08;
 			print.media = 0;  /* ignore job->jp.media! */
 
-			print.ipp = SINFONIA_PRINT28_IPP_CONTOUR;
+			print.ipp = SINFONIA_PRINT28_IPP_CONTOUR; // XXX make configurable?
 			print.method = cpu_to_le32(job->jp.method | SINFONIA_PRINT28_METHOD_ERR_RECOVERY | SINFONIA_PRINT28_METHOD_ERR_PREHEAT);
 
 			if ((ret = sinfonia_docmd(&ctx->dev,
@@ -2140,7 +1989,7 @@ static const char *shinkos6145_prefixes[] = {
 
 struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.40" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.41" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
