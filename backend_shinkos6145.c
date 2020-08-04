@@ -948,6 +948,7 @@ static int shinkos2245_get_imagecorr(struct shinkos6145_ctx *ctx, uint8_t option
 	cmd.hdr.len = sizeof(cmd) - sizeof(cmd.hdr);
 	cmd.options = options;
 	cmd.flags = S2245_IMAGECORR_FLAG_CONTOUR_ENH; // XXX make configurable?  or key off a flag in the job?
+	memset(cmd.null, 0, sizeof(cmd.null));
 
 	if (ctx->corrdata) {
 		free(ctx->corrdata);
@@ -1228,12 +1229,12 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 		ctx->dev.error_codes = &s2245_error_codes;
 
 #if defined(WITH_DYNAMIC)
-		INFO("Attempting to load image processing library\n");
+		INFO("Attempting to load S2245 image processing library\n");
 		ctx->dl_handle = DL_OPEN(LIB2245_NAME); /* Try the Sinfonia one first */
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB2245_NAME_RE); /* Then the RE one */
 		if (ctx->dl_handle) {
-			ctx->ip_imageProc = DL_SYM(ctx->dl_handle, "ip_ImageProc");
+			ctx->ip_imageProc = DL_SYM(ctx->dl_handle, "ip_imageProc");
 			ctx->ip_checkIpp = DL_SYM(ctx->dl_handle, "ip_checkIpp");
 			ctx->ip_getMemorySize = DL_SYM(ctx->dl_handle, "ip_getMemorySize");
 			if (!ctx->ip_imageProc || !ctx->ip_checkIpp || !ctx->ip_getMemorySize) {
@@ -1252,7 +1253,7 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 		ctx->dev.error_codes = &s6145_error_codes;
 
 #if defined(WITH_DYNAMIC)
-		INFO("Attempting to load image processing library\n");
+		INFO("Attempting to load S6145 image processing library\n");
 		ctx->dl_handle = DL_OPEN(LIB6145_NAME); /* Try the Sinfonia one first */
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB6145_NAME_RE); /* Then the RE one */
@@ -1381,7 +1382,7 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 	input_ymc = job->jp.ext_flags & EXT_FLAG_PLANARYMC;
 
 	/* Convert packed RGB to planar YMC if necessary */
-	if (!input_ymc) {
+	if (ctx->dev.type != P_SHINKO_S2245 && !input_ymc) {
 		INFO("Converting Packed RGB to Planar YMC\n");
 		int planelen = job->jp.columns * job->jp.rows;
 		uint8_t *databuf3 = malloc(job->datalen);
@@ -1626,7 +1627,7 @@ top:
 		uint32_t oc_mode = job->jp.oc_mode;
 		uint32_t updated = 0;
 
-		if (ctx->dev.type == P_SHINKO_S2245) {
+		if (ctx->dev.type != P_SHINKO_S2245) {
 			if (!oc_mode) /* if nothing set, default to glossy */
 				oc_mode = PARAM_OC_PRINT_GLOSS;
 
@@ -1663,10 +1664,17 @@ top:
 			if (updated || !ctx->corrdata || !ctx->corrdatalen) {
 				ret = shinkos6145_get_imagecorr(ctx);
 			}
-			if (ret) {
-				ERROR("Failed to execute command\n");
-				return ret;
-			}
+		}
+		if (ret) {
+			ERROR("Failed to execute command\n");
+			return ret;
+		}
+
+		if (ctx->dl_handle) {
+			INFO("Calling image processing library...\n");
+		} else {
+			ERROR("Image processing library not found!  Cannot print!\n");
+			return CUPS_BACKEND_FAILED;
 		}
 
 		if (ctx->dev.type == P_SHINKO_S2245) {
@@ -1713,19 +1721,12 @@ top:
 			memcpy((uint8_t*)ctx->corrdata + S6145_CORRDATA_HEIGHT_OFFSET, &tmp, sizeof(tmp));
 
 			/* Perform the actual library transform */
-			if (ctx->dl_handle) {
-				INFO("Calling image processing library...\n");
-
-				if (ctx->ImageAvrCalc(job->databuf, job->jp.columns, job->jp.rows, ctx->image_avg)) {
-					free(databuf2);
-					ERROR("Library returned error!\n");
-					return CUPS_BACKEND_FAILED;
-				}
-				ctx->ImageProcessing(job->databuf, databuf2, ctx->corrdata);
-			} else {
-				ERROR("Image processing library not found!  Cannot print!\n");
+			if (ctx->ImageAvrCalc(job->databuf, job->jp.columns, job->jp.rows, ctx->image_avg)) {
+				free(databuf2);
+				ERROR("Library returned error!\n");
 				return CUPS_BACKEND_FAILED;
 			}
+			ctx->ImageProcessing(job->databuf, databuf2, ctx->corrdata);
 
 			free(job->databuf);
 			job->databuf = (uint8_t*) databuf2;
@@ -1989,7 +1990,7 @@ static const char *shinkos6145_prefixes[] = {
 
 struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.41" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.42" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
