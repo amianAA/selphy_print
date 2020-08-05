@@ -41,12 +41,11 @@
 
 #define LIB_VERSION "0.1.1"
 
-#include <string.h>
-#include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
 
 #define USE_EXTRA_STUFF  // For extensions made to the base library
 
