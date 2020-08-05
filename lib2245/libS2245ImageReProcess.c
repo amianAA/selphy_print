@@ -39,7 +39,7 @@
 
 */
 
-#define LIB_VERSION "0.1.0"
+#define LIB_VERSION "0.1.1"
 
 #include <string.h>
 #include <stdint.h>
@@ -230,11 +230,13 @@ struct pic_data {
 };
 
 // Data format Sanity checks
+#ifndef __WIN32
 #define STATIC_ASSERT(test_for_true) _Static_assert((test_for_true), "(" #test_for_true ") failed")
 
 STATIC_ASSERT(sizeof(struct ippData) == 10224);
 
 #undef STATIC_ASSERT
+#endif
 
 //-------------------------------------------------------------------------
 // Private data declarations
