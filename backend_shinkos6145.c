@@ -1694,7 +1694,7 @@ top:
 				ERROR("Memory Allocation failure!\n");
 				return CUPS_BACKEND_RETRY;
 			}
-			if (ctx->ip_imageProc(newbuf, job->databuf, job->jp.columns, job->jp.rows, ctx->corrdata)) {
+			if (!ctx->ip_imageProc(newbuf, job->databuf, job->jp.columns, job->jp.rows, ctx->corrdata)) {
 				ERROR("ip_imageProc Failed!\n");
 				free(newbuf);
 				return CUPS_BACKEND_FAILED;
