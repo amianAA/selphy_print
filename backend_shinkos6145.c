@@ -58,6 +58,7 @@ typedef int (*ImageAvrCalcFN)(unsigned char *, unsigned short, unsigned short, u
 #define S6145_CORRDATA_HEIGHT_OFFSET    12434
 #define S6145_CORRDATA_EXTRA_LEN        4
 
+#define S2245_CORRDATA_HEADER_MODE_OFFSET (64+7)
 
 typedef bool (*ip_imageProcFN)(uint16_t *destData, uint8_t *srcInRgb,
 			       uint16_t width, uint16_t height, void *srcIpp);
@@ -195,19 +196,31 @@ static const struct sinfonia_param s2245_params[] =
 };
 #define s2245_params_num (sizeof(s2245_params) / sizeof(struct sinfonia_param))
 
+// CHC-S6145
 #define PARAM_OC_PRINT_OFF   0x00000001
 #define PARAM_OC_PRINT_GLOSS 0x00000002
 #define PARAM_OC_PRINT_MATTE 0x00000003
 
+// CHC-S6145-5A
+#define PARAM_PRINTM_OC_OFF    0x00000001
+#define PARAM_PRINTM_OC_GLOSS  0x00000002
+#define PARAM_PRINTM_OC_MATTE  0x00000012
+#define PARAM_PRINTM_STD       0x00000000
+#define PARAM_PRINTM_FINE      0x00000004
+#define PARAM_PRINTM_FAST      0x00000008
+
+// S6145 (ALL)
 #define PARAM_PAPER_PRESV_OFF 0x00000000
 #define PARAM_PAPER_PRESV_ON  0x00000001
 
+// S6145 (ALL), S2245
 #define PARAM_DRIVER_WIZOFF 0x00000000
 #define PARAM_DRIVER_WIZON  0x00000001
 
 #define PARAM_PAPER_NOCUT   0x00000000
 #define PARAM_PAPER_CUTLOAD 0x00000001
 
+// S6145
 #define PARAM_SLEEP_5MIN    0x00000000
 #define PARAM_SLEEP_15MIN   0x00000001
 #define PARAM_SLEEP_30MIN   0x00000002
@@ -1650,6 +1663,13 @@ top:
 		uint32_t oc_mode = job->jp.oc_mode;
 		uint32_t updated = 0;
 
+		if (ctx->dev.type == P_SHINKO_S2245) {
+			oc_mode = (job->jp.oc_mode & SINFONIA_PRINT28_OC_MASK) | (job->jp.quality ? SINFONIA_PRINT28_OPTIONS_HQ : 0);
+			if (!ctx->corrdata ||
+			    ctx->corrdatalen <= S2245_CORRDATA_HEADER_MODE_OFFSET ||
+			    ((uint8_t*)ctx->corrdata)[S2245_CORRDATA_HEADER_MODE_OFFSET] != oc_mode)
+				updated = 1;
+		}
 		if (ctx->dev.type != P_SHINKO_S2245) {
 			if (!oc_mode) /* if nothing set, default to glossy */
 				oc_mode = PARAM_OC_PRINT_GLOSS;
@@ -1680,11 +1700,11 @@ top:
 			return ret;
 		}
 
-		if (ctx->dev.type == P_SHINKO_S2245) {
-			ret = shinkos2245_get_imagecorr(ctx, (job->jp.oc_mode & SINFONIA_PRINT28_OC_MASK) | (job->jp.quality ? SINFONIA_PRINT28_OPTIONS_HQ : 0));
-		} else {
-			/* Get image correction parameters if necessary */
-			if (updated || !ctx->corrdata || !ctx->corrdatalen) {
+		/* Get image correction parameters if necessary */
+		if (updated || !ctx->corrdata || !ctx->corrdatalen) {
+			if (ctx->dev.type == P_SHINKO_S2245) {
+				ret = shinkos2245_get_imagecorr(ctx, oc_mode);
+			} else {
 				ret = shinkos6145_get_imagecorr(ctx);
 			}
 		}
