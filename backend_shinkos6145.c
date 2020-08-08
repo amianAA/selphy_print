@@ -570,27 +570,49 @@ static const char *s2245_error_codes(uint8_t major, uint8_t minor)
 #define RIBBON_5x7    0x03
 #define RIBBON_6x8    0x04
 #define RIBBON_6x9    0x05
-// XXX what about 89xXXXmm ribbons?
 
-static int ribbon_sizes (uint8_t v) {
+#define RIBBON_89x60mm 0x01
+
+static int ribbon_sizes (uint8_t v, uint8_t is_card, uint8_t is_2245) {
+	if (is_card) {
+		return 450;
+	}
+
 	switch (v) {
 	case RIBBON_4x6:
-		return 300;
+		if (is_2245)
+			return 900;
+		else
+			return 300;
 	case RIBBON_3_5x5:
 		return 340;
 	case RIBBON_5x7:
 		return 170;
 	case RIBBON_6x8:
-		return 150;
+		if (is_2245)
+			return 450;
+		else
+			return 150;
 	case RIBBON_6x9:
 		return 130; // XXX guessed
-	// XXX 89x??? rubbons.
 	default:
-		return 300; // don't want 0.
+		if (is_2245)
+			return 450;
+		else
+			return 300;
 	}
 }
 
-static const char *print_ribbons (uint8_t v) {
+static const char *print_ribbons (uint8_t v, uint8_t is_card) {
+	if (is_card) {
+		if (v == RIBBON_89x60mm)
+			return "89x60mm";
+		else if (v == RIBBON_NONE)
+			return "None";
+		else
+			return "Unknown";
+	}
+
 	switch (v) {
 	case RIBBON_NONE:
 		return "None";
@@ -604,7 +626,6 @@ static const char *print_ribbons (uint8_t v) {
 		return "6x8";
 	case RIBBON_6x9:
 		return "6x9";
-	// XXX 89x??? ribbons.
 	default:
 		return "Unknown";
 	}
@@ -645,6 +666,8 @@ struct shinkos6145_ctx {
 
 	char serial[32];
 	char fwver[32];
+
+	int is_card; /* card printer model */
 
 	struct marker marker;
 
@@ -800,11 +823,11 @@ static int get_status(struct shinkos6145_ctx *ctx)
 	return CUPS_BACKEND_OK;
 }
 
-static void dump_mediainfo(struct sinfonia_6x45_mediainfo_resp *resp)
+static void dump_mediainfo(struct sinfonia_6x45_mediainfo_resp *resp, int is_card)
 {
 	int i;
 
-	INFO("Loaded Media Type:  %s\n", print_ribbons(resp->ribbon_code));
+	INFO("Loaded Media Type:  %s\n", print_ribbons(resp->ribbon_code, is_card));
 	INFO("Supported Print Sizes: %u entries:\n", resp->count);
 	for (i = 0 ; i < resp->count ; i++) {
 		INFO(" %02d: C 0x%02x (%s), %04ux%04u, P 0x%02x (%s)\n", i,
@@ -1165,7 +1188,7 @@ static int shinkos6145_cmdline_arg(void *vctx, int argc, char **argv)
 			j = sinfonia_settonecurve(&ctx->dev, UPDATE_TARGET_TONE_CURRENT, optarg);
 			break;
 		case 'm':
-			dump_mediainfo(&ctx->media);
+			dump_mediainfo(&ctx->media, ctx->is_card);
 			break;
 		case 'q':
 			j = shinkos6145_dump_eeprom(ctx, optarg);
@@ -1298,9 +1321,9 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 	}
 
 	ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
-	ctx->marker.name = print_ribbons(ctx->media.ribbon_code);
+	ctx->marker.name = print_ribbons(ctx->media.ribbon_code, ctx->is_card);
 	ctx->marker.numtype = ctx->media.ribbon_code;
-	ctx->marker.levelmax = ribbon_sizes(ctx->media.ribbon_code);
+	ctx->marker.levelmax = ribbon_sizes(ctx->media.ribbon_code, ctx->is_card, ctx->dev.type == P_SHINKO_S2245);
 	ctx->marker.levelnow = CUPS_MARKER_UNKNOWN;
 
 	return CUPS_BACKEND_OK;
@@ -1990,7 +2013,7 @@ static const char *shinkos6145_prefixes[] = {
 
 struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.42" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.43" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
