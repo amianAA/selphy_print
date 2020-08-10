@@ -1,20 +1,20 @@
-   libS6145ImageReProcess -- Re-implemented Image Processing library for
-                             the Sinfonia CHC-S6145 printer family
+   libS2245ImageReProcess -- Re-implemented Image Processing library for
+                             the Sinfonia CHC-S2245 printer family
 
-   Copyright (c) 2015-2016 Solomon Peachy <pizza@shaftnet.org>
+   Copyright (c) 2020 Solomon Peachy <pizza@shaftnet.org>
 
    ** ** ** ** Do NOT contact Sinfonia about this library! ** ** ** **
 
    This is intended to be a drop-in replacement for Sinfonia's proprietary
-   libS6145ImageProcess library, which is necessary in order to utilize
-   their CHC-S6145 printer family.
+   libS2245ImageProcess library, which is necessary in order to utilize
+   theCHC-S2245 printer family.
 
    Sinfonia Inc was not involved in the creation of this library, and
    is not responsible in any way for the library or any deficiencies in
    its output.  They will provide no support if it is used.
 
    If you have the appropriate permission fron Sinfonia, we recommend
-   you use their official libS6145ImageProcess library instead, as it
+   you use their official libS2245ImageProcess library instead, as it
    will generate the highest quality output. However, it is only
    available for x86/x86_64 targets on Linux. Please contact your local
    Sinfonia distributor to obtain the official library.
@@ -26,11 +26,11 @@
 
    In order to utilize this library with Gutenprint, you will need:
 
-	* Gutenprint 5.2.11 or later
+	* Gutenprint 5.3.4 or later
 	* Current selphy_print backend
 	* This library
 
-   Gutenprint 5.2.12-pre and newer already include up-to-date backend
+   Gutenprint 5.3.4 or and newer already include up-to-date backend
    code, so if you have that version installed you will only need to 
    compile and install this library.
 
