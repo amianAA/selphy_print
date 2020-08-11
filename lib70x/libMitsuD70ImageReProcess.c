@@ -24,6 +24,8 @@
      * Mitsubishi CP-D80DW
      * Kodak 305
      * Fujifilm ASK-300
+     * Mitsubishi CP-M1
+     * Mitsubishi CP-M15
 
    More recently, the CP98xx family now uses this library.  These
    models are expected to function:
@@ -31,11 +33,6 @@
      * Mitsubishi CP9800DW
      * Mitsubishi CP9810DW
      * Mitsubishi CP9820DW-S
-
-   Even more recently, the CP-M1 family now uses this library.  These
-   models are expected to function:
-
-     * Mitsubishi CP-M1
 
    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **
 
@@ -56,7 +53,7 @@
 
 */
 
-#define LIB_VERSION "0.9.3"
+#define LIB_VERSION "0.9.4"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -272,8 +269,6 @@ static void CColorConv3D_DoColorConvPixel(struct CColorConv3D *this, uint8_t *re
 	blu_l = *blup & 0xF;
 	blu_li = 16 - blu_l;
 
-//	printf("%d %d %d =>", *redp, *grnp, *blup);
-
 	tab0 = this->lut[red_h+0][grn_h+0][blu_h+0];
 	tab1 = this->lut[red_h+1][grn_h+0][blu_h+0];
 	tab2 = this->lut[red_h+0][grn_h+1][blu_h+0];
@@ -304,8 +299,6 @@ static void CColorConv3D_DoColorConvPixel(struct CColorConv3D *this, uint8_t *re
 		 * (grn_li * (red_li * tab4[2] + red_l * tab5[2])
 		    + grn_l * (red_li * tab6[2] + red_l * tab7[2]))
 		 + 2048) >> 12;
-
-//	printf("=> %d %d %d\n", *redp, *grnp, *blup);
 }
 
 /* Perform a total conversion on an entire image */
