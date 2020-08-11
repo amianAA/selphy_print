@@ -62,7 +62,7 @@
 #ifndef __MITSU_D70_H
 #define __MITSU_D70_H
 
-#define LIB_APIVERSION 6
+#define LIB_APIVERSION 7
 
 #include <stdint.h>
 
@@ -79,6 +79,9 @@ struct BandImage {
 
 /* Get version */
 int lib70x_getapiversion(void);
+
+/* print annoucement blurb */
+void dump_announce(FILE *fp);
 
 /* Forward-declaration */
 struct CPCData;

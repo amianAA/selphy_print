@@ -47,6 +47,8 @@
 #endif
 
 /* Image processing library function prototypes */
+typedef void (*dump_announceFN)(FILE *fp);
+
 typedef int (*ImageProcessingFN)(unsigned char *, unsigned short *, void *);
 typedef int (*ImageAvrCalcFN)(unsigned char *, unsigned short, unsigned short, unsigned char *);
 
@@ -691,6 +693,7 @@ struct shinkos6145_ctx {
 
 	void *dl_handle;
 
+	dump_announceFN DumpAnnounce;
 	ImageProcessingFN ImageProcessing;
 	ImageAvrCalcFN ImageAvrCalc;
 
@@ -1270,6 +1273,7 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB2245_NAME_RE); /* Then the RE one */
 		if (ctx->dl_handle) {
+			ctx->DumpAnnounce = DL_SYM(ctx->dl_handle, "dump_announce");
 			ctx->ip_imageProc = DL_SYM(ctx->dl_handle, "ip_imageProc");
 			ctx->ip_checkIpp = DL_SYM(ctx->dl_handle, "ip_checkIpp");
 			ctx->ip_getMemorySize = DL_SYM(ctx->dl_handle, "ip_getMemorySize");
@@ -1279,6 +1283,8 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 				ctx->dl_handle = NULL;
 			} else {
 				INFO("Image processing library successfully loaded\n");
+				if (ctx->DumpAnnounce)
+					ctx->DumpAnnounce(logger);
 			}
 		}
 #endif
@@ -1294,6 +1300,7 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB6145_NAME_RE); /* Then the RE one */
 		if (ctx->dl_handle) {
+			ctx->DumpAnnounce = DL_SYM(ctx->dl_handle, "dump_announce");
 			ctx->ImageProcessing = DL_SYM(ctx->dl_handle, "ImageProcessing");
 			ctx->ImageAvrCalc = DL_SYM(ctx->dl_handle, "ImageAvrCalc");
 			if (!ctx->ImageProcessing || !ctx->ImageAvrCalc) {
@@ -1302,6 +1309,8 @@ static int shinkos6145_attach(void *vctx, struct libusb_device_handle *dev, int 
 				ctx->dl_handle = NULL;
 			} else {
 				INFO("Image processing library successfully loaded\n");
+				if (ctx->DumpAnnounce)
+					ctx->DumpAnnounce(logger);
 			}
 		}
 #endif

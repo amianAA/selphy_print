@@ -1648,18 +1648,21 @@ done:
 //-------------------------------------------------------------------------
 // Exported Functions
 
+void dump_announce(FILE *fp)
+{
+	fprintf(fp, "INFO: libS2245ImageReProcess version '%s'\n", LIB_VERSION);
+	fprintf(fp, "INFO: Copyright (c) 2020 Solomon Peachy\n");
+	fprintf(fp, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
+	fprintf(fp, "INFO: Licensed under the GNU GPLv3.\n");
+	fprintf(fp, "INFO: *** This code is NOT supported or endorsed by Sinfonia! ***\n");
+}
+
 bool ip_imageProc(uint16_t *destData, uint8_t *srcInRgb,
 		  uint16_t width, uint16_t height, void *srcIpp)
 {
 	bool rval = 0;
 	struct CIppMng ippMng;
 	struct CImageProc imageProc;
-
-	fprintf(stderr, "INFO: libS2245ImageReProcess version '%s'\n", LIB_VERSION);
-	fprintf(stderr, "INFO: Copyright (c) 2020 Solomon Peachy\n");
-	fprintf(stderr, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
-	fprintf(stderr, "INFO: Licensed under the GNU GPLv3.\n");
-	fprintf(stderr, "INFO: *** This code is NOT supported or endorsed by Sinfonia! ***\n");
 
 	CIppMng_Init(&ippMng);
 	CImageProc_Init(&imageProc, &ippMng);

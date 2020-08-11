@@ -439,16 +439,21 @@ int ImageAvrCalc(uint8_t *input, uint16_t cols, uint16_t rows, uint8_t *avg)
   return 0;
 }
 
+void dump_announce(FILE *fp)
+{
+  fprintf(fp, "INFO: libS6145ImageReProcess version '%s'\n", LIB_VERSION);
+  fprintf(fp, "INFO: Copyright (c) 2015-2020 Solomon Peachy\n");
+  fprintf(fp, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
+  fprintf(fp, "INFO: Licensed under the GNU GPLv3.\n");
+  fprintf(fp, "INFO: *** This code is NOT supported or endorsed by Sinfonia! ***\n");
+}
+
 int ImageProcessing(unsigned char *in, unsigned short *out, void *corrdata)
 {
   uint8_t i;
   struct lib6145_ctx *ctx;
 
-  fprintf(stderr, "INFO: libS6145ImageReProcess version '%s'\n", LIB_VERSION);
-  fprintf(stderr, "INFO: Copyright (c) 2015-2020 Solomon Peachy\n");
-  fprintf(stderr, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
-  fprintf(stderr, "INFO: Licensed under the GNU GPLv3.\n");
-  fprintf(stderr, "INFO: *** This code is NOT supported or endorsed by Sinfonia! ***\n");
+
 
   if (!in)
 	  return 1;

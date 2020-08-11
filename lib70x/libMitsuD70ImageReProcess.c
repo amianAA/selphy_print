@@ -1190,20 +1190,18 @@ static void CImageEffect70_DoGamma(struct CImageEffect70 *data, struct BandImage
 	}
 }
 
-static void dump_announce(void)
+void dump_announce(FILE *fp)
 {
-	fprintf(stderr, "INFO: libMitsuD70ImageReProcess version '%s' API %d\n", LIB_VERSION, LIB_APIVERSION);
-	fprintf(stderr, "INFO: Copyright (c) 2016-2020 Solomon Peachy\n");
-	fprintf(stderr, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
-	fprintf(stderr, "INFO: Licensed under the GNU GPLv3.\n");
-	fprintf(stderr, "INFO: *** This code is NOT supported or endorsed by Mitsubishi! ***\n");
+	fprintf(fp, "INFO: libMitsuD70ImageReProcess version '%s' API %d\n", LIB_VERSION, LIB_APIVERSION);
+	fprintf(fp, "INFO: Copyright (c) 2016-2020 Solomon Peachy\n");
+	fprintf(fp, "INFO: This free software comes with ABSOLUTELY NO WARRANTY!\n");
+	fprintf(fp, "INFO: Licensed under the GNU GPLv3.\n");
+	fprintf(fp, "INFO: *** This code is NOT supported or endorsed by Mitsubishi! ***\n");
 }
 
 int do_image_effect80(struct CPCData *cpc, struct CPCData *ecpc, struct BandImage *input, struct BandImage *output, int sharpen, int reverse, uint8_t rew[2])
 {
 	struct CImageEffect70 *data;
-
-	dump_announce();
 
 	data = CImageEffect70_Create(cpc);
 	if (!data)
@@ -1254,8 +1252,6 @@ int do_image_effect60(struct CPCData *cpc, struct CPCData *ecpc, struct BandImag
 
 	UNUSED(ecpc);
 
-	dump_announce();
-
 	data = CImageEffect70_Create(cpc);
 	if (!data)
 		return -1;
@@ -1290,8 +1286,6 @@ int do_image_effect70(struct CPCData *cpc, struct CPCData *ecpc, struct BandImag
 
 	UNUSED(ecpc);
 	UNUSED(rew);
-
-	dump_announce();
 
 	data = CImageEffect70_Create(cpc);
 	if (!data)
@@ -2281,8 +2275,6 @@ int CP98xx_DoConvert(const struct mitsu98xx_data *table,
 {
 	uint32_t i;
 
-	dump_announce();
-
 	/* Figure out which table to use */
 	switch (type) {
 	case 0x80:
@@ -2731,8 +2723,6 @@ void M1_Gamma8to14(const struct M1CPCData *cpc,
 	int rows, cols, row, col;
 	const uint8_t *inp;
 	uint16_t *outp;
-
-	dump_announce();
 
 	rows = in->rows - in->origin_rows;
 	cols = in->cols - in->origin_cols;
