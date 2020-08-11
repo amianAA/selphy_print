@@ -41,7 +41,7 @@
 
 //#define S6145_UNUSED
 
-#define LIB_VERSION "0.4.1"
+#define LIB_VERSION "0.5.0"
 
 #include <string.h>
 #include <stdint.h>
@@ -181,45 +181,47 @@ struct imageCorrParam {
 
 #define ASSERT(__COND, __TXT) if ((!__COND)) { printf(__TXT " @ %d\n", __LINE__); exit(1); }
 
+struct lib6145_ctx;  /* Forward-declaration */
+
 static void SetTableData(void *src, void *dest, uint16_t words);
-static int32_t CheckPrintParam(uint8_t *corrdata);
+static int32_t CheckPrintParam(struct imageCorrParam *corrdata);
 static uint16_t LinePrintCalcBit(uint16_t val);
 
-static void GetInfo(void);
-static void Global_Init(void);
-static void SetTableColor(uint8_t plane);
-static void LinePrintPreProcess(void);
-static void CTankResetParameter(int32_t *params);
-static void CTankResetTank(void);
-static void PagePrintPreProcess(void);
-static void PagePrintProcess(void);
-static void CTankProcess(void);
-static void SendData(void);
-static void PulseTrans(void);
-static void CTankUpdateTankVolumeInterDot(uint8_t tank);
-static void CTankUpdateTankVolumeInterRay(void);
-static void CTankHoseiPreread(void);
-static void CTankHosei(void);
-static void LineCorrection(void);
+static void GetInfo(struct lib6145_ctx *ctx);
+static void Global_Init(struct lib6145_ctx *ctx);
+static void SetTableColor(struct lib6145_ctx *ctx, uint8_t plane);
+static void LinePrintPreProcess(struct lib6145_ctx *ctx);
+static void CTankResetParameter(struct lib6145_ctx *ctx, int32_t *params);
+static void CTankResetTank(struct lib6145_ctx *ctx);
+static void PagePrintPreProcess(struct lib6145_ctx *ctx);
+static void PagePrintProcess(struct lib6145_ctx *ctx);
+static void CTankProcess(struct lib6145_ctx *ctx);
+static void SendData(struct lib6145_ctx *ctx);
+static void PulseTrans(struct lib6145_ctx *ctx);
+static void CTankUpdateTankVolumeInterDot(struct lib6145_ctx *ctx, uint8_t tank);
+static void CTankUpdateTankVolumeInterRay(struct lib6145_ctx *ctx);
+static void CTankHoseiPreread(struct lib6145_ctx *ctx);
+static void CTankHosei(struct lib6145_ctx *ctx);
+static void LineCorrection(struct lib6145_ctx *ctx);
 
-static void PulseTransPreReadOP(void);
-static void PulseTransPreReadYMC(void);
-static void CTankProcessPreRead(void);
-static void CTankProcessPreReadDummy(void);
-static void RecieveDataOP_GLOSS(void);
-static void RecieveDataYMC(void);
-static void RecieveDataOP_MATTE(void);
+static void PulseTransPreReadOP(struct lib6145_ctx *ctx);
+static void PulseTransPreReadYMC(struct lib6145_ctx *ctx);
+static void CTankProcessPreRead(struct lib6145_ctx *ctx);
+static void CTankProcessPreReadDummy(struct lib6145_ctx *ctx);
+static void RecieveDataOP_GLOSS(struct lib6145_ctx *ctx);
+static void RecieveDataYMC(struct lib6145_ctx *ctx);
+static void RecieveDataOP_MATTE(struct lib6145_ctx *ctx);
 
 #ifdef S6145_UNUSED
-static void SetTable(void);
-static void ImageLevelAddition(void);
-static void ImageLevelAdditionEx(uint32_t *a1, uint32_t a2, int32_t a3);
-static void RecieveDataOP_Post(void);
-static void RecieveDataYMC_Post(void);
-static void RecieveDataOPLevel_Post(void);
-static void RecieveDataOPMatte_Post(void);
-static void SideEdgeCorrection(void);
-static void LeadEdgeCorrection(void);
+static void SetTable(struct lib6145_ctx *ctx);
+static void ImageLevelAddition(struct lib6145_ctx *ctx);
+static void ImageLevelAdditionEx(struct lib6145_ctx *ctx, uint32_t *a1, uint32_t a2, int32_t a3);
+static void RecieveDataOP_Post(struct lib6145_ctx *ctx);
+static void RecieveDataYMC_Post(struct lib6145_ctx *ctx);
+static void RecieveDataOPLevel_Post(struct lib6145_ctx *ctx);
+static void RecieveDataOPMatte_Post(struct lib6145_ctx *ctx);
+static void SideEdgeCorrection(struct lib6145_ctx *ctx);
+static void LeadEdgeCorrection(struct lib6145_ctx *ctx);
 #endif
 
 //-------------------------------------------------------------------------
@@ -252,154 +254,157 @@ static void LeadEdgeCorrection(void);
 #define MAX_ROWS 2492
 #define MAX_COLS 1844
 
-static void (*g_pfRecieveData)(void);
-static void (*g_pfPulseTransPreRead)(void);
-static void (*g_pfTankProcessPreRead)(void);
+/* global context */
+struct lib6145_ctx {
+	void (*pfRecieveData)(struct lib6145_ctx *ctx);
+	void (*pfPulseTransPreRead)(struct lib6145_ctx *ctx);
+	void (*pfTankProcessPreRead)(struct lib6145_ctx *ctx);
 
-static uint8_t g_pusInLineBuf0[BUF_SIZE];
-static uint8_t g_pusInLineBuf1[BUF_SIZE];
-static uint8_t g_pusInLineBuf2[BUF_SIZE];
-static uint8_t g_pusInLineBuf3[BUF_SIZE];
-static uint8_t g_pusInLineBuf4[BUF_SIZE];
-static uint8_t g_pusInLineBuf5[BUF_SIZE];
-static uint8_t g_pusInLineBuf6[BUF_SIZE];
-static uint8_t g_pusInLineBuf7[BUF_SIZE];
-static uint8_t g_pusInLineBuf8[BUF_SIZE];
-static uint8_t g_pusInLineBuf9[BUF_SIZE];
-static uint8_t g_pusInLineBufA[BUF_SIZE];
+	uint8_t pusInLineBuf0[BUF_SIZE];
+	uint8_t pusInLineBuf1[BUF_SIZE];
+	uint8_t pusInLineBuf2[BUF_SIZE];
+	uint8_t pusInLineBuf3[BUF_SIZE];
+	uint8_t pusInLineBuf4[BUF_SIZE];
+	uint8_t pusInLineBuf5[BUF_SIZE];
+	uint8_t pusInLineBuf6[BUF_SIZE];
+	uint8_t pusInLineBuf7[BUF_SIZE];
+	uint8_t pusInLineBuf8[BUF_SIZE];
+	uint8_t pusInLineBuf9[BUF_SIZE];
+	uint8_t pusInLineBufA[BUF_SIZE];
 
-static uint16_t g_pusOutLineBuf1[BUF_SIZE];
-static uint16_t *g_pusOutLineBufTab[2]; // XXX actually [1]
+	uint16_t pusOutLineBuf1[BUF_SIZE];
+	uint16_t *pusOutLineBufTab[2]; // XXX actually [1]
 
-static uint8_t *g_pusPreReadLineBufTab[12]; // XXX actually [11]
-static uint8_t *g_pusPulseTransLineBufTab[4];
+	uint8_t *pusPreReadLineBufTab[12]; // XXX actually [11]
+	uint8_t *pusPulseTransLineBufTab[4];
+	uint16_t pusPreReadOutLineBuf[BUF_SIZE];
 
-static uint16_t g_pusPreReadOutLineBuf[BUF_SIZE];
+	 int16_t psMtfPreCalcTable[512];
+	uint16_t pusTankMinusMaxEnegyTable[256];
+	uint16_t pusTankPlusMaxEnegyTable[256];
+	uint16_t pusPulseTransTable[256];
+	uint16_t pusLineHistCoefTable[256];
 
-static  int32_t m_piTrdTankArray[TANK_SIZE];
-static  int32_t m_piFstTankArray[TANK_SIZE];
-static  int32_t m_piSndTankArray[TANK_SIZE];
+	 int32_t piTankParam[128];   // should be struct tankParam[4]
+	 int32_t pulRandomTable[32]; // should be u32
 
-static  int16_t g_psMtfPreCalcTable[512];
-static uint16_t g_pusTankMinusMaxEnegyTable[256];
-static uint16_t g_pusTankPlusMaxEnegyTable[256];
-static uint16_t g_pusPulseTransTable[256];
-static uint16_t g_pusLineHistCoefTable[256];
+	uint8_t  *pucInputImageBuf;
+	struct imageCorrParam *pSPrintParam;
+	uint16_t *pusOutputImageBuf;
 
-static  int32_t g_piTankParam[128];   // should be struct tankParam[4]
-static  int32_t g_pulRandomTable[32]; // should be u32
+	uint8_t  ucRandomBaseLevel[4];
+	 int16_t sPrintSideOffset;
+	uint16_t usHeadDots;
+	 int32_t iLineCorrectPulse;
+	uint32_t uiMtfSlice;    // really u16?
+	uint32_t uiMtfWeightV;  // really u16?
+	uint32_t uiMtfWeightH;  // really u16?
+	uint16_t usLineCorrect_Env_A;
+	uint16_t usLineCorrect_Env_B;
+	uint16_t usLineCorrect_Env_C;
 
-static uint8_t  *g_pucInputImageBuf;
-static struct imageCorrParam *g_pSPrintParam;
-static uint16_t *g_pusOutputImageBuf;
+	uint32_t uiOutputImageIndex;
+	uint32_t uiInputImageIndex;
 
-static uint8_t  g_ucRandomBaseLevel[4];
-static  int16_t g_sPrintSideOffset;
-static uint16_t g_usHeadDots;
-static  int32_t g_iLineCorrectPulse;
-static uint32_t g_uiMtfSlice;    // really u16?
-static uint32_t g_uiMtfWeightV;  // really u16?
-static uint32_t g_uiMtfWeightH;  // really u16?
-static uint16_t g_usLineCorrect_Env_A;
-static uint16_t g_usLineCorrect_Env_B;
-static uint16_t g_usLineCorrect_Env_C;
+	 int32_t iMaxPulseValue;
+	uint32_t uiMaxPulseBit;
 
-static uint32_t g_uiOutputImageIndex;
-static uint32_t g_uiInputImageIndex;
+	uint16_t usPrintMaxPulse;
+	uint16_t usPrintOpLevel;
+	uint16_t usMatteSize;
+	uint32_t uiLineCorrectSlice;
+	uint32_t uiLineCorrectSlice1Line;
+	uint16_t usPrintSizeHeight;
+	uint32_t uiLineCorrectBase1Line;
+	uint32_t uiLineCorrectSum;
+	uint32_t uiLineCorrectBase;
+	 int16_t sCorrectSw;
+	uint16_t usMatteMode;
+	 int32_t iLineCorrectPulseMax;
+	uint16_t usSheetSizeWidth;
+	uint16_t usPrintSizeWidth;
+	uint16_t usPrintColor;
+	uint32_t uiSendToHeadCounter;
+	uint32_t uiLineCopyCounter;
 
-static  int32_t g_iMaxPulseValue;
-static uint32_t g_uiMaxPulseBit;
+	/* Not sure the significance of 'm_' */
+	 int32_t m_piTrdTankArray[TANK_SIZE];
+	 int32_t m_piFstTankArray[TANK_SIZE];
+	 int32_t m_piSndTankArray[TANK_SIZE];
 
-static uint16_t g_usPrintMaxPulse;
-static uint16_t g_usPrintOpLevel;
-static uint16_t g_usMatteSize;
-static uint32_t g_uiLineCorrectSlice;
-static uint32_t g_uiLineCorrectSlice1Line;
-static uint16_t g_usPrintSizeHeight;
-static uint32_t g_uiLineCorrectBase1Line;
-static uint32_t g_uiLineCorrectSum;
-static uint32_t g_uiLineCorrectBase;
-static  int16_t g_sCorrectSw;
-static uint16_t g_usMatteMode;
-static  int32_t g_iLineCorrectPulseMax;
-static uint16_t g_usSheetSizeWidth;
-static uint16_t g_usPrintSizeWidth;
-static uint16_t g_usPrintColor;
-static uint32_t g_uiSendToHeadCounter;
-static uint32_t g_uiLineCopyCounter;
-
-static  int32_t m_iTrdTankSize;
-static  int32_t m_iTrdSndConductivity;
-static  int32_t m_iSndTankSize;
-static  int32_t m_iTankKeisuSndFstDivFst;
-static  int32_t m_iSndSndConductivity;
-static  int32_t m_iTrdTrdConductivity;
-static  int32_t m_iTankKeisuTrdSndDivSnd;
-static  int32_t m_iTankKeisuTrdSndDivTrd;
-static  int32_t m_iSndFstConductivity;
-static  int32_t m_iFstTankSize;
-static  int32_t m_iTrdTankIniEnergy;
-static  int32_t m_iFstTankIniEnergy;
-static  int32_t m_iTankKeisuSndFstDivSnd;
-static  int32_t m_iSndTankIniEnergy;
-static  int32_t m_iPreReadLevelDiff;
-static  int32_t m_iMinusMaxEnergyPreRead;
-static  int32_t m_iOutTrdConductivity;
-static  int32_t m_iFstOutConductivity;
-static  int32_t m_iFstFstConductivity;
-static  int32_t m_iTankKeisuFstOutDivFst;
-static  int32_t m_iTankKeisuOutTrdDivTrd;
+	 int32_t m_iTrdTankSize;
+	 int32_t m_iTrdSndConductivity;
+	 int32_t m_iSndTankSize;
+	 int32_t m_iTankKeisuSndFstDivFst;
+	 int32_t m_iSndSndConductivity;
+	 int32_t m_iTrdTrdConductivity;
+	 int32_t m_iTankKeisuTrdSndDivSnd;
+	 int32_t m_iTankKeisuTrdSndDivTrd;
+	 int32_t m_iSndFstConductivity;
+	 int32_t m_iFstTankSize;
+	 int32_t m_iTrdTankIniEnergy;
+	 int32_t m_iFstTankIniEnergy;
+	 int32_t m_iTankKeisuSndFstDivSnd;
+	 int32_t m_iSndTankIniEnergy;
+	 int32_t m_iPreReadLevelDiff;
+	 int32_t m_iMinusMaxEnergyPreRead;
+	 int32_t m_iOutTrdConductivity;
+	 int32_t m_iFstOutConductivity;
+	 int32_t m_iFstFstConductivity;
+	 int32_t m_iTankKeisuFstOutDivFst;
+	 int32_t m_iTankKeisuOutTrdDivTrd;
 
 #ifdef S6145_UNUSED
-
-static void (*g_pfRecieveData_Post)(void);  /* all users are no-ops */
+	void (*pfRecieveData_Post)(struct lib6145_ctx *ctx);  /* all users are no-ops */
 
 /* Set but never referenced */
-static uint32_t g_uiDataTransCounter;
-static uint32_t g_uiTudenLineCounter;
+	uint32_t uiDataTransCounter;
+	uint32_t uiTudenLineCounter;
 
 /* Only ever set to 0 */
-static uint16_t g_usPrintDummyLevel;
-static uint16_t g_usPrintDummyLine;
-static uint16_t g_usRearDummyPrintLine;
-static uint16_t g_usRearDeleteLine;
+	uint16_t usPrintDummyLevel;
+	uint16_t usPrintDummyLine;
+	uint16_t usRearDummyPrintLine;
+	uint16_t usRearDeleteLine;
 
 /* Appear unused */
-static uint16_t g_usCancelCheckLinesForPRec;
+	uint16_t usCancelCheckLinesForPRec;
 
-static uint16_t g_usPrintSizeLHeight;
-static uint16_t g_usPrintSizeLWidth;
+	uint16_t usPrintSizeLHeight;
+	uint16_t usPrintSizeLWidth;
 
-static uint16_t g_pusSideEdgeLvCoefTable[256];
-static uint16_t g_pusSideEdgeCoefTable[128];
-static  int32_t g_iLeadEdgeCorrectPulse;
+	uint16_t pusSideEdgeLvCoefTable[256];
+	uint16_t pusSideEdgeCoefTable[128];
+	 int32_t iLeadEdgeCorrectPulse;
 
-static  int32_t m_iMinusMaxEnergy;
-static  int32_t m_iPlusMaxEnergy;
-static  int32_t m_iPlusMaxEnergyPreRead;
+	 int32_t m_iMinusMaxEnergy;
+	 int32_t m_iPlusMaxEnergy;
+	 int32_t m_iPlusMaxEnergyPreRead;
 
-static uint16_t g_usCenterHeadToColSen;
-static uint16_t g_usThearmEnv;
-static uint16_t g_usThearmHead;
-static uint16_t g_usMatteGloss;
-static uint16_t g_usMatteDeglossBlk;
-static uint16_t g_usMatteDeglossWht;
-static uint16_t g_usPrintOffsetWidth;
-static uint16_t g_usCancelCheckDotsForPRec;
-static uint32_t g_uiOffsetCancelCheckPRec;
-static uint32_t g_uiLevelAveCounter;
-static uint32_t g_uiLevelAveCounter2;
-static uint32_t g_uiLevelAveAddtion;
-static uint32_t g_uiLevelAveAddtion2;
-static uint32_t g_uiDummyPrintCounter;
-static uint16_t g_usRearDummyPrintLevel;
-static uint16_t g_usLastPrintSizeHeight;
-static uint16_t g_usLastPrintSizeWidth;
-static uint16_t g_usLastSheetSizeWidth;
+	uint16_t usCenterHeadToColSen;
+	uint16_t usThearmEnv;
+	uint16_t usThearmHead;
+	uint16_t usMatteGloss;
+	uint16_t usMatteDeglossBlk;
+	uint16_t usMatteDeglossWht;
+	uint16_t usPrintOffsetWidth;
+	uint16_t usCancelCheckDotsForPRec;
+	uint32_t uiOffsetCancelCheckPRec;
+	uint32_t uiLevelAveCounter;
+	uint32_t uiLevelAveCounter2;
+	uint32_t uiLevelAveAddtion;
+	uint32_t uiLevelAveAddtion2;
+	uint32_t uiDummyPrintCounter;
+	uint16_t usRearDummyPrintLevel;
+	uint16_t usLastPrintSizeHeight;
+	uint16_t usLastPrintSizeWidth;
+	uint16_t usLastSheetSizeWidth;
 
-uint16_t g_pusOutLineBuf2[BUF_SIZE];
-uint16_t *g_pusLamiCompInLineBufTab[4];
+	uint16_t *pusLamiCompInLineBufTab[4];
+
+	uint16_t pusOutLineBuf2[BUF_SIZE];
 #endif
+};
 
 /* **************************** */
 
@@ -437,6 +442,7 @@ int ImageAvrCalc(uint8_t *input, uint16_t cols, uint16_t rows, uint8_t *avg)
 int ImageProcessing(unsigned char *in, unsigned short *out, void *corrdata)
 {
   uint8_t i;
+  struct lib6145_ctx *ctx;
 
   fprintf(stderr, "INFO: libS6145ImageReProcess version '%s'\n", LIB_VERSION);
   fprintf(stderr, "INFO: Copyright (c) 2015-2020 Solomon Peachy\n");
@@ -451,30 +457,38 @@ int ImageProcessing(unsigned char *in, unsigned short *out, void *corrdata)
   if (!corrdata)
 	  return 3;
 
-  g_pucInputImageBuf = in;
-  g_pusOutputImageBuf = out;
-  g_pSPrintParam = (struct imageCorrParam *) corrdata;
+  ctx = malloc(sizeof(struct lib6145_ctx));
+  if (!ctx)
+	  return 4;
+
+  memset(ctx, 0, sizeof(struct lib6145_ctx));
+
+  ctx->pucInputImageBuf = in;
+  ctx->pusOutputImageBuf = out;
+  ctx->pSPrintParam = (struct imageCorrParam *) corrdata;
 
   i = CheckPrintParam(corrdata);
   if (i)
     return i;
 
-  Global_Init();
+  Global_Init(ctx);
 #ifdef S6145_UNUSED
-  SetTable();
+  SetTable(ctx);
 #endif
 
   for ( i = 0; i < 4; i++ ) {   /* Full YMCO */
     int32_t lines;
-    SetTableColor(i);
-    LinePrintPreProcess();
-    PagePrintPreProcess();
-    lines = g_usPrintSizeHeight;
+    SetTableColor(ctx, i);
+    LinePrintPreProcess(ctx);
+    PagePrintPreProcess(ctx);
+    lines = ctx->usPrintSizeHeight;
     while ( lines-- ) {
-      PagePrintProcess();
+      PagePrintProcess(ctx);
     }
-    g_usPrintColor++;
+    ctx->usPrintColor++;
   }
+
+  free(ctx);
 
   return 0;
 }
@@ -490,243 +504,243 @@ static void SetTableData(void *src, void *dest, uint16_t words)
   }
 }
 
-static void GetInfo(void)
+static void GetInfo(struct lib6145_ctx *ctx)
 {
   uint32_t tmp;
 
 #ifdef S6145_UNUSED
-  g_usLastPrintSizeWidth = g_usPrintSizeWidth;
-  g_usLastPrintSizeHeight = g_usPrintSizeHeight;
-  g_usLastSheetSizeWidth = g_usSheetSizeWidth;
-  g_usPrintOffsetWidth = 0;
+  ctx->usLastPrintSizeWidth = ctx->usPrintSizeWidth;
+  ctx->usLastPrintSizeHeight = ctx->usPrintSizeHeight;
+  ctx->usLastSheetSizeWidth = ctx->usSheetSizeWidth;
+  ctx->usPrintOffsetWidth = 0;
 #endif
 
-  g_usPrintSizeWidth = le16_to_cpu(g_pSPrintParam->width);
-  g_usPrintSizeHeight = le16_to_cpu(g_pSPrintParam->height);
-  g_usSheetSizeWidth = g_usPrintSizeWidth;
+  ctx->usPrintSizeWidth = le16_to_cpu(ctx->pSPrintParam->width);
+  ctx->usPrintSizeHeight = le16_to_cpu(ctx->pSPrintParam->height);
+  ctx->usSheetSizeWidth = ctx->usPrintSizeWidth;
 
-  g_sPrintSideOffset = le16_to_cpu(g_pSPrintParam->printSideOffset);
+  ctx->sPrintSideOffset = le16_to_cpu(ctx->pSPrintParam->printSideOffset);
 
-  if ( g_pSPrintParam->val_1 )
-	  g_sCorrectSw |= 1;
-  if ( g_pSPrintParam->val_2 )
-	  g_sCorrectSw |= 2;
+  if ( ctx->pSPrintParam->val_1 )
+	  ctx->sCorrectSw |= 1;
+  if ( ctx->pSPrintParam->val_2 )
+	  ctx->sCorrectSw |= 2;
 
-  g_usPrintOpLevel = le16_to_cpu(g_pSPrintParam->printOpLevel);
+  ctx->usPrintOpLevel = le16_to_cpu(ctx->pSPrintParam->printOpLevel);
 
-  tmp = le16_to_cpu(g_pSPrintParam->randomBase[0]);
-  g_ucRandomBaseLevel[0] = tmp & 0xff;
-  tmp = le16_to_cpu(g_pSPrintParam->randomBase[1]);
-  g_ucRandomBaseLevel[1] = tmp & 0xff;
-  tmp = le16_to_cpu(g_pSPrintParam->randomBase[2]);
-  g_ucRandomBaseLevel[2] = tmp & 0xff;
-  tmp = le16_to_cpu(g_pSPrintParam->randomBase[3]);
-  g_ucRandomBaseLevel[3] = tmp & 0xff;
+  tmp = le16_to_cpu(ctx->pSPrintParam->randomBase[0]);
+  ctx->ucRandomBaseLevel[0] = tmp & 0xff;
+  tmp = le16_to_cpu(ctx->pSPrintParam->randomBase[1]);
+  ctx->ucRandomBaseLevel[1] = tmp & 0xff;
+  tmp = le16_to_cpu(ctx->pSPrintParam->randomBase[2]);
+  ctx->ucRandomBaseLevel[2] = tmp & 0xff;
+  tmp = le16_to_cpu(ctx->pSPrintParam->randomBase[3]);
+  ctx->ucRandomBaseLevel[3] = tmp & 0xff;
 
-  g_usMatteSize = le16_to_cpu(g_pSPrintParam->matteSize);
-  g_usMatteMode = le16_to_cpu(g_pSPrintParam->matteMode);
+  ctx->usMatteSize = le16_to_cpu(ctx->pSPrintParam->matteSize);
+  ctx->usMatteMode = le16_to_cpu(ctx->pSPrintParam->matteMode);
 
 #ifdef S6145_UNUSED
-  g_usMatteGloss = le16_to_cpu(g_pSPrintParam->matteGloss);
-  g_usMatteDeglossBlk = le16_to_cpu(g_pSPrintParam->matteDeglossBlk);
-  g_usMatteDeglossWht = le16_to_cpu(g_pSPrintParam->matteDeglossWht);
+  ctx->usMatteGloss = le16_to_cpu(ctx->pSPrintParam->matteGloss);
+  ctx->usMatteDeglossBlk = le16_to_cpu(ctx->pSPrintParam->matteDeglossBlk);
+  ctx->usMatteDeglossWht = le16_to_cpu(ctx->pSPrintParam->matteDeglossWht);
 #endif
 
-  switch (g_usPrintColor) {
+  switch (ctx->usPrintColor) {
   case 0:
-    g_usPrintMaxPulse = le16_to_cpu(g_pSPrintParam->printMaxPulse_Y);
-    g_uiMtfWeightH = le16_to_cpu(g_pSPrintParam->mtfWeightH_Y);
-    g_uiMtfWeightV = le16_to_cpu(g_pSPrintParam->mtfWeightV_Y);
-    g_uiMtfSlice = le16_to_cpu(g_pSPrintParam->mtfSlice_Y);
-    g_usLineCorrect_Env_A = le16_to_cpu(g_pSPrintParam->lineCorrectEnvA_Y);
-    g_usLineCorrect_Env_B = le16_to_cpu(g_pSPrintParam->lineCorrectEnvB_Y);
-    g_usLineCorrect_Env_C = le16_to_cpu(g_pSPrintParam->lineCorrectEnvC_Y);
-    g_uiLineCorrectSlice = le32_to_cpu(g_pSPrintParam->lineCorrectSlice_Y);
-    g_uiLineCorrectSlice1Line = le32_to_cpu(g_pSPrintParam->lineCorrectSlice1Line_Y);
-    g_iLineCorrectPulseMax = le32_to_cpu(g_pSPrintParam->lineCorrectPulseMax_Y);
+    ctx->usPrintMaxPulse = le16_to_cpu(ctx->pSPrintParam->printMaxPulse_Y);
+    ctx->uiMtfWeightH = le16_to_cpu(ctx->pSPrintParam->mtfWeightH_Y);
+    ctx->uiMtfWeightV = le16_to_cpu(ctx->pSPrintParam->mtfWeightV_Y);
+    ctx->uiMtfSlice = le16_to_cpu(ctx->pSPrintParam->mtfSlice_Y);
+    ctx->usLineCorrect_Env_A = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvA_Y);
+    ctx->usLineCorrect_Env_B = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvB_Y);
+    ctx->usLineCorrect_Env_C = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvC_Y);
+    ctx->uiLineCorrectSlice = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice_Y);
+    ctx->uiLineCorrectSlice1Line = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice1Line_Y);
+    ctx->iLineCorrectPulseMax = le32_to_cpu(ctx->pSPrintParam->lineCorrectPulseMax_Y);
     break;
   case 1:
-    g_usPrintMaxPulse = le16_to_cpu(g_pSPrintParam->printMaxPulse_M);
-    g_uiMtfWeightH = le16_to_cpu(g_pSPrintParam->mtfWeightH_M);
-    g_uiMtfWeightV = le16_to_cpu(g_pSPrintParam->mtfWeightV_M);
-    g_uiMtfSlice = le16_to_cpu(g_pSPrintParam->mtfSlice_M);
-    g_usLineCorrect_Env_A = le16_to_cpu(g_pSPrintParam->lineCorrectEnvA_M);
-    g_usLineCorrect_Env_B = le16_to_cpu(g_pSPrintParam->lineCorrectEnvB_M);
-    g_usLineCorrect_Env_C = le16_to_cpu(g_pSPrintParam->lineCorrectEnvC_M);
-    g_uiLineCorrectSlice = le32_to_cpu(g_pSPrintParam->lineCorrectSlice_M);
-    g_uiLineCorrectSlice1Line = le32_to_cpu(g_pSPrintParam->lineCorrectSlice1Line_M);
-    g_iLineCorrectPulseMax = le32_to_cpu(g_pSPrintParam->lineCorrectPulseMax_M);
+    ctx->usPrintMaxPulse = le16_to_cpu(ctx->pSPrintParam->printMaxPulse_M);
+    ctx->uiMtfWeightH = le16_to_cpu(ctx->pSPrintParam->mtfWeightH_M);
+    ctx->uiMtfWeightV = le16_to_cpu(ctx->pSPrintParam->mtfWeightV_M);
+    ctx->uiMtfSlice = le16_to_cpu(ctx->pSPrintParam->mtfSlice_M);
+    ctx->usLineCorrect_Env_A = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvA_M);
+    ctx->usLineCorrect_Env_B = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvB_M);
+    ctx->usLineCorrect_Env_C = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvC_M);
+    ctx->uiLineCorrectSlice = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice_M);
+    ctx->uiLineCorrectSlice1Line = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice1Line_M);
+    ctx->iLineCorrectPulseMax = le32_to_cpu(ctx->pSPrintParam->lineCorrectPulseMax_M);
     break;
   case 2:
-    g_usPrintMaxPulse = le16_to_cpu(g_pSPrintParam->printMaxPulse_C);
-    g_uiMtfWeightH = le16_to_cpu(g_pSPrintParam->mtfWeightH_C);
-    g_uiMtfWeightV = le16_to_cpu(g_pSPrintParam->mtfWeightV_C);
-    g_uiMtfSlice = le16_to_cpu(g_pSPrintParam->mtfSlice_C);
-    g_usLineCorrect_Env_A = le16_to_cpu(g_pSPrintParam->lineCorrectEnvA_C);
-    g_usLineCorrect_Env_B = le16_to_cpu(g_pSPrintParam->lineCorrectEnvB_C);
-    g_usLineCorrect_Env_C = le16_to_cpu(g_pSPrintParam->lineCorrectEnvC_C);
-    g_uiLineCorrectSlice = le32_to_cpu(g_pSPrintParam->lineCorrectSlice_C);
-    g_uiLineCorrectSlice1Line = le32_to_cpu(g_pSPrintParam->lineCorrectSlice1Line_C);
-    g_iLineCorrectPulseMax = le32_to_cpu(g_pSPrintParam->lineCorrectPulseMax_C);
+    ctx->usPrintMaxPulse = le16_to_cpu(ctx->pSPrintParam->printMaxPulse_C);
+    ctx->uiMtfWeightH = le16_to_cpu(ctx->pSPrintParam->mtfWeightH_C);
+    ctx->uiMtfWeightV = le16_to_cpu(ctx->pSPrintParam->mtfWeightV_C);
+    ctx->uiMtfSlice = le16_to_cpu(ctx->pSPrintParam->mtfSlice_C);
+    ctx->usLineCorrect_Env_A = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvA_C);
+    ctx->usLineCorrect_Env_B = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvB_C);
+    ctx->usLineCorrect_Env_C = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvC_C);
+    ctx->uiLineCorrectSlice = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice_C);
+    ctx->uiLineCorrectSlice1Line = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice1Line_C);
+    ctx->iLineCorrectPulseMax = le32_to_cpu(ctx->pSPrintParam->lineCorrectPulseMax_C);
     break;
   case 3:
-    g_usPrintMaxPulse = le16_to_cpu(g_pSPrintParam->printMaxPulse_O);
-    g_uiMtfWeightH = le16_to_cpu(g_pSPrintParam->mtfWeightH_O);
-    g_uiMtfWeightV = le16_to_cpu(g_pSPrintParam->mtfWeightV_O);
-    g_uiMtfSlice = le16_to_cpu(g_pSPrintParam->mtfSlice_O);;
-    g_usLineCorrect_Env_A = le16_to_cpu(g_pSPrintParam->lineCorrectEnvA_O);
-    g_usLineCorrect_Env_B = le16_to_cpu(g_pSPrintParam->lineCorrectEnvB_O);
-    g_usLineCorrect_Env_C = le16_to_cpu(g_pSPrintParam->lineCorrectEnvC_O);
-    g_uiLineCorrectSlice = le32_to_cpu(g_pSPrintParam->lineCorrectSlice_O);
-    g_uiLineCorrectSlice1Line = le32_to_cpu(g_pSPrintParam->lineCorrectSlice1Line_O);
-    g_iLineCorrectPulseMax = le32_to_cpu(g_pSPrintParam->lineCorrectPulseMax_O);
+    ctx->usPrintMaxPulse = le16_to_cpu(ctx->pSPrintParam->printMaxPulse_O);
+    ctx->uiMtfWeightH = le16_to_cpu(ctx->pSPrintParam->mtfWeightH_O);
+    ctx->uiMtfWeightV = le16_to_cpu(ctx->pSPrintParam->mtfWeightV_O);
+    ctx->uiMtfSlice = le16_to_cpu(ctx->pSPrintParam->mtfSlice_O);;
+    ctx->usLineCorrect_Env_A = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvA_O);
+    ctx->usLineCorrect_Env_B = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvB_O);
+    ctx->usLineCorrect_Env_C = le16_to_cpu(ctx->pSPrintParam->lineCorrectEnvC_O);
+    ctx->uiLineCorrectSlice = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice_O);
+    ctx->uiLineCorrectSlice1Line = le32_to_cpu(ctx->pSPrintParam->lineCorrectSlice1Line_O);
+    ctx->iLineCorrectPulseMax = le32_to_cpu(ctx->pSPrintParam->lineCorrectPulseMax_O);
     break;
   default:
-    printf("ERROR: bad g_usPrintColor %d\n", g_usPrintColor);
+    printf("ERROR: bad ctx->usPrintColor %d\n", ctx->usPrintColor);
     break;
   }
 
-  g_usHeadDots = le16_to_cpu(g_pSPrintParam->headDots);
+  ctx->usHeadDots = le16_to_cpu(ctx->pSPrintParam->headDots);
 }
 
-static void Global_Init(void)
+static void Global_Init(struct lib6145_ctx *ctx)
 {
-  g_usPrintColor = 0;
-  g_usPrintSizeWidth = 0;
-  g_usPrintSizeHeight = 0;
-  g_usSheetSizeWidth = 0;
-  g_sPrintSideOffset = 0;
-  g_sCorrectSw = 0;
-  g_usPrintOpLevel = 0;
-  g_uiMtfWeightH = 0;
-  g_uiMtfWeightV = 0;
-  g_uiMtfSlice = 0;
-  g_usPrintMaxPulse = MAX_PULSE;
-  g_usMatteMode = 0;
-  g_usLineCorrect_Env_A = 0;
-  g_usLineCorrect_Env_B = 0;
-  g_usLineCorrect_Env_C = 0;
-  g_uiLineCorrectSum = 0;
-  g_uiLineCorrectBase = 0;
-  g_uiLineCorrectBase1Line = 0;
-  g_iLineCorrectPulse = 0;
-  g_iLineCorrectPulseMax = MAX_PULSE;
-  g_pulRandomTable[0] = 3;
-  g_pulRandomTable[1] = -1708027847;
-  g_pulRandomTable[2] = 853131300;
-  g_pulRandomTable[3] = -1687801470;
-  g_pulRandomTable[4] = 1570894658;
-  g_pulRandomTable[5] = -566525472;
-  g_pulRandomTable[6] = -552964171;
-  g_pulRandomTable[7] = -251413502;
-  g_pulRandomTable[8] = 1223901435;
-  g_pulRandomTable[9] = 1950999915;
-  g_pulRandomTable[10] = -1095640144;
-  g_pulRandomTable[11] = -1420011240;
-  g_pulRandomTable[12] = -1805298435;
-  g_pulRandomTable[13] = -1943115761;
-  g_pulRandomTable[14] = -348292705;
-  g_pulRandomTable[15] = -1323376457;
-  g_pulRandomTable[16] = 759393158;
-  g_pulRandomTable[17] = -630772182;
-  g_pulRandomTable[18] = 361286280;
-  g_pulRandomTable[19] = -479628451;
-  g_pulRandomTable[20] = -1873857033;
-  g_pulRandomTable[21] = -686452778;
-  g_pulRandomTable[22] = 1873211473;
-  g_pulRandomTable[23] = 1634626454;
-  g_pulRandomTable[24] = -1399525412;
-  g_pulRandomTable[25] = 910245779;
-  g_pulRandomTable[26] = -970800488;
-  g_pulRandomTable[27] = -173790536;
-  g_pulRandomTable[28] = -1970743429;
-  g_pulRandomTable[29] = -173171442;
-  g_pulRandomTable[30] = -1986452981;
-  g_pulRandomTable[31] = 670779321;
-  g_uiInputImageIndex = 0;
-  g_uiOutputImageIndex = 0;
-  g_usHeadDots = 0;
+  ctx->usPrintColor = 0;
+  ctx->usPrintSizeWidth = 0;
+  ctx->usPrintSizeHeight = 0;
+  ctx->usSheetSizeWidth = 0;
+  ctx->sPrintSideOffset = 0;
+  ctx->sCorrectSw = 0;
+  ctx->usPrintOpLevel = 0;
+  ctx->uiMtfWeightH = 0;
+  ctx->uiMtfWeightV = 0;
+  ctx->uiMtfSlice = 0;
+  ctx->usPrintMaxPulse = MAX_PULSE;
+  ctx->usMatteMode = 0;
+  ctx->usLineCorrect_Env_A = 0;
+  ctx->usLineCorrect_Env_B = 0;
+  ctx->usLineCorrect_Env_C = 0;
+  ctx->uiLineCorrectSum = 0;
+  ctx->uiLineCorrectBase = 0;
+  ctx->uiLineCorrectBase1Line = 0;
+  ctx->iLineCorrectPulse = 0;
+  ctx->iLineCorrectPulseMax = MAX_PULSE;
+  ctx->pulRandomTable[0] = 3;
+  ctx->pulRandomTable[1] = -1708027847;
+  ctx->pulRandomTable[2] = 853131300;
+  ctx->pulRandomTable[3] = -1687801470;
+  ctx->pulRandomTable[4] = 1570894658;
+  ctx->pulRandomTable[5] = -566525472;
+  ctx->pulRandomTable[6] = -552964171;
+  ctx->pulRandomTable[7] = -251413502;
+  ctx->pulRandomTable[8] = 1223901435;
+  ctx->pulRandomTable[9] = 1950999915;
+  ctx->pulRandomTable[10] = -1095640144;
+  ctx->pulRandomTable[11] = -1420011240;
+  ctx->pulRandomTable[12] = -1805298435;
+  ctx->pulRandomTable[13] = -1943115761;
+  ctx->pulRandomTable[14] = -348292705;
+  ctx->pulRandomTable[15] = -1323376457;
+  ctx->pulRandomTable[16] = 759393158;
+  ctx->pulRandomTable[17] = -630772182;
+  ctx->pulRandomTable[18] = 361286280;
+  ctx->pulRandomTable[19] = -479628451;
+  ctx->pulRandomTable[20] = -1873857033;
+  ctx->pulRandomTable[21] = -686452778;
+  ctx->pulRandomTable[22] = 1873211473;
+  ctx->pulRandomTable[23] = 1634626454;
+  ctx->pulRandomTable[24] = -1399525412;
+  ctx->pulRandomTable[25] = 910245779;
+  ctx->pulRandomTable[26] = -970800488;
+  ctx->pulRandomTable[27] = -173790536;
+  ctx->pulRandomTable[28] = -1970743429;
+  ctx->pulRandomTable[29] = -173171442;
+  ctx->pulRandomTable[30] = -1986452981;
+  ctx->pulRandomTable[31] = 670779321;
+  ctx->uiInputImageIndex = 0;
+  ctx->uiOutputImageIndex = 0;
+  ctx->usHeadDots = 0;
 
 #ifdef S6145_UNUSED
 
-  g_usPrintDummyLevel = 0;
-  g_usPrintDummyLine = 0;
-  g_usRearDummyPrintLine = 0;
-  g_usRearDeleteLine = 0;
+  ctx->usPrintDummyLevel = 0;
+  ctx->usPrintDummyLine = 0;
+  ctx->usRearDummyPrintLine = 0;
+  ctx->usRearDeleteLine = 0;
 
-  g_usPrintSizeLWidth = 0;
-  g_usPrintSizeLHeight = 0;
+  ctx->usPrintSizeLWidth = 0;
+  ctx->usPrintSizeLHeight = 0;
 
-  g_usThearmHead = 0;
-  g_usThearmEnv = 0;
-  g_usRearDummyPrintLevel = 0;
+  ctx->usThearmHead = 0;
+  ctx->usThearmEnv = 0;
+  ctx->usRearDummyPrintLevel = 0;
 
-  g_usLastPrintSizeWidth = 0;
-  g_usLastPrintSizeHeight = 0;
-  g_usLastSheetSizeWidth = 0;
+  ctx->usLastPrintSizeWidth = 0;
+  ctx->usLastPrintSizeHeight = 0;
+  ctx->usLastSheetSizeWidth = 0;
 
-  g_iLeadEdgeCorrectPulse = 0;
+  ctx->iLeadEdgeCorrectPulse = 0;
 
-  g_usCancelCheckLinesForPRec = 118;
+  ctx->usCancelCheckLinesForPRec = 118;
 
-  g_pusLamiCompInLineBufTab[0] = (uint16_t*)g_pusInLineBuf0;
-  g_pusLamiCompInLineBufTab[1] = (uint16_t*)g_pusInLineBuf2;
-  g_pusLamiCompInLineBufTab[2] = g_pusOutLineBuf1;
-  g_pusLamiCompInLineBufTab[3] = g_pusOutLineBuf2;
+  ctx->pusLamiCompInLineBufTab[0] = (uint16_t*)ctx->pusInLineBuf0;
+  ctx->pusLamiCompInLineBufTab[1] = (uint16_t*)ctx->pusInLineBuf2;
+  ctx->pusLamiCompInLineBufTab[2] = ctx->pusOutLineBuf1;
+  ctx->pusLamiCompInLineBufTab[3] = ctx->pusOutLineBuf2;
 
-  g_usMatteGloss = 105;
-  g_usMatteDeglossBlk = 150;
-  g_usMatteDeglossWht = 175;
+  ctx->usMatteGloss = 105;
+  ctx->usMatteDeglossBlk = 150;
+  ctx->usMatteDeglossWht = 175;
 
-  g_usPrintOffsetWidth = 0;
-  g_usCenterHeadToColSen = 268;
+  ctx->usPrintOffsetWidth = 0;
+  ctx->usCenterHeadToColSen = 268;
 
-  g_uiLevelAveAddtion = 0;
-  g_uiLevelAveCounter = 0;
-  g_uiLevelAveCounter2 = 0;
-  g_uiLevelAveAddtion2 = 0;
-  g_usCancelCheckDotsForPRec = 236;
+  ctx->uiLevelAveAddtion = 0;
+  ctx->uiLevelAveCounter = 0;
+  ctx->uiLevelAveCounter2 = 0;
+  ctx->uiLevelAveAddtion2 = 0;
+  ctx->usCancelCheckDotsForPRec = 236;
 #endif
 }
 
 #ifdef S6145_UNUSED
-static void SetTable(void)
+static void SetTable(struct lib6145_ctx *ctx)
 {
-  SetTableData(g_pSPrintParam->SideEdgeCoefTable, g_pusSideEdgeCoefTable, 128);
-  SetTableData(g_pSPrintParam->SideEdgeLvCoefTable, g_pusSideEdgeLvCoefTable, 256);
+  SetTableData(ctx->pSPrintParam->SideEdgeCoefTable, ctx->pusSideEdgeCoefTable, 128);
+  SetTableData(ctx->pSPrintParam->SideEdgeLvCoefTable, ctx->pusSideEdgeLvCoefTable, 256);
 }
 #endif
 
-static void SetTableColor(uint8_t plane)
+static void SetTableColor(struct lib6145_ctx *ctx, uint8_t plane)
 {
   switch (plane) {
   case 0:
-    SetTableData(g_pSPrintParam->pulseTransTable_Y, g_pusPulseTransTable, 256);
-    SetTableData(g_pSPrintParam->lineHistCoefTable_Y, g_pusLineHistCoefTable, 256);
-    SetTableData(g_pSPrintParam->tankPlusMaxEnergyTable_Y, g_pusTankPlusMaxEnegyTable, 256);
-    SetTableData(g_pSPrintParam->tankMinusMaxEnergy_Y, g_pusTankMinusMaxEnegyTable, 256);
-    memcpy(g_piTankParam, &g_pSPrintParam->tableTankParam_Y, 128);
+    SetTableData(ctx->pSPrintParam->pulseTransTable_Y, ctx->pusPulseTransTable, 256);
+    SetTableData(ctx->pSPrintParam->lineHistCoefTable_Y, ctx->pusLineHistCoefTable, 256);
+    SetTableData(ctx->pSPrintParam->tankPlusMaxEnergyTable_Y, ctx->pusTankPlusMaxEnegyTable, 256);
+    SetTableData(ctx->pSPrintParam->tankMinusMaxEnergy_Y, ctx->pusTankMinusMaxEnegyTable, 256);
+    memcpy(ctx->piTankParam, &ctx->pSPrintParam->tableTankParam_Y, 128);
     break;
   case 1:
-    SetTableData(g_pSPrintParam->pulseTransTable_M, g_pusPulseTransTable, 256);
-    SetTableData(g_pSPrintParam->lineHistCoefTable_M, g_pusLineHistCoefTable, 256);
-    SetTableData(g_pSPrintParam->tankPlusMaxEnergyTable_M, g_pusTankPlusMaxEnegyTable, 256);
-    SetTableData(g_pSPrintParam->tankMinusMaxEnergy_M, g_pusTankMinusMaxEnegyTable, 256);
-    memcpy(&g_piTankParam[32], &g_pSPrintParam->tableTankParam_M, 128);
+    SetTableData(ctx->pSPrintParam->pulseTransTable_M, ctx->pusPulseTransTable, 256);
+    SetTableData(ctx->pSPrintParam->lineHistCoefTable_M, ctx->pusLineHistCoefTable, 256);
+    SetTableData(ctx->pSPrintParam->tankPlusMaxEnergyTable_M, ctx->pusTankPlusMaxEnegyTable, 256);
+    SetTableData(ctx->pSPrintParam->tankMinusMaxEnergy_M, ctx->pusTankMinusMaxEnegyTable, 256);
+    memcpy(&ctx->piTankParam[32], &ctx->pSPrintParam->tableTankParam_M, 128);
     break;
   case 2:
-    SetTableData(g_pSPrintParam->pulseTransTable_C, g_pusPulseTransTable, 256);
-    SetTableData(g_pSPrintParam->lineHistCoefTable_C, g_pusLineHistCoefTable, 256);
-    SetTableData(g_pSPrintParam->tankPlusMaxEnergyTable_C, g_pusTankPlusMaxEnegyTable, 256);
-    SetTableData(g_pSPrintParam->tankMinusMaxEnergy_C, g_pusTankMinusMaxEnegyTable, 256);
-    memcpy(&g_piTankParam[64], &g_pSPrintParam->tableTankParam_C, 128);
+    SetTableData(ctx->pSPrintParam->pulseTransTable_C, ctx->pusPulseTransTable, 256);
+    SetTableData(ctx->pSPrintParam->lineHistCoefTable_C, ctx->pusLineHistCoefTable, 256);
+    SetTableData(ctx->pSPrintParam->tankPlusMaxEnergyTable_C, ctx->pusTankPlusMaxEnegyTable, 256);
+    SetTableData(ctx->pSPrintParam->tankMinusMaxEnergy_C, ctx->pusTankMinusMaxEnegyTable, 256);
+    memcpy(&ctx->piTankParam[64], &ctx->pSPrintParam->tableTankParam_C, 128);
     break;
   case 3:
-    SetTableData(g_pSPrintParam->pulseTransTable_O, g_pusPulseTransTable, 256);
-    SetTableData(g_pSPrintParam->lineHistCoefTable_O, g_pusLineHistCoefTable, 256);
-    SetTableData(g_pSPrintParam->tankPlusMaxEnergyTable_O, g_pusTankPlusMaxEnegyTable, 256);
-    SetTableData(g_pSPrintParam->tankMinusMaxEnergy_O, g_pusTankMinusMaxEnegyTable, 256);
-    memcpy(&g_piTankParam[96], &g_pSPrintParam->tableTankParam_O, 128);
+    SetTableData(ctx->pSPrintParam->pulseTransTable_O, ctx->pusPulseTransTable, 256);
+    SetTableData(ctx->pSPrintParam->lineHistCoefTable_O, ctx->pusLineHistCoefTable, 256);
+    SetTableData(ctx->pSPrintParam->tankPlusMaxEnergyTable_O, ctx->pusTankPlusMaxEnegyTable, 256);
+    SetTableData(ctx->pSPrintParam->tankMinusMaxEnergy_O, ctx->pusTankMinusMaxEnegyTable, 256);
+    memcpy(&ctx->piTankParam[96], &ctx->pSPrintParam->tableTankParam_O, 128);
     break;
   default:
     printf("ERROR: Bad plane in SetTableColor (%d)\n", plane);
@@ -734,10 +748,9 @@ static void SetTableColor(uint8_t plane)
   }
 }
 
-static int32_t CheckPrintParam(uint8_t *corrdataraw)
+static int32_t CheckPrintParam(struct imageCorrParam *corrdata)
 {
   int i;
-  struct imageCorrParam *corrdata = (struct imageCorrParam *) corrdataraw;
 
   for (i = 0 ; i < 256 ; i++) {
     if (le16_to_cpu(corrdata->pulseTransTable_Y[i]) > le16_to_cpu(corrdata->printMaxPulse_Y) ||
@@ -796,292 +809,292 @@ static int32_t CheckPrintParam(uint8_t *corrdataraw)
 
 /* This resets the preprocess pipeline at the start of a new image
    plane. */
-static void LinePrintPreProcess(void)
+static void LinePrintPreProcess(struct lib6145_ctx *ctx)
 {
   int16_t i;
 
-  GetInfo();
+  GetInfo(ctx);
 
-  if ( !(g_sCorrectSw & 1) )
+  if ( !(ctx->sCorrectSw & 1) )
   {
-    g_uiMtfWeightH = 0;
-    g_uiMtfWeightV = 0;
-    g_uiMtfSlice = 0;
+    ctx->uiMtfWeightH = 0;
+    ctx->uiMtfWeightV = 0;
+    ctx->uiMtfSlice = 0;
   }
 
   for ( i = -256; i < 256; i++ )
   {
-    if ( (uint32_t)(i * i) >= (uint32_t)(g_uiMtfSlice * g_uiMtfSlice) )
-	    g_psMtfPreCalcTable[i+256] = i;
+    if ( (uint32_t)(i * i) >= (uint32_t)(ctx->uiMtfSlice * ctx->uiMtfSlice) )
+	    ctx->psMtfPreCalcTable[i+256] = i;
     else
-	    g_psMtfPreCalcTable[i+256] = -i;
+	    ctx->psMtfPreCalcTable[i+256] = -i;
   }
 
-  g_pusPreReadLineBufTab[0] = g_pusInLineBuf0;
-  g_pusPreReadLineBufTab[1] = g_pusInLineBuf1;
-  g_pusPreReadLineBufTab[2] = g_pusInLineBuf2;
-  g_pusPreReadLineBufTab[3] = g_pusInLineBuf3;
-  g_pusPreReadLineBufTab[4] = g_pusInLineBuf4;
-  g_pusPreReadLineBufTab[5] = g_pusInLineBuf5;
-  g_pusPreReadLineBufTab[6] = g_pusInLineBuf6;
-  g_pusPreReadLineBufTab[7] = g_pusInLineBuf7;
-  g_pusPreReadLineBufTab[8] = g_pusInLineBuf8;
-  g_pusPreReadLineBufTab[9] = g_pusInLineBuf9;
-  g_pusPreReadLineBufTab[10] = g_pusInLineBufA;
+  ctx->pusPreReadLineBufTab[0] = ctx->pusInLineBuf0;
+  ctx->pusPreReadLineBufTab[1] = ctx->pusInLineBuf1;
+  ctx->pusPreReadLineBufTab[2] = ctx->pusInLineBuf2;
+  ctx->pusPreReadLineBufTab[3] = ctx->pusInLineBuf3;
+  ctx->pusPreReadLineBufTab[4] = ctx->pusInLineBuf4;
+  ctx->pusPreReadLineBufTab[5] = ctx->pusInLineBuf5;
+  ctx->pusPreReadLineBufTab[6] = ctx->pusInLineBuf6;
+  ctx->pusPreReadLineBufTab[7] = ctx->pusInLineBuf7;
+  ctx->pusPreReadLineBufTab[8] = ctx->pusInLineBuf8;
+  ctx->pusPreReadLineBufTab[9] = ctx->pusInLineBuf9;
+  ctx->pusPreReadLineBufTab[10] = ctx->pusInLineBufA;
 
-  memset(g_pusInLineBuf0, 0, sizeof(g_pusInLineBuf0));
-  memset(g_pusInLineBuf1, 0, sizeof(g_pusInLineBuf1));
-  memset(g_pusInLineBuf2, 0, sizeof(g_pusInLineBuf2));
-  memset(g_pusInLineBuf3, 0, sizeof(g_pusInLineBuf3));
-  memset(g_pusInLineBuf4, 0, sizeof(g_pusInLineBuf4));
-  memset(g_pusInLineBuf5, 0, sizeof(g_pusInLineBuf5));
-  memset(g_pusInLineBuf6, 0, sizeof(g_pusInLineBuf6));
-  memset(g_pusInLineBuf7, 0, sizeof(g_pusInLineBuf7));
-  memset(g_pusInLineBuf8, 0, sizeof(g_pusInLineBuf8));
-  memset(g_pusInLineBuf9, 0, sizeof(g_pusInLineBuf9));
-  memset(g_pusInLineBufA, 0, sizeof(g_pusInLineBufA));
+  memset(ctx->pusInLineBuf0, 0, sizeof(ctx->pusInLineBuf0));
+  memset(ctx->pusInLineBuf1, 0, sizeof(ctx->pusInLineBuf1));
+  memset(ctx->pusInLineBuf2, 0, sizeof(ctx->pusInLineBuf2));
+  memset(ctx->pusInLineBuf3, 0, sizeof(ctx->pusInLineBuf3));
+  memset(ctx->pusInLineBuf4, 0, sizeof(ctx->pusInLineBuf4));
+  memset(ctx->pusInLineBuf5, 0, sizeof(ctx->pusInLineBuf5));
+  memset(ctx->pusInLineBuf6, 0, sizeof(ctx->pusInLineBuf6));
+  memset(ctx->pusInLineBuf7, 0, sizeof(ctx->pusInLineBuf7));
+  memset(ctx->pusInLineBuf8, 0, sizeof(ctx->pusInLineBuf8));
+  memset(ctx->pusInLineBuf9, 0, sizeof(ctx->pusInLineBuf9));
+  memset(ctx->pusInLineBufA, 0, sizeof(ctx->pusInLineBufA));
 
-  g_pusPulseTransLineBufTab[0] = g_pusInLineBuf0;
-  g_pusPulseTransLineBufTab[1] = g_pusInLineBuf1;
-  g_pusPulseTransLineBufTab[2] = g_pusInLineBuf2;
-  g_pusPulseTransLineBufTab[3] = g_pusInLineBuf3;
+  ctx->pusPulseTransLineBufTab[0] = ctx->pusInLineBuf0;
+  ctx->pusPulseTransLineBufTab[1] = ctx->pusInLineBuf1;
+  ctx->pusPulseTransLineBufTab[2] = ctx->pusInLineBuf2;
+  ctx->pusPulseTransLineBufTab[3] = ctx->pusInLineBuf3;
 
-  memset(g_pusOutLineBuf1, 0, sizeof(g_pusOutLineBuf1));
-  g_pusOutLineBufTab[0] = g_pusOutLineBuf1;
-
-#ifdef S6145_UNUSED
-  memset(g_pusInLineBuf3, g_usPrintDummyLevel, sizeof(g_pusInLineBuf3)); // XXX redundant with memset above, printDummyLevel is always 0 anyway.
-#endif
-
-  g_uiSendToHeadCounter = g_usPrintSizeHeight;
-  g_uiLineCopyCounter = g_usPrintSizeHeight;
+  memset(ctx->pusOutLineBuf1, 0, sizeof(ctx->pusOutLineBuf1));
+  ctx->pusOutLineBufTab[0] = ctx->pusOutLineBuf1;
 
 #ifdef S6145_UNUSED
-  g_uiDataTransCounter = g_usPrintSizeHeight;
-  g_uiDataTransCounter += g_usPrintDummyLine;
-  g_uiDataTransCounter -= g_usRearDeleteLine;
-  g_uiDataTransCounter += g_usRearDummyPrintLine;
-
-  g_uiSendToHeadCounter += g_usPrintDummyLine;
-  g_uiSendToHeadCounter -= g_usRearDeleteLine;
-  g_uiSendToHeadCounter += g_usRearDummyPrintLine;
-
-  g_uiTudenLineCounter = g_usPrintSizeHeight;
-  g_uiTudenLineCounter += g_usRearDummyPrintLine;
-  g_uiTudenLineCounter -= g_usRearDeleteLine;
-
-  g_uiLineCopyCounter -= g_usRearDeleteLine;
-
-  if ( g_usPrintColor != 3 )
-    g_usRearDummyPrintLevel = 255;
-
-  g_iLeadEdgeCorrectPulse = 0;
+  memset(ctx->pusInLineBuf3, ctx->usPrintDummyLevel, sizeof(ctx->pusInLineBuf3)); // XXX redundant with memset above, printDummyLevel is always 0 anyway.
 #endif
 
-  switch (g_usPrintColor) {
+  ctx->uiSendToHeadCounter = ctx->usPrintSizeHeight;
+  ctx->uiLineCopyCounter = ctx->usPrintSizeHeight;
+
+#ifdef S6145_UNUSED
+  ctx->uiDataTransCounter = ctx->usPrintSizeHeight;
+  ctx->uiDataTransCounter += ctx->usPrintDummyLine;
+  ctx->uiDataTransCounter -= ctx->usRearDeleteLine;
+  ctx->uiDataTransCounter += ctx->usRearDummyPrintLine;
+
+  ctx->uiSendToHeadCounter += ctx->usPrintDummyLine;
+  ctx->uiSendToHeadCounter -= ctx->usRearDeleteLine;
+  ctx->uiSendToHeadCounter += ctx->usRearDummyPrintLine;
+
+  ctx->uiTudenLineCounter = ctx->usPrintSizeHeight;
+  ctx->uiTudenLineCounter += ctx->usRearDummyPrintLine;
+  ctx->uiTudenLineCounter -= ctx->usRearDeleteLine;
+
+  ctx->uiLineCopyCounter -= ctx->usRearDeleteLine;
+
+  if ( ctx->usPrintColor != 3 )
+    ctx->usRearDummyPrintLevel = 255;
+
+  ctx->iLeadEdgeCorrectPulse = 0;
+#endif
+
+  switch (ctx->usPrintColor) {
   case 0:
-    CTankResetParameter(&g_piTankParam[0]);
-    g_iMaxPulseValue = g_usPrintMaxPulse;
-    g_uiMaxPulseBit = LinePrintCalcBit(g_usPrintMaxPulse);
-    g_pfRecieveData = RecieveDataYMC;
+    CTankResetParameter(ctx, &ctx->piTankParam[0]);
+    ctx->iMaxPulseValue = ctx->usPrintMaxPulse;
+    ctx->uiMaxPulseBit = LinePrintCalcBit(ctx->usPrintMaxPulse);
+    ctx->pfRecieveData = RecieveDataYMC;
 #ifdef S6145_UNUSED
-    g_pfRecieveData_Post = RecieveDataYMC_Post;
+    ctx->pfRecieveData_Post = RecieveDataYMC_Post;
 #endif
-    g_pfPulseTransPreRead = PulseTransPreReadYMC;
-    g_pfTankProcessPreRead = CTankProcessPreRead;
+    ctx->pfPulseTransPreRead = PulseTransPreReadYMC;
+    ctx->pfTankProcessPreRead = CTankProcessPreRead;
     break;
   case 1:
-    CTankResetParameter(&g_piTankParam[32]);
-    g_iMaxPulseValue = g_usPrintMaxPulse;
-    g_uiMaxPulseBit = LinePrintCalcBit(g_usPrintMaxPulse);
-    g_pfRecieveData = RecieveDataYMC;
+    CTankResetParameter(ctx, &ctx->piTankParam[32]);
+    ctx->iMaxPulseValue = ctx->usPrintMaxPulse;
+    ctx->uiMaxPulseBit = LinePrintCalcBit(ctx->usPrintMaxPulse);
+    ctx->pfRecieveData = RecieveDataYMC;
 #ifdef S6145_UNUSED
-    g_pfRecieveData_Post = RecieveDataYMC_Post;
+    ctx->pfRecieveData_Post = RecieveDataYMC_Post;
 #endif
-    g_pfPulseTransPreRead = PulseTransPreReadYMC;
-    g_pfTankProcessPreRead = CTankProcessPreRead;
+    ctx->pfPulseTransPreRead = PulseTransPreReadYMC;
+    ctx->pfTankProcessPreRead = CTankProcessPreRead;
     break;
   case 2:
-    CTankResetParameter(&g_piTankParam[64]);
-    g_iMaxPulseValue = g_usPrintMaxPulse;
-    g_uiMaxPulseBit = LinePrintCalcBit(g_usPrintMaxPulse);
-    g_pfRecieveData = RecieveDataYMC;
+    CTankResetParameter(ctx, &ctx->piTankParam[64]);
+    ctx->iMaxPulseValue = ctx->usPrintMaxPulse;
+    ctx->uiMaxPulseBit = LinePrintCalcBit(ctx->usPrintMaxPulse);
+    ctx->pfRecieveData = RecieveDataYMC;
 #ifdef S6145_UNUSED
-    g_pfRecieveData_Post = RecieveDataYMC_Post;
+    ctx->pfRecieveData_Post = RecieveDataYMC_Post;
 #endif
-    g_pfPulseTransPreRead = PulseTransPreReadYMC;
-    g_pfTankProcessPreRead = CTankProcessPreRead;
+    ctx->pfPulseTransPreRead = PulseTransPreReadYMC;
+    ctx->pfTankProcessPreRead = CTankProcessPreRead;
     break;
   case 3:
-    CTankResetParameter(&g_piTankParam[96]);
-    g_iMaxPulseValue = g_usPrintMaxPulse;
-    g_uiMaxPulseBit = LinePrintCalcBit(g_usPrintMaxPulse);
-    if ( g_usMatteMode ) {
-      g_pfRecieveData = RecieveDataOP_MATTE;
+    CTankResetParameter(ctx, &ctx->piTankParam[96]);
+    ctx->iMaxPulseValue = ctx->usPrintMaxPulse;
+    ctx->uiMaxPulseBit = LinePrintCalcBit(ctx->usPrintMaxPulse);
+    if ( ctx->usMatteMode ) {
+      ctx->pfRecieveData = RecieveDataOP_MATTE;
 #ifdef S6145_UNUSED
-      g_pfRecieveData_Post = RecieveDataOPMatte_Post;
+      ctx->pfRecieveData_Post = RecieveDataOPMatte_Post;
 #endif
     } else {
-      g_pfRecieveData = RecieveDataOP_GLOSS;
+      ctx->pfRecieveData = RecieveDataOP_GLOSS;
 #ifdef S6145_UNUSED
-      g_pfRecieveData_Post = RecieveDataOPLevel_Post;
+      ctx->pfRecieveData_Post = RecieveDataOPLevel_Post;
 #endif
     }
-    g_pfPulseTransPreRead = PulseTransPreReadOP;
-    g_pfTankProcessPreRead = CTankProcessPreReadDummy;
+    ctx->pfPulseTransPreRead = PulseTransPreReadOP;
+    ctx->pfTankProcessPreRead = CTankProcessPreReadDummy;
 #ifdef S6145_UNUSED
-    if ( g_usMatteMode )
-      g_iLeadEdgeCorrectPulse = 120;
+    if ( ctx->usMatteMode )
+      ctx->iLeadEdgeCorrectPulse = 120;
 #endif
     break;
   default:
-    printf("ERROR: Bad g_usPrintColor %d\n", g_usPrintColor);
+    printf("ERROR: Bad ctx->usPrintColor %d\n", ctx->usPrintColor);
     return;
   }
 
-  g_uiLineCorrectSum = 0;
-  g_iLineCorrectPulse = 0;
+  ctx->uiLineCorrectSum = 0;
+  ctx->iLineCorrectPulse = 0;
 
-  if ( g_uiLineCorrectSlice ) {
-    g_uiLineCorrectBase = g_uiLineCorrectSlice * g_usLineCorrect_Env_A;
-    g_uiLineCorrectBase >>= 15;
-    g_uiLineCorrectBase *= g_usSheetSizeWidth;
+  if ( ctx->uiLineCorrectSlice ) {
+    ctx->uiLineCorrectBase = ctx->uiLineCorrectSlice * ctx->usLineCorrect_Env_A;
+    ctx->uiLineCorrectBase >>= 15;
+    ctx->uiLineCorrectBase *= ctx->usSheetSizeWidth;
   } else {
-    g_uiLineCorrectBase = -1;
+    ctx->uiLineCorrectBase = -1;
   }
 
-  if ( g_uiLineCorrectSlice1Line ) {
-    g_uiLineCorrectBase1Line = g_uiLineCorrectSlice1Line * g_usLineCorrect_Env_B;
-    g_uiLineCorrectBase1Line >>= 15;
-    g_uiLineCorrectBase1Line *= g_usSheetSizeWidth;
+  if ( ctx->uiLineCorrectSlice1Line ) {
+    ctx->uiLineCorrectBase1Line = ctx->uiLineCorrectSlice1Line * ctx->usLineCorrect_Env_B;
+    ctx->uiLineCorrectBase1Line >>= 15;
+    ctx->uiLineCorrectBase1Line *= ctx->usSheetSizeWidth;
   }
 
-  if ( g_iLineCorrectPulseMax ) {
-    g_iLineCorrectPulseMax *= g_usLineCorrect_Env_C;
-    g_iLineCorrectPulseMax /= 1024;
+  if ( ctx->iLineCorrectPulseMax ) {
+    ctx->iLineCorrectPulseMax *= ctx->usLineCorrect_Env_C;
+    ctx->iLineCorrectPulseMax /= 1024;
   } else {
-    g_iLineCorrectPulseMax = MAX_PULSE;
+    ctx->iLineCorrectPulseMax = MAX_PULSE;
   }
 
-  CTankResetTank();
+  CTankResetTank(ctx);
 
 #ifdef S6145_UNUSED
-  g_uiDummyPrintCounter = 0;
+  ctx->uiDummyPrintCounter = 0;
 #endif
 }
 
-static void CTankResetParameter(int32_t *params)
+static void CTankResetParameter(struct lib6145_ctx *ctx, int32_t *params)
 {
-  m_iTrdTankSize = le32_to_cpu(params[0]);
-  m_iSndTankSize = le32_to_cpu(params[1]);
-  m_iFstTankSize = le32_to_cpu(params[2]);
-  m_iTrdTankIniEnergy = le32_to_cpu(params[3]);
-  m_iSndTankIniEnergy = le32_to_cpu(params[4]);
-  m_iFstTankIniEnergy = le32_to_cpu(params[5]);
-  m_iTrdTrdConductivity = le32_to_cpu(params[6]);
-  m_iSndSndConductivity = le32_to_cpu(params[7]);
-  m_iFstFstConductivity = le32_to_cpu(params[8]);
-  m_iOutTrdConductivity = le32_to_cpu(params[9]);
-  m_iTrdSndConductivity = le32_to_cpu(params[10]);
-  m_iSndFstConductivity = le32_to_cpu(params[11]);
-  m_iFstOutConductivity = le32_to_cpu(params[12]);
+  ctx->m_iTrdTankSize = le32_to_cpu(params[0]);
+  ctx->m_iSndTankSize = le32_to_cpu(params[1]);
+  ctx->m_iFstTankSize = le32_to_cpu(params[2]);
+  ctx->m_iTrdTankIniEnergy = le32_to_cpu(params[3]);
+  ctx->m_iSndTankIniEnergy = le32_to_cpu(params[4]);
+  ctx->m_iFstTankIniEnergy = le32_to_cpu(params[5]);
+  ctx->m_iTrdTrdConductivity = le32_to_cpu(params[6]);
+  ctx->m_iSndSndConductivity = le32_to_cpu(params[7]);
+  ctx->m_iFstFstConductivity = le32_to_cpu(params[8]);
+  ctx->m_iOutTrdConductivity = le32_to_cpu(params[9]);
+  ctx->m_iTrdSndConductivity = le32_to_cpu(params[10]);
+  ctx->m_iSndFstConductivity = le32_to_cpu(params[11]);
+  ctx->m_iFstOutConductivity = le32_to_cpu(params[12]);
 #ifdef S6145_UNUSED
-  m_iPlusMaxEnergy = le32_to_cpu(params[13]);
-  m_iMinusMaxEnergy = le32_to_cpu(params[14]);
-  m_iPlusMaxEnergyPreRead = le32_to_cpu(params[15]);
+  ctx->m_iPlusMaxEnergy = le32_to_cpu(params[13]);
+  ctx->m_iMinusMaxEnergy = le32_to_cpu(params[14]);
+  ctx->m_iPlusMaxEnergyPreRead = le32_to_cpu(params[15]);
 #endif
 
-  m_iMinusMaxEnergyPreRead = le32_to_cpu(params[16]);
-  m_iPreReadLevelDiff = le32_to_cpu(params[17]);
+  ctx->m_iMinusMaxEnergyPreRead = le32_to_cpu(params[16]);
+  ctx->m_iPreReadLevelDiff = le32_to_cpu(params[17]);
 
-  m_iTankKeisuOutTrdDivTrd = (int64_t)m_iOutTrdConductivity * (int64_t)0x10000 / (int64_t)m_iTrdTankSize;
-  m_iTankKeisuTrdSndDivTrd = (int64_t)m_iTrdSndConductivity * (int64_t)0x10000 / (int64_t)m_iTrdTankSize;
-  m_iTankKeisuTrdSndDivSnd = (int64_t)m_iTrdSndConductivity * (int64_t)0x10000 / (int64_t)m_iSndTankSize;
-  m_iTankKeisuSndFstDivSnd = (int64_t)m_iSndFstConductivity * (int64_t)0x10000 / (int64_t)m_iSndTankSize;
-  m_iTankKeisuSndFstDivFst = (int64_t)m_iSndFstConductivity * (int64_t)0x10000 / (int64_t)m_iFstTankSize;
-  m_iTankKeisuFstOutDivFst = (int64_t)m_iFstOutConductivity * (int64_t)0x10000 / (int64_t)m_iFstTankSize;
+  ctx->m_iTankKeisuOutTrdDivTrd = (int64_t)ctx->m_iOutTrdConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iTrdTankSize;
+  ctx->m_iTankKeisuTrdSndDivTrd = (int64_t)ctx->m_iTrdSndConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iTrdTankSize;
+  ctx->m_iTankKeisuTrdSndDivSnd = (int64_t)ctx->m_iTrdSndConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iSndTankSize;
+  ctx->m_iTankKeisuSndFstDivSnd = (int64_t)ctx->m_iSndFstConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iSndTankSize;
+  ctx->m_iTankKeisuSndFstDivFst = (int64_t)ctx->m_iSndFstConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iFstTankSize;
+  ctx->m_iTankKeisuFstOutDivFst = (int64_t)ctx->m_iFstOutConductivity * (int64_t)0x10000 / (int64_t)ctx->m_iFstTankSize;
 
   return;
 }
 
-static void CTankResetTank(void)
+static void CTankResetTank(struct lib6145_ctx *ctx)
 {
   int i;
 
   for (i = 0 ; i < TANK_SIZE; i++) {
-    m_piTrdTankArray[i] = m_iTrdTankIniEnergy;
-    m_piSndTankArray[i] = m_iSndTankIniEnergy;
-    m_piFstTankArray[i] = m_iFstTankIniEnergy;
+    ctx->m_piTrdTankArray[i] = ctx->m_iTrdTankIniEnergy;
+    ctx->m_piSndTankArray[i] = ctx->m_iSndTankIniEnergy;
+    ctx->m_piFstTankArray[i] = ctx->m_iFstTankIniEnergy;
   }
 }
 
 /* This primes the preprocessing pipeline prior to starting the first
    actual row of image data */
-static void PagePrintPreProcess(void)
+static void PagePrintPreProcess(struct lib6145_ctx *ctx)
 {
   uint32_t i;
 
-  g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[1];
-  g_pfRecieveData();
-  g_pusPulseTransLineBufTab[1] = g_pusPulseTransLineBufTab[3];
-  g_uiLineCopyCounter++;
-  g_uiInputImageIndex -= g_usPrintSizeWidth;
-  g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[2];
-  g_pfRecieveData();
-  g_pusPulseTransLineBufTab[2] = g_pusPulseTransLineBufTab[3];
-  g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[3];
-  g_pfRecieveData();
+  ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[1];
+  ctx->pfRecieveData(ctx);
+  ctx->pusPulseTransLineBufTab[1] = ctx->pusPulseTransLineBufTab[3];
+  ctx->uiLineCopyCounter++;
+  ctx->uiInputImageIndex -= ctx->usPrintSizeWidth;
+  ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[2];
+  ctx->pfRecieveData(ctx);
+  ctx->pusPulseTransLineBufTab[2] = ctx->pusPulseTransLineBufTab[3];
+  ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[3];
+  ctx->pfRecieveData(ctx);
   for ( i = 0; i < 7; i++ )
   {
-    g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[i + 4];
-    g_pfRecieveData();
+    ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[i + 4];
+    ctx->pfRecieveData(ctx);
   }
-  g_pusPulseTransLineBufTab[0] = g_pusPreReadLineBufTab[0];
+  ctx->pusPulseTransLineBufTab[0] = ctx->pusPreReadLineBufTab[0];
 }
 
 /* Process a single scanline,
    From reading the input data to writing the output.
  */
-static void PagePrintProcess(void)
+static void PagePrintProcess(struct lib6145_ctx *ctx)
 {
   uint32_t i;
 
   /* First, rotate the input buffers... */
-  if ( g_usPrintColor != 3 || g_usMatteMode != 1 || g_usMatteSize != 2 ) {
+  if ( ctx->usPrintColor != 3 || ctx->usMatteMode != 1 || ctx->usMatteSize != 2 ) {
     /* If we're not printing a matte layer... */
-    uint8_t *v4 = g_pusPreReadLineBufTab[0];
+    uint8_t *v4 = ctx->pusPreReadLineBufTab[0];
     for ( i = 0; i < 10; i++ )
-      g_pusPreReadLineBufTab[i] = g_pusPreReadLineBufTab[i + 1];
-    g_pusPreReadLineBufTab[10] = v4;
-    g_pusPulseTransLineBufTab[0] = g_pusPreReadLineBufTab[0];
-    g_pusPulseTransLineBufTab[1] = g_pusPreReadLineBufTab[1];
-    g_pusPulseTransLineBufTab[2] = g_pusPreReadLineBufTab[2];
-    g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[10];
-  } else if ( g_uiLineCopyCounter & 1 ) {
+      ctx->pusPreReadLineBufTab[i] = ctx->pusPreReadLineBufTab[i + 1];
+    ctx->pusPreReadLineBufTab[10] = v4;
+    ctx->pusPulseTransLineBufTab[0] = ctx->pusPreReadLineBufTab[0];
+    ctx->pusPulseTransLineBufTab[1] = ctx->pusPreReadLineBufTab[1];
+    ctx->pusPulseTransLineBufTab[2] = ctx->pusPreReadLineBufTab[2];
+    ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[10];
+  } else if ( ctx->uiLineCopyCounter & 1 ) {
     /* in other words, every other line when printing a matte layer..  */
-    uint8_t *v4 = g_pusPreReadLineBufTab[0];
+    uint8_t *v4 = ctx->pusPreReadLineBufTab[0];
     for ( i = 0; i < 10; i++ )
-      g_pusPreReadLineBufTab[i] = g_pusPreReadLineBufTab[i + 1];
-    g_pusPreReadLineBufTab[10] = v4;
-    g_pusPulseTransLineBufTab[0] = g_pusPreReadLineBufTab[0];
-    g_pusPulseTransLineBufTab[1] = g_pusPreReadLineBufTab[1];
-    g_pusPulseTransLineBufTab[2] = g_pusPreReadLineBufTab[2];
-    g_pusPulseTransLineBufTab[3] = g_pusPreReadLineBufTab[10];
+      ctx->pusPreReadLineBufTab[i] = ctx->pusPreReadLineBufTab[i + 1];
+    ctx->pusPreReadLineBufTab[10] = v4;
+    ctx->pusPulseTransLineBufTab[0] = ctx->pusPreReadLineBufTab[0];
+    ctx->pusPulseTransLineBufTab[1] = ctx->pusPreReadLineBufTab[1];
+    ctx->pusPulseTransLineBufTab[2] = ctx->pusPreReadLineBufTab[2];
+    ctx->pusPulseTransLineBufTab[3] = ctx->pusPreReadLineBufTab[10];
   }
 
 #ifdef S6145_UNUSED
-  g_uiTudenLineCounter--;
+  ctx->uiTudenLineCounter--;
 #endif
-  g_pfRecieveData(); /* Read another scanline */
-  PulseTrans();
-  g_pfPulseTransPreRead();
+  ctx->pfRecieveData(ctx); /* Read another scanline */
+  PulseTrans(ctx);
+  ctx->pfPulseTransPreRead(ctx);
 #ifdef S6145_UNUSED
-  g_pfRecieveData_Post();  /* Clean up after the receive */
+  ctx->pfRecieveData_Post();  /* Clean up after the receive */
 #endif
-  CTankProcess();  /* Update thermal tank state */
-  g_pfTankProcessPreRead();
-  LineCorrection(); /* Final output compensation */
-  SendData();      /* Write scanline output */
+  CTankProcess(ctx);  /* Update thermal tank state */
+  ctx->pfTankProcessPreRead(ctx);
+  LineCorrection(ctx); /* Final output compensation */
+  SendData(ctx);      /* Write scanline output */
   return;
 }
 
@@ -1096,39 +1109,40 @@ static uint16_t LinePrintCalcBit(uint16_t val)
 }
 
 /* Update thermal tank state */
-static void CTankProcess(void)
+static void CTankProcess(struct lib6145_ctx *ctx)
 {
-  if ( g_sCorrectSw & 2 ) {
-    CTankHosei();
-    CTankUpdateTankVolumeInterRay();
-    CTankUpdateTankVolumeInterDot(0);
-    CTankUpdateTankVolumeInterDot(1);
-    CTankUpdateTankVolumeInterDot(2);
+  if ( ctx->sCorrectSw & 2 ) {
+    CTankHosei(ctx);
+    CTankUpdateTankVolumeInterRay(ctx);
+    CTankUpdateTankVolumeInterDot(ctx, 0);
+    CTankUpdateTankVolumeInterDot(ctx, 1);
+    CTankUpdateTankVolumeInterDot(ctx, 2);
   }
   return;
 }
 
-static void CTankProcessPreRead(void)
+static void CTankProcessPreRead(struct lib6145_ctx *ctx)
 {
-  if (g_sCorrectSw & 2)
-     CTankHoseiPreread();
+  if (ctx->sCorrectSw & 2)
+     CTankHoseiPreread(ctx);
 }
 
-static void CTankProcessPreReadDummy(void)
+static void CTankProcessPreReadDummy(struct lib6145_ctx *ctx)
 {
+  (void)ctx;
   return;
 }
 
 /* This will generate one line worth of "gloss" OC data.
    It only covers the imageable area, rather than the head width */
-static void RecieveDataOP_GLOSS(void)
+static void RecieveDataOP_GLOSS(struct lib6145_ctx *ctx)
 {
-  if ( g_uiLineCopyCounter ) {
-     memset(g_pusPulseTransLineBufTab[3] + ((g_usHeadDots - g_usSheetSizeWidth) / 2),
-	    g_usPrintOpLevel,
-	    g_usSheetSizeWidth);
+  if ( ctx->uiLineCopyCounter ) {
+     memset(ctx->pusPulseTransLineBufTab[3] + ((ctx->usHeadDots - ctx->usSheetSizeWidth) / 2),
+	    ctx->usPrintOpLevel,
+	    ctx->usSheetSizeWidth);
 
-    g_uiLineCopyCounter--;
+    ctx->uiLineCopyCounter--;
   }
 
   return;
@@ -1136,91 +1150,91 @@ static void RecieveDataOP_GLOSS(void)
 
 /* This reads a single line worth of input image data.
  */
-static void RecieveDataYMC(void)
+static void RecieveDataYMC(struct lib6145_ctx *ctx)
 {
   uint8_t *v1;
   int16_t i;
 
-  v1 = g_pusPulseTransLineBufTab[3] + ((g_usHeadDots - g_usSheetSizeWidth) / 2);
+  v1 = ctx->pusPulseTransLineBufTab[3] + ((ctx->usHeadDots - ctx->usSheetSizeWidth) / 2);
 
-  if ( g_uiLineCopyCounter ) {
+  if ( ctx->uiLineCopyCounter ) {
      /* Read the next line */
-    for ( i = 0; i < g_usPrintSizeWidth; i++ )
-      v1[i] = g_pucInputImageBuf[g_uiInputImageIndex++];
-    --g_uiLineCopyCounter;
+    for ( i = 0; i < ctx->usPrintSizeWidth; i++ )
+      v1[i] = ctx->pucInputImageBuf[ctx->uiInputImageIndex++];
+    --ctx->uiLineCopyCounter;
   } else {
     /* Re-read the previous line */
-    g_uiInputImageIndex -= g_usPrintSizeWidth;
-    for ( i = 0; i < g_usPrintSizeWidth ; i++ )
-      v1[i] = g_pucInputImageBuf[g_uiInputImageIndex++];
+    ctx->uiInputImageIndex -= ctx->usPrintSizeWidth;
+    for ( i = 0; i < ctx->usPrintSizeWidth ; i++ )
+      v1[i] = ctx->pucInputImageBuf[ctx->uiInputImageIndex++];
   }
 }
 
 /* this will generate one scanline (ie 16b * BUF_SIZE) worth of
    "random" data for the matte overcoat */
-static void RecieveDataOP_MATTE(void)
+static void RecieveDataOP_MATTE(struct lib6145_ctx *ctx)
 {
-  if ( g_uiLineCopyCounter ) {
+  if ( ctx->uiLineCopyCounter ) {
     int32_t v1;
     uint32_t v5;
     int32_t v6;
 
     int16_t matteCtr;
-    uint8_t *outPtr = g_pusPulseTransLineBufTab[3];
+    uint8_t *outPtr = ctx->pusPulseTransLineBufTab[3];
 
-    if ( g_usMatteSize == 2 )
+    if ( ctx->usMatteSize == 2 )
       matteCtr = 256;
     else
       matteCtr = 512;
 
     while ( matteCtr-- ) {
-      if ( g_pulRandomTable[0] >= 31 )
+      if ( ctx->pulRandomTable[0] >= 31 )
         v6 = 1;
       else
-        v6 = g_pulRandomTable[0] + 1;
-      g_pulRandomTable[0] = v6;
+        v6 = ctx->pulRandomTable[0] + 1;
+      ctx->pulRandomTable[0] = v6;
       if ( v6 <= 3 )
-        v1 = g_pulRandomTable[v6 + 28];
+        v1 = ctx->pulRandomTable[v6 + 28];
       else
-        v1 = g_pulRandomTable[v6 - 3];
-      g_pulRandomTable[v6] += v1;
+        v1 = ctx->pulRandomTable[v6 - 3];
+      ctx->pulRandomTable[v6] += v1;
 
-      v5 = (uint32_t)g_pulRandomTable[v6] >> 1;
-      if ( g_usMatteSize == 2 ) {
-	*outPtr++ = g_ucRandomBaseLevel[(v5 >> 1) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 1) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 5) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 5) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 9) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 9) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 13) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 13) & 3];
+      v5 = (uint32_t)ctx->pulRandomTable[v6] >> 1;
+      if ( ctx->usMatteSize == 2 ) {
+	*outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 1) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 1) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 5) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 5) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 9) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 9) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 13) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 13) & 3];
       } else {
-	*outPtr++ = g_ucRandomBaseLevel[(v5 >> 1) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 5) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 9) & 3];
-        *outPtr++ = g_ucRandomBaseLevel[(v5 >> 13) & 3];
+	*outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 1) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 5) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 9) & 3];
+        *outPtr++ = ctx->ucRandomBaseLevel[(v5 >> 13) & 3];
       }
     }
-    --g_uiLineCopyCounter;
+    --ctx->uiLineCopyCounter;
   }
 }
 
 /* This writes a single scanline to the output buffer */
-static void SendData(void)
+static void SendData(struct lib6145_ctx *ctx)
 {
   uint16_t i;
 
-  if ( g_uiSendToHeadCounter ) {
-    for ( i = 0; i < g_usHeadDots; i++ )
-      g_pusOutputImageBuf[g_uiOutputImageIndex++] = cpu_to_le16(g_pusOutLineBufTab[0][i]);
-    --g_uiSendToHeadCounter;
+  if ( ctx->uiSendToHeadCounter ) {
+    for ( i = 0; i < ctx->usHeadDots; i++ )
+      ctx->pusOutputImageBuf[ctx->uiOutputImageIndex++] = cpu_to_le16(ctx->pusOutLineBufTab[0][i]);
+    --ctx->uiSendToHeadCounter;
   }
 }
 
 /* Use the previous two rows to generate the needed impulse for
    the current row. */
-static void PulseTrans(void)
+static void PulseTrans(struct lib6145_ctx *ctx)
 {
   int32_t overHang;
   int32_t sheetSizeWidth;
@@ -1231,24 +1245,24 @@ static void PulseTrans(void)
 
   uint16_t *out;
 
-  sheetSizeWidth = g_usSheetSizeWidth;
-  overHang = (g_usHeadDots - g_usSheetSizeWidth) / 2;
+  sheetSizeWidth = ctx->usSheetSizeWidth;
+  overHang = (ctx->usHeadDots - ctx->usSheetSizeWidth) / 2;
 
-  currentRow = g_pusPulseTransLineBufTab[0] + overHang;
-  prevRow = g_pusPulseTransLineBufTab[1] + overHang;
-  prevPrevRow = g_pusPulseTransLineBufTab[2] + overHang;
-  out = g_pusOutLineBufTab[0] + g_sPrintSideOffset + overHang;
+  currentRow = ctx->pusPulseTransLineBufTab[0] + overHang;
+  prevRow = ctx->pusPulseTransLineBufTab[1] + overHang;
+  prevPrevRow = ctx->pusPulseTransLineBufTab[2] + overHang;
+  out = ctx->pusOutLineBufTab[0] + ctx->sPrintSideOffset + overHang;
 
-  if ( out >= g_pusOutLineBufTab[0] ) {
-    int32_t offset = g_sPrintSideOffset
-        + g_usSheetSizeWidth
+  if ( out >= ctx->pusOutLineBufTab[0] ) {
+    int32_t offset = ctx->sPrintSideOffset
+        + ctx->usSheetSizeWidth
         + overHang;
     if ( offset > BUF_SIZE )
-      sheetSizeWidth = g_usSheetSizeWidth - (offset - BUF_SIZE);
+      sheetSizeWidth = ctx->usSheetSizeWidth - (offset - BUF_SIZE);
   } else {
-    int32_t offset = (g_pusOutLineBufTab[0] - out);
-    out = g_pusOutLineBufTab[0];
-    sheetSizeWidth = g_usSheetSizeWidth - offset;
+    int32_t offset = (ctx->pusOutLineBufTab[0] - out);
+    out = ctx->pusOutLineBufTab[0];
+    sheetSizeWidth = ctx->usSheetSizeWidth - offset;
     currentRow += offset;
     prevRow += offset;
     prevPrevRow += offset;
@@ -1269,10 +1283,10 @@ static void PulseTrans(void)
     v3 = *v2++;
     v12 = *v2;
     prevRow = v2 + 1;
-    v4 = g_psMtfPreCalcTable[256 + v12 - *prevRow] + g_psMtfPreCalcTable[256 + v12 - v3];
-    v6 = g_psMtfPreCalcTable[256 + v12 - *currentRow++];
+    v4 = ctx->psMtfPreCalcTable[256 + v12 - *prevRow] + ctx->psMtfPreCalcTable[256 + v12 - v3];
+    v6 = ctx->psMtfPreCalcTable[256 + v12 - *currentRow++];
 
-    tableOffset = v12 + ((v4 * g_uiMtfWeightH + (g_psMtfPreCalcTable[256 + v12 - *prevPrevRow++] + v6) * g_uiMtfWeightV) >> 7);
+    tableOffset = v12 + ((v4 * ctx->uiMtfWeightH + (ctx->psMtfPreCalcTable[256 + v12 - *prevPrevRow++] + v6) * ctx->uiMtfWeightV) >> 7);
     if ( tableOffset > 255 )
       tableOffset = 255;
     if ( tableOffset <= 0 )
@@ -1280,7 +1294,7 @@ static void PulseTrans(void)
     if ( !v12 )
       tableOffset = 0;
 
-    compVal = g_pusPulseTransTable[tableOffset];
+    compVal = ctx->pusPulseTransTable[tableOffset];
     if ( compVal > MAX_PULSE )
       compVal = MAX_PULSE;
 
@@ -1288,16 +1302,16 @@ static void PulseTrans(void)
   }
 
 #ifdef S6145_UNUSED
-  g_uiDataTransCounter--;
+  ctx->uiDataTransCounter--;
 #endif
 }
 
-static void PulseTransPreReadOP(void)
+static void PulseTransPreReadOP(struct lib6145_ctx *ctx)
 {
-
+  (void)ctx;
 }
 
-static void PulseTransPreReadYMC(void)
+static void PulseTransPreReadYMC(struct lib6145_ctx *ctx)
 {
   uint16_t overHang;
   uint16_t printSizeWidth;
@@ -1315,26 +1329,26 @@ static void PulseTransPreReadYMC(void)
   uint8_t *v16;
   uint8_t *v17;
 
-  printSizeWidth = g_usPrintSizeWidth;
-  overHang = (g_usHeadDots - g_usPrintSizeWidth) / 2;
-  v17 = g_pusPreReadLineBufTab[2] + overHang;
-  v16 = g_pusPreReadLineBufTab[3] + overHang;
-  v15 = g_pusPreReadLineBufTab[4] + overHang;
-  v14 = g_pusPreReadLineBufTab[5] + overHang;
+  printSizeWidth = ctx->usPrintSizeWidth;
+  overHang = (ctx->usHeadDots - ctx->usPrintSizeWidth) / 2;
+  v17 = ctx->pusPreReadLineBufTab[2] + overHang;
+  v16 = ctx->pusPreReadLineBufTab[3] + overHang;
+  v15 = ctx->pusPreReadLineBufTab[4] + overHang;
+  v14 = ctx->pusPreReadLineBufTab[5] + overHang;
 
 #ifdef S6145_UNUSED
-  v1 = g_pusPreReadLineBufTab[6] + overHang;
-  v2 = g_pusPreReadLineBufTab[7] + overHang;
-  v3 = g_pusPreReadLineBufTab[8] + overHang;
-  v4 = g_pusPreReadLineBufTab[9] + overHang;
+  v1 = ctx->pusPreReadLineBufTab[6] + overHang;
+  v2 = ctx->pusPreReadLineBufTab[7] + overHang;
+  v3 = ctx->pusPreReadLineBufTab[8] + overHang;
+  v4 = ctx->pusPreReadLineBufTab[9] + overHang;
 #endif
 
-  out = g_pusPreReadOutLineBuf + overHang + g_sPrintSideOffset;
+  out = ctx->pusPreReadOutLineBuf + overHang + ctx->sPrintSideOffset;
 
-  if ( out < g_pusPreReadOutLineBuf ) {
-    int32_t offset = (g_pusPreReadOutLineBuf - out);
-    out = g_pusPreReadOutLineBuf;
-    printSizeWidth = g_usPrintSizeWidth - offset;
+  if ( out < ctx->pusPreReadOutLineBuf ) {
+    int32_t offset = (ctx->pusPreReadOutLineBuf - out);
+    out = ctx->pusPreReadOutLineBuf;
+    printSizeWidth = ctx->usPrintSizeWidth - offset;
     v17 += offset;
     v16 += offset;
     v15 += offset;
@@ -1347,14 +1361,14 @@ static void PulseTransPreReadYMC(void)
     int32_t v7 = *v16++ + v6;
     int32_t v8 = *v15++ + v7;
     int32_t v9 = *v14++ + v8;
-    int32_t pixel = g_pusPulseTransTable[v9 / 4];
+    int32_t pixel = ctx->pusPulseTransTable[v9 / 4];
     if ( pixel > MAX_PULSE )
       pixel = MAX_PULSE;
     *out++ = pixel;
   }
 }
 
-static void CTankUpdateTankVolumeInterDot(uint8_t tank)
+static void CTankUpdateTankVolumeInterDot(struct lib6145_ctx *ctx, uint8_t tank)
 {
   int32_t *tankIn;
   int32_t *tankOut;
@@ -1373,19 +1387,19 @@ static void CTankUpdateTankVolumeInterDot(uint8_t tank)
 
   switch (tank) {
   case 0:
-    tankIn = m_piFstTankArray;
-    tankOut = m_piFstTankArray + 2;
-    conductivity = m_iFstFstConductivity / 2;
+    tankIn = ctx->m_piFstTankArray;
+    tankOut = ctx->m_piFstTankArray + 2;
+    conductivity = ctx->m_iFstFstConductivity / 2;
     break;
   case 1:
-    tankIn = m_piSndTankArray;
-    tankOut = m_piSndTankArray + 2;
-    conductivity = m_iSndSndConductivity / 2;
+    tankIn = ctx->m_piSndTankArray;
+    tankOut = ctx->m_piSndTankArray + 2;
+    conductivity = ctx->m_iSndSndConductivity / 2;
     break;
   case 2:
-    tankIn = m_piTrdTankArray;
-    tankOut = m_piTrdTankArray + 2;
-    conductivity = m_iTrdTrdConductivity / 2;
+    tankIn = ctx->m_piTrdTankArray;
+    tankOut = ctx->m_piTrdTankArray + 2;
+    conductivity = ctx->m_iTrdTrdConductivity / 2;
     break;
   default:
     printf("ERROR: Bad Tank %d in CTankUpdateVolumeInterDot\n", tank);
@@ -1396,7 +1410,7 @@ static void CTankUpdateTankVolumeInterDot(uint8_t tank)
      averages, and uses that as the basis for the output */
 
   tankIn[0] = tankIn[1] = tankIn[2];
-  v1 = g_usSheetSizeWidth + 1;
+  v1 = ctx->usSheetSizeWidth + 1;
   tankIn[v1+1] = tankIn[v1+2] = tankIn[v1];
   v2 = *tankIn++;
   v4 = *tankIn++;
@@ -1407,7 +1421,7 @@ static void CTankUpdateTankVolumeInterDot(uint8_t tank)
   v19 = conductivity * (v5 + v2  - 2 * v4);
   v18 = conductivity * (v8 + v4  - 2 * v5);
   v17 = conductivity * (v20 + v5 - 2 * v8);
-  sheetSizeWidth = g_usSheetSizeWidth;
+  sheetSizeWidth = ctx->usSheetSizeWidth;
 
   while ( sheetSizeWidth-- ) {
     int32_t pixel = (v18 >> 6) + v5 - (conductivity * ((2 * v18 - v19 - v17) >> 7) >> 7);
@@ -1423,30 +1437,30 @@ static void CTankUpdateTankVolumeInterDot(uint8_t tank)
   }
 }
 
-static void CTankUpdateTankVolumeInterRay(void)
+static void CTankUpdateTankVolumeInterRay(struct lib6145_ctx *ctx)
 {
-  uint16_t sheetWidth = g_usSheetSizeWidth;
-  int32_t *fstTankPtr = m_piFstTankArray + 2;
-  int32_t *sndTankPtr = m_piSndTankArray + 2;
-  int32_t *trdTankPtr = m_piTrdTankArray + 2;
+  uint16_t sheetWidth = ctx->usSheetSizeWidth;
+  int32_t *fstTankPtr = ctx->m_piFstTankArray + 2;
+  int32_t *sndTankPtr = ctx->m_piSndTankArray + 2;
+  int32_t *trdTankPtr = ctx->m_piTrdTankArray + 2;
 
   while ( sheetWidth-- ) {
     int32_t v2, v3;
 
-    v2 = (*sndTankPtr * m_iTankKeisuSndFstDivSnd - *fstTankPtr * m_iTankKeisuSndFstDivFst) >> 17;
-    *fstTankPtr = v2 + *fstTankPtr - (*fstTankPtr * m_iTankKeisuFstOutDivFst >> 17);
+    v2 = (*sndTankPtr * ctx->m_iTankKeisuSndFstDivSnd - *fstTankPtr * ctx->m_iTankKeisuSndFstDivFst) >> 17;
+    *fstTankPtr = v2 + *fstTankPtr - (*fstTankPtr * ctx->m_iTankKeisuFstOutDivFst >> 17);
     fstTankPtr++;
 
-    v3 = (*trdTankPtr * m_iTankKeisuTrdSndDivTrd - *sndTankPtr * m_iTankKeisuTrdSndDivSnd) >> 17;
+    v3 = (*trdTankPtr * ctx->m_iTankKeisuTrdSndDivTrd - *sndTankPtr * ctx->m_iTankKeisuTrdSndDivSnd) >> 17;
     *sndTankPtr = v3 + *sndTankPtr - v2;
     sndTankPtr++;
 
-    *trdTankPtr = *trdTankPtr - v3 - (*trdTankPtr * m_iTankKeisuOutTrdDivTrd >> 17);
+    *trdTankPtr = *trdTankPtr - v3 - (*trdTankPtr * ctx->m_iTankKeisuOutTrdDivTrd >> 17);
     trdTankPtr++;
   }
 }
 
-static void CTankHoseiPreread(void)
+static void CTankHoseiPreread(struct lib6145_ctx *ctx)
 {
   uint16_t sheetWidth;
   int16_t overHang;
@@ -1456,29 +1470,29 @@ static void CTankHoseiPreread(void)
 
   int32_t v4;
 
-  overHang = (g_usHeadDots - g_usSheetSizeWidth) / 2;
-  inPtr = (int16_t*)g_pusPreReadOutLineBuf + overHang + g_sPrintSideOffset;
-  outPtr = g_pusOutLineBufTab[0] + overHang + g_sPrintSideOffset;
-  if ( outPtr < g_pusOutLineBufTab[0] )
-    outPtr = g_pusOutLineBufTab[0];
-  fstTankPtr = m_piFstTankArray + 2;
-  v4 = (1 << (g_uiMaxPulseBit + 20)) / m_iFstTankSize;
+  overHang = (ctx->usHeadDots - ctx->usSheetSizeWidth) / 2;
+  inPtr = (int16_t*)ctx->pusPreReadOutLineBuf + overHang + ctx->sPrintSideOffset;
+  outPtr = ctx->pusOutLineBufTab[0] + overHang + ctx->sPrintSideOffset;
+  if ( outPtr < ctx->pusOutLineBufTab[0] )
+    outPtr = ctx->pusOutLineBufTab[0];
+  fstTankPtr = ctx->m_piFstTankArray + 2;
+  v4 = (1 << (ctx->uiMaxPulseBit + 20)) / ctx->m_iFstTankSize;
 
   /* Walk forward through the line to compute the necessary delta */
-  sheetWidth = g_usSheetSizeWidth;
+  sheetWidth = ctx->usSheetSizeWidth;
   while ( sheetWidth-- ) {
     int32_t v5 = *inPtr - (v4 * (*inPtr + *fstTankPtr++) >> 20);
     int32_t v6 = 0;
-    if ( v5 < m_iPreReadLevelDiff )
-      v6 = -(m_iMinusMaxEnergyPreRead * v5 * v5) >> g_uiMaxPulseBit;
+    if ( v5 < ctx->m_iPreReadLevelDiff )
+      v6 = -(ctx->m_iMinusMaxEnergyPreRead * v5 * v5) >> ctx->uiMaxPulseBit;
     *inPtr++ = v6;
   }
 
   /* Now walk backwards through the line to derive the desired pixel
      values, adding the actual value with the necessary delta.. */
-  outPtr += g_usSheetSizeWidth;
+  outPtr += ctx->usSheetSizeWidth;
 
-  sheetWidth = g_usSheetSizeWidth;
+  sheetWidth = ctx->usSheetSizeWidth;
   while ( sheetWidth-- ) {
     int32_t pixel;
 
@@ -1488,14 +1502,14 @@ static void CTankHoseiPreread(void)
     pixel = *inPtr + *outPtr;
     if ( pixel < 0 )
       pixel = 0;
-    if ( pixel > g_iMaxPulseValue )
-      pixel = g_iMaxPulseValue;
+    if ( pixel > ctx->iMaxPulseValue )
+      pixel = ctx->iMaxPulseValue;
     *outPtr = pixel;
   }
 }
 
 /* Apply the correction needed based on the thermal tanks */
-static void CTankHosei(void)
+static void CTankHosei(struct lib6145_ctx *ctx)
 {
   uint16_t overHang;
   uint16_t sheetSizeWidth;
@@ -1509,32 +1523,32 @@ static void CTankHosei(void)
   int32_t *v12;
 #endif
 
-  sheetSizeWidth = g_usSheetSizeWidth;
-  overHang = (g_usHeadDots - g_usSheetSizeWidth) / 2;
-  out = g_pusOutLineBufTab[0] + (overHang + g_sPrintSideOffset);
-  in = g_pusPulseTransLineBufTab[1] + overHang;
+  sheetSizeWidth = ctx->usSheetSizeWidth;
+  overHang = (ctx->usHeadDots - ctx->usSheetSizeWidth) / 2;
+  out = ctx->pusOutLineBufTab[0] + (overHang + ctx->sPrintSideOffset);
+  in = ctx->pusPulseTransLineBufTab[1] + overHang;
 
-  if ( out >= g_pusOutLineBufTab[0] ) {
-    int32_t offset = g_sPrintSideOffset + sheetSizeWidth + overHang;
+  if ( out >= ctx->pusOutLineBufTab[0] ) {
+    int32_t offset = ctx->sPrintSideOffset + sheetSizeWidth + overHang;
     if ( offset > BUF_SIZE ) {
       offset -= BUF_SIZE;
       sheetSizeWidth -= offset;
     }
   } else {
-    int32_t offset = (g_pusOutLineBufTab[0] - out);
+    int32_t offset = (ctx->pusOutLineBufTab[0] - out);
     sheetSizeWidth -= offset;
-    in += (out - g_pusOutLineBufTab[0]); // XXX was: in += out;
-    out = g_pusOutLineBufTab[0];
+    in += (out - ctx->pusOutLineBufTab[0]); // XXX was: in += out;
+    out = ctx->pusOutLineBufTab[0];
     printf("WARN: CTankHosei() alt path\n");
   }
-  tankPtr = m_piFstTankArray + 2;
+  tankPtr = ctx->m_piFstTankArray + 2;
 
 #ifdef S6145_UNUSED
-  v2 = m_iPlusMaxEnergy;
+  v2 = ctx->m_iPlusMaxEnergy;
   v12 = &v2;
 #endif
 
-  v4 = (1 << (g_uiMaxPulseBit + 20)) / m_iFstTankSize;
+  v4 = (1 << (ctx->uiMaxPulseBit + 20)) / ctx->m_iFstTankSize;
 
   while ( sheetSizeWidth-- ) {
     int32_t v5;
@@ -1543,14 +1557,14 @@ static void CTankHosei(void)
     uint32_t v3 = *in++;
     v5 = *out - ((v4 * (*out + *tankPtr)) >> 20);
     if ( v5 < 0 )
-      v11 = g_pusTankMinusMaxEnegyTable[v3];
+      v11 = ctx->pusTankMinusMaxEnegyTable[v3];
     else
-      v11 = g_pusTankPlusMaxEnegyTable[v3];
-    v8 = *out + ((v5 * v11) >> g_uiMaxPulseBit);
+      v11 = ctx->pusTankPlusMaxEnegyTable[v3];
+    v8 = *out + ((v5 * v11) >> ctx->uiMaxPulseBit);
     if ( v8 < 0 )
       v8 = 0;
-    if ( v8 > g_iMaxPulseValue )
-      v8 = g_iMaxPulseValue;
+    if ( v8 > ctx->iMaxPulseValue )
+      v8 = ctx->iMaxPulseValue;
     *out++ = v8;
     *tankPtr++ += v8;
   }
@@ -1558,7 +1572,7 @@ static void CTankHosei(void)
 
 /* Apply final corrections to the output. */
 #define LINECORR_BUCKETS 4
-static void LineCorrection(void)
+static void LineCorrection(struct lib6145_ctx *ctx)
 {
   uint16_t sheetSizeWidth;
   uint16_t overHang;
@@ -1568,21 +1582,21 @@ static void LineCorrection(void)
   uint32_t correct;
   uint8_t i;
 
-  sheetSizeWidth = g_usSheetSizeWidth;
-  overHang = (g_usHeadDots - g_usSheetSizeWidth) / 2;
-  in = g_pusPulseTransLineBufTab[1] + overHang;
-  out = g_pusOutLineBufTab[0] + overHang + g_sPrintSideOffset;
-  if ( out >= g_pusOutLineBufTab[0] ) {
-    uint32_t tmp = g_sPrintSideOffset + sheetSizeWidth + overHang;
+  sheetSizeWidth = ctx->usSheetSizeWidth;
+  overHang = (ctx->usHeadDots - ctx->usSheetSizeWidth) / 2;
+  in = ctx->pusPulseTransLineBufTab[1] + overHang;
+  out = ctx->pusOutLineBufTab[0] + overHang + ctx->sPrintSideOffset;
+  if ( out >= ctx->pusOutLineBufTab[0] ) {
+    uint32_t tmp = ctx->sPrintSideOffset + sheetSizeWidth + overHang;
     if ( tmp > BUF_SIZE ) {
       tmp -= BUF_SIZE;
       sheetSizeWidth -= tmp;
     }
   } else {
-    uint32_t tmp = g_pusOutLineBufTab[0] - out;
+    uint32_t tmp = ctx->pusOutLineBufTab[0] - out;
     sheetSizeWidth -= tmp;
-    in += (out - g_pusOutLineBufTab[0]); // XXX was: in += out;
-    out = g_pusOutLineBufTab[0];
+    in += (out - ctx->pusOutLineBufTab[0]); // XXX was: in += out;
+    out = ctx->pusOutLineBufTab[0];
     printf("WARN: LineCorrection() alt path\n");
   }
 
@@ -1593,7 +1607,7 @@ static void LineCorrection(void)
     while ( j-- ) {
       int32_t pixel = *out;
       bucket[i] += pixel;
-      pixel -= g_pusLineHistCoefTable[*in++] * g_iLineCorrectPulse / 1024;
+      pixel -= ctx->pusLineHistCoefTable[*in++] * ctx->iLineCorrectPulse / 1024;
       if ( pixel < 0 )
         pixel = 0;
       *out++ = pixel;
@@ -1603,17 +1617,17 @@ static void LineCorrection(void)
   /* See if we need to increase the correction compensation */
   correct = 0;
   for ( i = 0; i < LINECORR_BUCKETS; i++ ) {
-    if ( g_uiLineCorrectBase1Line / LINECORR_BUCKETS <= bucket[i] )
+    if ( ctx->uiLineCorrectBase1Line / LINECORR_BUCKETS <= bucket[i] )
       correct++;
   }
   if ( correct ) {
     for ( i = 0; i < LINECORR_BUCKETS; i++ )
-      g_uiLineCorrectSum += bucket[i];
+      ctx->uiLineCorrectSum += bucket[i];
   }
-  if ( g_uiLineCorrectSum > g_uiLineCorrectBase ) {
-    g_uiLineCorrectSum -= g_uiLineCorrectBase;
-    if ( g_iLineCorrectPulse < g_iLineCorrectPulseMax )
-      g_iLineCorrectPulse++;
+  if ( ctx->uiLineCorrectSum > ctx->uiLineCorrectBase ) {
+    ctx->uiLineCorrectSum -= ctx->uiLineCorrectBase;
+    if ( ctx->iLineCorrectPulse < ctx->iLineCorrectPulseMax )
+      ctx->iLineCorrectPulse++;
   }
 
 }
@@ -1621,7 +1635,7 @@ static void LineCorrection(void)
 #ifdef S6145_UNUSED
 /* XXX all of these functions are present in the library, but not actually
    referenced by anything, so there's no point in worrying about them. */
-static void SideEdgeCorrection(void)
+static void SideEdgeCorrection(struct lib6145_ctx *ctx)
 {
   int32_t v0;
   uint32_t v1;
@@ -1639,24 +1653,24 @@ static void SideEdgeCorrection(void)
   int32_t v15;
   int32_t v16;
 
-  v16 = g_usSheetSizeWidth;
-  v0 = (g_usHeadDots - g_usSheetSizeWidth) / 2;
-  v6 = g_pusPulseTransLineBufTab[1] + v0;
-  out = g_pusOutLineBufTab[0] + g_sPrintSideOffset + v0;
+  v16 = ctx->usSheetSizeWidth;
+  v0 = (ctx->usHeadDots - ctx->usSheetSizeWidth) / 2;
+  v6 = ctx->pusPulseTransLineBufTab[1] + v0;
+  out = ctx->pusOutLineBufTab[0] + ctx->sPrintSideOffset + v0;
   v11 = 0;
-  if ( out >= g_pusOutLineBufTab[0] ) {
-    v10 = g_sPrintSideOffset
-        + g_usSheetSizeWidth
+  if ( out >= ctx->pusOutLineBufTab[0] ) {
+    v10 = ctx->sPrintSideOffset
+        + ctx->usSheetSizeWidth
         + v0;
     if ( v10 > BUF_SIZE )
     {
       v10 -= BUF_SIZE;
-      v16 = g_usSheetSizeWidth - v10;
+      v16 = ctx->usSheetSizeWidth - v10;
     }
   } else {
-    v1 = g_pusOutLineBufTab[0] - out;
-    out = g_pusOutLineBufTab[0];
-    v16 = g_usSheetSizeWidth - v1;
+    v1 = ctx->pusOutLineBufTab[0] - out;
+    out = ctx->pusOutLineBufTab[0];
+    v16 = ctx->usSheetSizeWidth - v1;
     v10 = v11;
   }
   v5 = out + 2 * v16;
@@ -1664,9 +1678,9 @@ static void SideEdgeCorrection(void)
   v14 = 128 - v11;
 
   while ( v14 ) {
-    v12 = (((1024 - g_pusSideEdgeLvCoefTable[*v6++] * (uint32_t)g_pusSideEdgeCoefTable[128 - v14--]) >> 10) * *out) >> 10;
-    if ( v12 > g_iMaxPulseValue )
-      v12 = g_iMaxPulseValue;
+    v12 = (((1024 - ctx->pusSideEdgeLvCoefTable[*v6++] * (uint32_t)ctx->pusSideEdgeCoefTable[128 - v14--]) >> 10) * *out) >> 10;
+    if ( v12 > ctx->iMaxPulseValue )
+      v12 = ctx->iMaxPulseValue;
     *out++ = v12;
   }
 
@@ -1677,14 +1691,14 @@ static void SideEdgeCorrection(void)
   while ( v15 ) {
     v9--;
     --v7;
-    v13 = ((1024 - (g_pusSideEdgeLvCoefTable[*v7] * (uint32_t)g_pusSideEdgeCoefTable[128 - v15--]) >> 10) * *v9) >> 10;
-    if ( g_iMaxPulseValue < v13 )
-      v13 = g_iMaxPulseValue;
+    v13 = ((1024 - (ctx->pusSideEdgeLvCoefTable[*v7] * (uint32_t)ctx->pusSideEdgeCoefTable[128 - v15--]) >> 10) * *v9) >> 10;
+    if ( ctx->iMaxPulseValue < v13 )
+      v13 = ctx->iMaxPulseValue;
     *v9 = v13;
   }
 }
 
-static void LeadEdgeCorrection(void)
+static void LeadEdgeCorrection(struct lib6145_ctx *ctx)
 {
   uint32_t v0;
   uint16_t *out;
@@ -1692,78 +1706,78 @@ static void LeadEdgeCorrection(void)
   uint32_t v5;
   int32_t v6;
 
-  if ( g_iLeadEdgeCorrectPulse ) {
-    v6 = g_usSheetSizeWidth;
-    out = g_pusOutLineBufTab[0] + g_sPrintSideOffset
-       + ((g_usHeadDots - g_usSheetSizeWidth) / 2);
-    if ( out >= g_pusOutLineBufTab[0] ) {
-      v5 = g_sPrintSideOffset
-         + g_usSheetSizeWidth
-         + ((g_usHeadDots - g_usSheetSizeWidth) / 2);
+  if ( ctx->iLeadEdgeCorrectPulse ) {
+    v6 = ctx->usSheetSizeWidth;
+    out = ctx->pusOutLineBufTab[0] + ctx->sPrintSideOffset
+       + ((ctx->usHeadDots - ctx->usSheetSizeWidth) / 2);
+    if ( out >= ctx->pusOutLineBufTab[0] ) {
+      v5 = ctx->sPrintSideOffset
+         + ctx->usSheetSizeWidth
+         + ((ctx->usHeadDots - ctx->usSheetSizeWidth) / 2);
       if ( v5 > BUF_SIZE )
-        v6 = g_usSheetSizeWidth - (v5 - BUF_SIZE);
+        v6 = ctx->usSheetSizeWidth - (v5 - BUF_SIZE);
     } else {
-      v0 = g_pusOutLineBufTab[0] - out;
-      out = g_pusOutLineBufTab[0];
-      v6 = g_usSheetSizeWidth - v0;
+      v0 = ctx->pusOutLineBufTab[0] - out;
+      out = ctx->pusOutLineBufTab[0];
+      v6 = ctx->usSheetSizeWidth - v0;
     }
 
     while ( v6-- ) {
-      v4 = (g_iLeadEdgeCorrectPulse / 4) + *out;
-      if ( v4 > g_iMaxPulseValue )
-        v4 = g_iMaxPulseValue;
+      v4 = (ctx->iLeadEdgeCorrectPulse / 4) + *out;
+      if ( v4 > ctx->iMaxPulseValue )
+        v4 = ctx->iMaxPulseValue;
       *out++ = v4;
     }
-    --g_iLeadEdgeCorrectPulse;
+    --ctx->iLeadEdgeCorrectPulse;
   }
 }
 
-static void RecieveDataOP_Post(void)
+static void RecieveDataOP_Post(struct lib6145_ctx *ctx)
 {
   return;
 }
 
-static void RecieveDataYMC_Post(void)
+static void RecieveDataYMC_Post(struct lib6145_ctx *ctx)
 {
   return;
 }
 
-static void RecieveDataOPLevel_Post(void)
+static void RecieveDataOPLevel_Post(struct lib6145_ctx *ctx)
 {
   return;
 }
 
-static void RecieveDataOPMatte_Post(void)
+static void RecieveDataOPMatte_Post(struct lib6145_ctx *ctx)
 {
   return;
 }
 
-static void ImageLevelAddition(void)
+static void ImageLevelAddition(struct lib6145_ctx *ctx)
 {
-  if ( g_uiLevelAveCounter < g_usPrintSizeHeight )
+  if ( ctx->uiLevelAveCounter < ctx->usPrintSizeHeight )
   {
-    ImageLevelAdditionEx(&g_uiLevelAveAddtion, 0, g_usSheetSizeWidth);
-    g_uiLevelAveCounter++;
-    if ( g_uiLevelAveCounter2-- == 0 )
+    ImageLevelAdditionEx(ctx, &ctx->uiLevelAveAddtion, 0, ctx->usSheetSizeWidth);
+    ctx->uiLevelAveCounter++;
+    if ( ctx->uiLevelAveCounter2-- == 0 )
     {
-      ImageLevelAdditionEx(
-	      &g_uiLevelAveAddtion2,
-	      g_uiOffsetCancelCheckPRec,
-	      g_usCancelCheckDotsForPRec);
-      ++g_uiLevelAveCounter2;
+        ImageLevelAdditionEx(ctx,
+	      &ctx->uiLevelAveAddtion2,
+	      ctx->uiOffsetCancelCheckPRec,
+	      ctx->usCancelCheckDotsForPRec);
+      ++ctx->uiLevelAveCounter2;
     }
   }
 }
 
-static void ImageLevelAdditionEx(uint32_t *a1, uint32_t a2, int32_t a3)
+static void ImageLevelAdditionEx(struct lib6145_ctx *ctx, uint32_t *a1, uint32_t a2, int32_t a3)
 {
   int32_t v3;
   uint8_t *v6;
   int32_t i;
   int32_t v8;
 
-  v6 = g_pusPulseTransLineBufTab[1] + a2 +
-	  ((g_usHeadDots - g_usSheetSizeWidth) / 2);
+  v6 = ctx->pusPulseTransLineBufTab[1] + a2 +
+	  ((ctx->usHeadDots - ctx->usSheetSizeWidth) / 2);
   v8 = a3;
   for ( i = 0; v8-- ; i += v3 ) {
     v3 = *v6++;
