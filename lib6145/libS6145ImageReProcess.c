@@ -41,7 +41,7 @@
 
 //#define S6145_UNUSED
 
-#define LIB_VERSION "0.5.0"
+#define LIB_VERSION "0.5.1"
 
 #include <string.h>
 #include <stdint.h>
@@ -596,7 +596,6 @@ static void GetInfo(struct lib6145_ctx *ctx)
     ctx->iLineCorrectPulseMax = le32_to_cpu(ctx->pSPrintParam->lineCorrectPulseMax_O);
     break;
   default:
-    printf("ERROR: bad ctx->usPrintColor %d\n", ctx->usPrintColor);
     break;
   }
 
@@ -743,7 +742,6 @@ static void SetTableColor(struct lib6145_ctx *ctx, uint8_t plane)
     memcpy(&ctx->piTankParam[96], &ctx->pSPrintParam->tableTankParam_O, 128);
     break;
   default:
-    printf("ERROR: Bad plane in SetTableColor (%d)\n", plane);
     break;
   }
 }
@@ -948,7 +946,6 @@ static void LinePrintPreProcess(struct lib6145_ctx *ctx)
 #endif
     break;
   default:
-    printf("ERROR: Bad ctx->usPrintColor %d\n", ctx->usPrintColor);
     return;
   }
 
@@ -1266,7 +1263,7 @@ static void PulseTrans(struct lib6145_ctx *ctx)
     currentRow += offset;
     prevRow += offset;
     prevPrevRow += offset;
-    printf("WARN: PulseTrans() alt path\n");
+//    fprintf(stderr, "WARN: PulseTrans() alt path\n");
   }
 
   while ( sheetSizeWidth-- ) {
@@ -1353,7 +1350,7 @@ static void PulseTransPreReadYMC(struct lib6145_ctx *ctx)
     v16 += offset;
     v15 += offset;
     v14 += offset;
-    printf("WARN: PulseTransPreReadYMC alt path!\n");
+//    fprintf(stderr, "WARN: PulseTransPreReadYMC alt path!\n");
   }
 
   while ( printSizeWidth-- ) {
@@ -1402,7 +1399,6 @@ static void CTankUpdateTankVolumeInterDot(struct lib6145_ctx *ctx, uint8_t tank)
     conductivity = ctx->m_iTrdTrdConductivity / 2;
     break;
   default:
-    printf("ERROR: Bad Tank %d in CTankUpdateVolumeInterDot\n", tank);
     return;
   }
 
@@ -1539,7 +1535,7 @@ static void CTankHosei(struct lib6145_ctx *ctx)
     sheetSizeWidth -= offset;
     in += (out - ctx->pusOutLineBufTab[0]); // XXX was: in += out;
     out = ctx->pusOutLineBufTab[0];
-    printf("WARN: CTankHosei() alt path\n");
+//    fprintf(stderr, "WARN: CTankHosei() alt path\n");
   }
   tankPtr = ctx->m_piFstTankArray + 2;
 
@@ -1597,7 +1593,7 @@ static void LineCorrection(struct lib6145_ctx *ctx)
     sheetSizeWidth -= tmp;
     in += (out - ctx->pusOutLineBufTab[0]); // XXX was: in += out;
     out = ctx->pusOutLineBufTab[0];
-    printf("WARN: LineCorrection() alt path\n");
+//    fprintf(stderr, "WARN: LineCorrection() alt path\n");
   }
 
   /* Apply the correction compensation */
