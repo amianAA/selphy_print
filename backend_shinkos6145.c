@@ -1647,7 +1647,7 @@ top:
 	}
 	last_state = state;
 
-	fflush(stderr);
+	fflush(logger);
 
 	switch (state) {
 	case S_IDLE:

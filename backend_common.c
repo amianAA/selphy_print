@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.106"
+#define BACKEND_VERSION "0.107"
 #ifndef URI_PREFIX
 #error "Must Define URI_PREFIX"
 #endif
@@ -60,6 +60,7 @@ int ncopies = 1;
 int collate = 0;
 int test_mode = 0;
 int quiet = 0;
+FILE *logger;
 
 const char *corrtable_path = CORRTABLE_PATH;
 static int max_xfer_size = URB_XFER_SIZE;
@@ -1001,7 +1002,7 @@ for more details.\n\
 You should have received a copy of the GNU General Public License\n\
 along with this program; if not, see <https://www.gnu.org/licenses/>.\n\n";
 
-	fprintf(stderr, "%s", license);
+	fprintf(logger, "%s", license);
 }
 
 void print_help(const char *argv0, const struct dyesub_backend *backend)
@@ -1269,6 +1270,8 @@ int main (int argc, char **argv)
 	char *use_serno = NULL;
 	const char *backend_str = NULL;
 	int  printer_type;
+
+	logger = stderr;
 
 	/* Handle environment variables  */
 	if (getenv("BACKEND_QUIET"))

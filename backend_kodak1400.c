@@ -456,7 +456,7 @@ top:
 		return CUPS_BACKEND_STOP;  // HOLD/CANCEL/FAILED?  XXXX parse error!
 	}
 
-	fflush(stderr);
+	fflush(logger);
 
 	switch (state) {
 	case S_IDLE:

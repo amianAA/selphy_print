@@ -50,15 +50,15 @@
 #endif
 
 #define STR_LEN_MAX 64
-#define STATE( ... ) do { if (!quiet) fprintf(stderr, "STATE: " __VA_ARGS__ ); } while(0)
-#define ATTR( ... ) do { if (!quiet) fprintf(stderr, "ATTR: " __VA_ARGS__ ); } while(0)
-#define PAGE( ... ) do { if (!quiet) fprintf(stderr, "PAGE: " __VA_ARGS__ ); } while(0)
-#define DEBUG( ... ) do { if (!quiet) fprintf(stderr, "DEBUG: " __VA_ARGS__ ); } while(0)
-#define DEBUG2( ... ) do { if (!quiet) fprintf(stderr, __VA_ARGS__ ); } while(0)
-#define INFO( ... )  do { if (!quiet) fprintf(stderr, "INFO: " __VA_ARGS__ ); } while(0)
-#define WARNING( ... )  do { fprintf(stderr, "WARNING: " __VA_ARGS__ ); } while(0)
-#define ERROR( ... ) do { fprintf(stderr, "ERROR: " __VA_ARGS__ ); sleep(1); } while (0)
-#define PPD( ... ) do { fprintf(stderr, "PPD: " __VA_ARGS__ ); sleep(1); } while (0)
+#define STATE( ... ) do { if (!quiet) fprintf(logger, "STATE: " __VA_ARGS__ ); } while(0)
+#define ATTR( ... ) do { if (!quiet) fprintf(logger, "ATTR: " __VA_ARGS__ ); } while(0)
+#define PAGE( ... ) do { if (!quiet) fprintf(logger, "PAGE: " __VA_ARGS__ ); } while(0)
+#define DEBUG( ... ) do { if (!quiet) fprintf(logger, "DEBUG: " __VA_ARGS__ ); } while(0)
+#define DEBUG2( ... ) do { if (!quiet) fprintf(logger, __VA_ARGS__ ); } while(0)
+#define INFO( ... )  do { if (!quiet) fprintf(logger, "INFO: " __VA_ARGS__ ); } while(0)
+#define WARNING( ... )  do { fprintf(logger, "WARNING: " __VA_ARGS__ ); } while(0)
+#define ERROR( ... ) do { fprintf(logger, "ERROR: " __VA_ARGS__ ); sleep(1); } while (0)
+#define PPD( ... ) do { fprintf(logger, "PPD: " __VA_ARGS__ ); sleep(1); } while (0)
 
 #if (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define le16_to_cpu(__x) __x
@@ -281,6 +281,7 @@ extern int collate;
 extern int test_mode;
 extern int quiet;
 extern const char *corrtable_path;
+extern FILE *logger;
 
 enum {
 	TEST_MODE_NONE = 0,
