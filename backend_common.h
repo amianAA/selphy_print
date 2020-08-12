@@ -193,6 +193,18 @@ struct printerstats {
 	int32_t cnt_life[DECKS_MAX];  /* Lifetime prints */
 };
 
+struct dyesub_connection {
+	struct libusb_device_handle *dev;
+	uint8_t endp_up;
+	uint8_t endp_down;
+	uint8_t iface;
+	uint8_t altset;
+
+	// TODO:  mutex/lock
+
+	int type; /* P_XXXX */
+};
+
 #define DYESUB_MAX_JOB_ENTRIES 3
 
 struct dyesub_joblist {
@@ -212,10 +224,9 @@ struct dyesub_job_common {
 };
 
 /* Exported functions */
-int send_data(struct libusb_device_handle *dev, uint8_t endp,
-	      const uint8_t *buf, int len);
-int read_data(struct libusb_device_handle *dev, uint8_t endp,
-	      uint8_t *buf, int buflen, int *readlen);
+int send_data(struct dyesub_connection *conn, const uint8_t *buf, int len);
+int read_data(struct dyesub_connection *conn,
+	       uint8_t *buf, int buflen, int *readlen);
 
 void dump_markers(const struct marker *markers, int marker_count, int full);
 
@@ -254,8 +265,7 @@ struct dyesub_backend {
 	const uint32_t flags;
 	void (*cmdline_usage)(void);  /* Optional */
 	void *(*init)(void);
-	int  (*attach)(void *ctx, struct libusb_device_handle *dev, int type,
-		       uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid);
+	int  (*attach)(void *ctx, struct dyesub_connection *conn, uint8_t jobid);
 	void (*teardown)(void *ctx);
 	int  (*cmdline_arg)(void *ctx, int argc, char **argv);
 	int  (*read_parse)(void *ctx, const void **job, int data_fd, int copies);
@@ -263,7 +273,7 @@ struct dyesub_backend {
 	void *(*combine_jobs)(const void *job1, const void *job2);
 	int  (*job_polarity)(void *ctx);
 	int  (*main_loop)(void *ctx, const void *job);
-	int  (*query_serno)(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len); /* Optional */
+	int  (*query_serno)(struct dyesub_connection *conn, char *buf, int buf_len); /* Optional */
 	int  (*query_markers)(void *ctx, struct marker **markers, int *count);
 	int  (*query_stats)(void *ctx, struct printerstats *stats); /* Optional */
 	const struct device_id devices[];

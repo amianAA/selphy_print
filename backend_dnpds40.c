@@ -66,12 +66,8 @@ struct dnpds40_printjob {
 };
 
 struct dnpds40_ctx {
-	struct libusb_device_handle *dev;
-	uint8_t endp_up;
-	uint8_t endp_down;
-	int iface;
+	struct dyesub_connection *conn;
 
-	int type;
 	int mfg;  /* 0 for dnp, 1 citizen, 2 other */
 
 	/* Version and whatnot */
@@ -635,12 +631,12 @@ static int dnpds40_do_cmd(struct dnpds40_ctx *ctx,
 {
 	int ret;
 
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     (uint8_t*)cmd, sizeof(*cmd))))
 		return ret;
 
 	if (data && len)
-		if ((ret = send_data(ctx->dev, ctx->endp_down,
+		if ((ret = send_data(ctx->conn,
 				     data, len)))
 			return ret;
 
@@ -663,7 +659,7 @@ static uint8_t *dnpds40_resp_cmd2(struct dnpds40_ctx *ctx,
 		return NULL;
 
 	/* Read in the response header */
-	ret = read_data(ctx->dev, ctx->endp_up,
+	ret = read_data(ctx->conn,
 			(uint8_t*)tmp, 8, &num);
 	if (ret < 0)
 		return NULL;
@@ -682,7 +678,7 @@ static uint8_t *dnpds40_resp_cmd2(struct dnpds40_ctx *ctx,
 	respbuf[i] = 0; /* Explicitly null-pad */
 
 	/* Read in the actual response */
-	ret = read_data(ctx->dev, ctx->endp_up,
+	ret = read_data(ctx->conn,
 			respbuf, i, &num);
 	if (ret < 0) {
 		free(respbuf);
@@ -701,17 +697,14 @@ static uint8_t *dnpds40_resp_cmd2(struct dnpds40_ctx *ctx,
 
 #define dnpds40_resp_cmd(__ctx, __cmd, __len) dnpds40_resp_cmd2(__ctx, __cmd, __len, NULL, 0)
 
-static int dnpds40_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len)
+static int dnpds40_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	struct dnpds40_cmd cmd;
 	uint8_t *resp;
 	int len = 0;
 
 	struct dnpds40_ctx ctx = {
-		.dev = dev,
-		.endp_up = endp_up,
-		.endp_down = endp_down,
-		.iface = iface,
+		.conn = conn,
 	};
 
 	/* Get Serial Number */
@@ -811,18 +804,13 @@ static int dnpds80dx_query_paper(struct dnpds40_ctx *ctx)
 	return CUPS_BACKEND_OK;
 }
 
-static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			  uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct dnpds40_ctx *ctx = vctx;
 
 	UNUSED(jobid);
 
-	ctx->dev = dev;
-	ctx->endp_up = endp_up;
-	ctx->endp_down = endp_down;
-	ctx->type = type;
-	ctx->iface = iface;
+	ctx->conn = conn;
 
 	/* Nearly all models support 600dpi */
 	ctx->supports_600dpi = 1;
@@ -859,7 +847,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 	}
 
 	/* Per-printer options */
-	switch (ctx->type) {
+	switch (ctx->conn->type) {
 	case P_DNP_DS40:
 		ctx->native_width = 1920;
 		ctx->max_height = 5480;
@@ -998,7 +986,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 		ctx->supports_systime = 1;
 		break;
 	default:
-		ERROR("Unknown printer type %d\n", ctx->type);
+		ERROR("Unknown printer type %d\n", ctx->conn->type);
 		return CUPS_BACKEND_FAILED;
 	}
 
@@ -1033,7 +1021,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 
 			ctx->media = atoi(tmp);
 
-			if (ctx->type != P_DNP_QW410) {
+			if (ctx->conn->type != P_DNP_QW410) {
 				/* Subtract out the "mark" type */
 				if (ctx->media & 1)
 					ctx->media--;
@@ -1055,7 +1043,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 			free(resp);
 		}
 
-		if (ctx->type == P_DNP_DS80D) {
+		if (ctx->conn->type == P_DNP_DS80D) {
 			if (dnpds80dx_query_paper(ctx))
 				return CUPS_BACKEND_FAILED;
 		}
@@ -1065,13 +1053,13 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 			struct libusb_device_descriptor desc;
 			struct libusb_device *udev;
 
-			udev = libusb_get_device(ctx->dev);
+			udev = libusb_get_device(ctx->conn->dev);
 			libusb_get_device_descriptor(udev, &desc);
 
 			char buf[STR_LEN_MAX + 1];
 			buf[0] = 0;
 			buf[STR_LEN_MAX] = 0;
-			libusb_get_string_descriptor_ascii(ctx->dev, desc.iManufacturer, (unsigned char*)buf, STR_LEN_MAX);
+			libusb_get_string_descriptor_ascii(ctx->conn->dev, desc.iManufacturer, (unsigned char*)buf, STR_LEN_MAX);
 
 			if (!strncmp(buf, "Dai", 3)) /* "Dai Nippon Printing" */
 				ctx->mfg = 0;
@@ -1092,7 +1080,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 #endif
 		}
 	} else {
-		switch(ctx->type) {
+		switch(ctx->conn->type) {
 		case P_DNP_DS80D:
 			ctx->duplex_media = 200;
 			/* Intentional fallthrough */
@@ -1163,7 +1151,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 		}
 	} else {
 		/* Look it up for legacy models & FW */
-		switch (ctx->type) {
+		switch (ctx->conn->type) {
 		case P_DNP_DS40:
 			switch (ctx->media) {
 			case 200: // L
@@ -1342,7 +1330,7 @@ static int dnpds40_attach(void *vctx, struct libusb_device_handle *dev, int type
 	ctx->marker[0].levelnow = CUPS_MARKER_UNKNOWN;
 	ctx->marker_count = 1;
 
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		ctx->marker[1].color = "#00FFFF#FF00FF#FFFF00";
 		ctx->marker[1].name = dnpds80_duplex_media_types(ctx->duplex_media);
 		ctx->marker[1].numtype = ctx->duplex_media;
@@ -1369,7 +1357,7 @@ static void dnpds40_teardown(void *vctx) {
 	if (!ctx)
 		return;
 
-	if (test_mode < TEST_MODE_NOATTACH && ctx->type == P_DNP_DS80D) {
+	if (test_mode < TEST_MODE_NOATTACH && ctx->conn->type == P_DNP_DS80D) {
 		struct dnpds40_cmd cmd;
 
 		/* Check to see if last print was the front side
@@ -1456,7 +1444,7 @@ static int dnpds40_read_parse(void *vctx, const void **vjob, int data_fd, int co
 			/* See if job lacks the standard ESC-P start sequence */
 			if (job->databuf[job->datalen + 0] != 0x1b ||
 			    job->databuf[job->datalen + 1] != 0x50) {
-				switch(ctx->type) {
+				switch(ctx->conn->type) {
 				case P_DNP_QW410:
 					i = legacy_qw410_read_parse(job, data_fd, i);
 					break;
@@ -1553,7 +1541,7 @@ static int dnpds40_read_parse(void *vctx, const void **vjob, int data_fd, int co
 				continue;
 			}
 
-			if (ctx->type == P_DNP_DS820) {
+			if (ctx->conn->type == P_DNP_DS820) {
 				if (j != 24) {
 					WARNING("Full cutter argument length incorrect, ignoring!\n");
 					continue;
@@ -1649,7 +1637,7 @@ parsed:
 	}
 
 	/* QW410 only supports 0 and 3, supposedly. */
-	if (ctx->type == P_DNP_QW410 && job->printspeed > 1) {
+	if (ctx->conn->type == P_DNP_QW410 && job->printspeed > 1) {
 		job->printspeed = 3;
 	}
 
@@ -1676,7 +1664,7 @@ parsed:
 	}
 
 	/* Make sure MULTICUT is sane, most validation needs this */
-	if (!job->multicut && ctx->type != P_CITIZEN_CW01) {
+	if (!job->multicut && ctx->conn->type != P_CITIZEN_CW01) {
 		WARNING("Missing or illegal MULTICUT command!\n");
 		if (job->dpi == 300)
 			job->buf_needed = 1;
@@ -1688,7 +1676,7 @@ parsed:
 
 	/* Only DS80D supports Cut Paper types */
 	if (job->multicut > 100) {
-		if ( ctx->type == P_DNP_DS80D) {
+		if ( ctx->conn->type == P_DNP_DS80D) {
 			job->cut_paper = 1;
 		} else {
 			ERROR("Only DS80D supports cut-paper sizes!\n");
@@ -1701,7 +1689,7 @@ parsed:
 	job->buf_needed = 1;
 
 	if (job->dpi == 600) {
-		switch(ctx->type) {
+		switch(ctx->conn->type) {
 		case P_DNP_DS620:
 			if (job->multicut == MULTICUT_6x9 ||
 			    job->multicut == MULTICUT_6x4_5X2)
@@ -1761,7 +1749,7 @@ parsed:
 			break;
 		}
 	}
-	if (job->dpi == 334 && ctx->type != P_CITIZEN_CW01)
+	if (job->dpi == 334 && ctx->conn->type != P_CITIZEN_CW01)
 	{
 		ERROR("Illegal resolution (%u) for printer!\n", job->dpi);
 		dnpds40_cleanup_job(job);
@@ -1859,7 +1847,7 @@ parsed:
 				job->can_rewind = 1;
 			break;
 		case 500: //"8x10"
-			if (ctx->type == P_DNP_DS820 &&
+			if (ctx->conn->type == P_DNP_DS820 &&
 			    (job->multicut == MULTICUT_8x7 || job->multicut == MULTICUT_8x9)) {
 				/* These are okay */
 			} else if (job->multicut < MULTICUT_8x10 || job->multicut == MULTICUT_8x12 ||
@@ -2160,7 +2148,7 @@ top:
 			free(resp);
 		}
 
-		if (ctx->type == P_CITIZEN_CW01) {
+		if (ctx->conn->type == P_CITIZEN_CW01) {
 			/* Get Vertical resolution */
 			dnpds40_build_cmd(&cmd, "INFO", "RESOLUTION_V", 0);
 
@@ -2217,7 +2205,7 @@ top:
 		snprintf(buf, sizeof(buf), "%08d", 1);
 		/* DS80D does not support BUFFCNTRL when using
 		   cut media; all others support this */
-		if (ctx->type != P_DNP_DS80D ||
+		if (ctx->conn->type != P_DNP_DS80D ||
 		    multicut < 100) {
 			dnpds40_build_cmd(&cmd, "CNTRL", "BUFFCNTRL", 8);
 			if ((ret = dnpds40_do_cmd(ctx, &cmd, (uint8_t*)buf, 8)))
@@ -2265,7 +2253,7 @@ top:
 		memcpy(buf, ptr + 24, 8);
 		i = atoi(buf) + 32;
 
-		if ((ret = send_data(ctx->dev, ctx->endp_down,
+		if ((ret = send_data(ctx->conn,
 				     ptr, i)))
 			return CUPS_BACKEND_FAILED;
 
@@ -2416,7 +2404,7 @@ static int dnpds40_get_info(struct dnpds40_ctx *ctx)
 	int cwd_index = 1;
 	uint8_t cwd_buf[5];
 
-	INFO("Model: %s\n", dnpds40_printer_type(ctx->type, ctx->mfg));
+	INFO("Model: %s\n", dnpds40_printer_type(ctx->conn->type, ctx->mfg));
 
 	/* Serial number already queried */
 	INFO("Serial Number: %s\n", ctx->serno);
@@ -2425,7 +2413,7 @@ static int dnpds40_get_info(struct dnpds40_ctx *ctx)
 	INFO("Firmware Version: %s\n", ctx->version);
 
 	/* Figure out Duplexer */
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		dnpds40_build_cmd(&cmd, "INFO", "UNIT_FVER", 0);
 
 		resp = dnpds40_resp_cmd(ctx, &cmd, &len);
@@ -2439,7 +2427,7 @@ static int dnpds40_get_info(struct dnpds40_ctx *ctx)
 		free(resp);
 	}
 
-	if (ctx->type == P_CITIZEN_CW01) {
+	if (ctx->conn->type == P_CITIZEN_CW01) {
 		/* Get Horizonal resolution */
 		dnpds40_build_cmd(&cmd, "INFO", "RESOLUTION_H", 0);
 
@@ -2545,7 +2533,7 @@ static int dnpds40_get_info(struct dnpds40_ctx *ctx)
 
 	free(resp);
 
-	if (ctx->type == P_CITIZEN_CW01)
+	if (ctx->conn->type == P_CITIZEN_CW01)
 		goto skip;
 
 	/* Get Ribbon ID code (?) */
@@ -2693,7 +2681,7 @@ CWD_TOP:
 	}
 
 	if (cwd_extra && cwd_index == 1) {
-		if (ctx->type == P_DNP_QW410)
+		if (ctx->conn->type == P_DNP_QW410)
 			cwd_index = 2;
 		else
 			cwd_index = 3;
@@ -2795,7 +2783,7 @@ static int dnpds40_get_status(struct dnpds40_ctx *ctx)
 	free(resp);
 
 	/* Figure out Duplexer */
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		dnpds40_build_cmd(&cmd, "INFO", "UNIT_STATUS", 0);
 
 		resp = dnpds40_resp_cmd(ctx, &cmd, &len);
@@ -2859,7 +2847,7 @@ static int dnpds40_get_status(struct dnpds40_ctx *ctx)
 	}
 
 	/* Report Cut Media */
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		INFO("Duplex Media Type: %s\n", dnpds80_duplex_media_types(ctx->duplex_media));
 		INFO("Duplexer Media Status: %s\n", dnpds80_duplex_paper_status(ctx->duplex_media_status));
 	}
@@ -2913,8 +2901,8 @@ static int dnpds40_get_counters(struct dnpds40_ctx *ctx)
 
 	free(resp);
 
-	if (ctx->type == P_DNP_DS620 ||
-	    ctx->type == P_DNP_DS820) {
+	if (ctx->conn->type == P_DNP_DS620 ||
+	    ctx->conn->type == P_DNP_DS820) {
 		/* Generate command */
 		dnpds40_build_cmd(&cmd, "MNT_RD", "COUNTER_HEAD", 0);
 
@@ -2998,7 +2986,7 @@ static int dnpds40_get_counters(struct dnpds40_ctx *ctx)
 		free(resp);
 	}
 
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		dnpds40_build_cmd(&cmd, "MNT_RD", "COUNTER_DUPLEX", 0);
 
 		resp = dnpds40_resp_cmd(ctx, &cmd, &len);
@@ -3261,7 +3249,7 @@ static int dnpds40_query_markers(void *vctx, struct marker **markers, int *count
 	if (ctx->marker[0].levelnow < 0)
 		return CUPS_BACKEND_FAILED;
 
-        if (ctx->type == P_DNP_DS80D) {
+        if (ctx->conn->type == P_DNP_DS80D) {
 		if (dnpds80dx_query_paper(ctx))
 			return CUPS_BACKEND_FAILED;
 		switch (ctx->duplex_media_status) {
@@ -3299,11 +3287,11 @@ static int dnp_query_stats(void *vctx, struct printerstats *stats)
 	default: stats->mfg = "Unknown" ; break;
 	}
 
-	stats->model = dnpds40_printer_type(ctx->type, ctx->mfg);
+	stats->model = dnpds40_printer_type(ctx->conn->type, ctx->mfg);
 	stats->serial = ctx->serno;
 	stats->fwver = ctx->version; // XXX duplexer version?
 
-	stats->decks = ctx->type == P_DNP_DS80D ? 2: 1;
+	stats->decks = ctx->conn->type == P_DNP_DS80D ? 2: 1;
 	stats->mediatype[0] = ctx->marker[0].name;
 	stats->levelmax[0] = ctx->marker[0].levelmax;
 	stats->levelnow[0] = ctx->marker[0].levelnow;
@@ -3330,7 +3318,7 @@ static int dnp_query_stats(void *vctx, struct printerstats *stats)
 	stats->cnt_life[0] = atoi((char*)resp+2);
 	free(resp);
 
-	if (ctx->type == P_DNP_DS80D) {
+	if (ctx->conn->type == P_DNP_DS80D) {
 		stats->name[0] = "Sheet";
 		stats->mediatype[1] = ctx->marker[1].name;
 		stats->levelmax[1] = ctx->marker[1].levelmax;
@@ -3409,7 +3397,7 @@ static const char *dnpds40_prefixes[] = {
 /* Exported */
 struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.133",
+	.version = "0.134",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,

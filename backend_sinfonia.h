@@ -24,7 +24,7 @@
  *
  */
 
-#define LIBSINFONIA_VER "0.15"
+#define LIBSINFONIA_VER "0.16"
 
 #define SINFONIA_HDR1_LEN 0x10
 #define SINFONIA_HDR2_LEN 0x64
@@ -79,11 +79,7 @@ struct sinfonia_param {
 
 /* Common usb functions */
 struct sinfonia_usbdev {
-	struct libusb_device_handle *dev;
-	uint8_t endp_up;
-	uint8_t endp_down;
-	int type;
-	int iface;
+	struct dyesub_connection *conn;
 
 	const struct sinfonia_param *params;
 	int params_count;
@@ -105,7 +101,7 @@ int sinfonia_gettonecurve(struct sinfonia_usbdev *usbh, int type, char *fname);
 int sinfonia_settonecurve(struct sinfonia_usbdev *usbh, int target, char *fname);
 int sinfonia_button_set(struct sinfonia_usbdev *dev, int enable);
 
-int sinfonia_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len);
+int sinfonia_query_serno(struct dyesub_connection *conn, char *buf, int buf_len);
 int sinfonia_dumpallparams(struct sinfonia_usbdev *usbh, int known);
 const char *sinfonia_paramname(struct sinfonia_usbdev *usbh, int id);
 

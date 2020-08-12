@@ -357,19 +357,14 @@ static void *kodak605_init(void)
 	return ctx;
 }
 
-static int kodak605_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			   uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int kodak605_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct kodak605_ctx *ctx = vctx;
 
-	ctx->dev.dev = dev;
-	ctx->dev.endp_up = endp_up;
-	ctx->dev.endp_down = endp_down;
-	ctx->dev.type = type;
-	ctx->dev.iface = iface;
+	ctx->dev.conn = conn;
 	ctx->dev.error_codes = &error_codes;
 
-	if (ctx->dev.type != P_KODAK_605) {
+	if (ctx->dev.conn->type != P_KODAK_605) {
 		ctx->dev.params = ek7000_params;
 		ctx->dev.params_count = ek7000_params_num;
 	}
@@ -601,7 +596,7 @@ retry_print:
 	}
 
 	INFO("Sending image data\n");
-	if ((ret = send_data(ctx->dev.dev, ctx->dev.endp_down,
+	if ((ret = send_data(ctx->dev.conn,
 			     job->databuf + offset, job->datalen - offset)))
 		return CUPS_BACKEND_FAILED;
 
@@ -830,7 +825,7 @@ static int kodak605_query_stats(void *vctx,  struct printerstats *stats)
 	if (kodak605_get_status(ctx, &status))
 		return CUPS_BACKEND_FAILED;
 
-	switch (ctx->dev.type) {
+	switch (ctx->dev.conn->type) {
 	case P_KODAK_605:
 		stats->mfg = "Kodak";
 		stats->model = "605";
@@ -849,8 +844,7 @@ static int kodak605_query_stats(void *vctx,  struct printerstats *stats)
 		break;
 	}
 
-	if (sinfonia_query_serno(ctx->dev.dev, ctx->dev.endp_up,
-				 ctx->dev.endp_down, ctx->dev.iface,
+	if (sinfonia_query_serno(ctx->dev.conn,
 				 ctx->serial, sizeof(ctx->serial)))
 		return CUPS_BACKEND_FAILED;
 
@@ -900,7 +894,7 @@ static const char *kodak605_prefixes[] = {
 /* Exported */
 struct dyesub_backend kodak605_backend = {
 	.name = "Kodak 605/70xx",
-	.version = "0.54" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.55" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak605_prefixes,
 	.cmdline_usage = kodak605_cmdline,
 	.cmdline_arg = kodak605_cmdline_arg,
@@ -910,6 +904,7 @@ struct dyesub_backend kodak605_backend = {
 	.read_parse = kodak605_read_parse,
 	.main_loop = kodak605_main_loop,
 	.query_markers = kodak605_query_markers,
+	.query_serno = sinfonia_query_serno,
 	.query_stats = kodak605_query_stats,
 	.devices = {
 		{ USB_VID_KODAK, USB_PID_KODAK_605, P_KODAK_605, "Kodak", "kodak-605"},

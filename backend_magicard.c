@@ -106,11 +106,7 @@ struct magicard_printjob {
 
 /* Private data structure */
 struct magicard_ctx {
-	struct libusb_device_handle *dev;
-	uint8_t endp_up;
-	uint8_t endp_down;
-	int type;
-
+	struct dyesub_connection *conn;
 	struct marker marker;
 };
 
@@ -254,13 +250,13 @@ static int magicard_query_sensors(struct magicard_ctx *ctx)
 		snprintf(buf2, sizeof(buf2), "SNR%d", i);
 		ret = magicard_build_cmd_simple(buf, buf2);
 
-		if ((ret = send_data(ctx->dev, ctx->endp_down,
+		if ((ret = send_data(ctx->conn,
 				     buf, ret)))
 			return ret;
 
 		memset(buf, 0, sizeof(buf));
 
-		ret = read_data(ctx->dev, ctx->endp_up,
+		ret = read_data(ctx->conn,
 				buf, sizeof(buf), &num);
 
 		if (ret < 0)
@@ -282,7 +278,7 @@ static int magicard_selftest_card(struct magicard_ctx *ctx)
 
 	ret = magicard_build_cmd_simple(buf, "TST,");
 
-	ret = send_data(ctx->dev, ctx->endp_down,
+	ret = send_data(ctx->conn,
 			buf, ret);
 	return ret;
 }
@@ -294,7 +290,7 @@ static int magicard_reset(struct magicard_ctx *ctx)
 
 	ret = magicard_build_cmd_simple(buf, "RST,");
 
-	ret = send_data(ctx->dev, ctx->endp_down,
+	ret = send_data(ctx->conn,
 			buf, ret);
 	return ret;
 }
@@ -306,7 +302,7 @@ static int magicard_eject(struct magicard_ctx *ctx)
 
 	ret = magicard_build_cmd_simple(buf, "EJT,");
 
-	ret = send_data(ctx->dev, ctx->endp_down,
+	ret = send_data(ctx->conn,
 			buf, ret);
 	return ret;
 }
@@ -324,13 +320,13 @@ static int magicard_query_printer(struct magicard_ctx *ctx)
 		snprintf(buf2, sizeof(buf2), "QPR%d", i);
 		ret = magicard_build_cmd_simple(buf, buf2);
 
-		if ((ret = send_data(ctx->dev, ctx->endp_down,
+		if ((ret = send_data(ctx->conn,
 				     buf, ret)))
 			return ret;
 
 		memset(buf, 0, sizeof(buf));
 
-		ret = read_data(ctx->dev, ctx->endp_up,
+		ret = read_data(ctx->conn,
 				buf, sizeof(buf), &num);
 
 		if (ret < 0)
@@ -362,13 +358,13 @@ static int magicard_query_status(struct magicard_ctx *ctx)
 		ret = magicard_build_cmd(buf, "REQ", "STA",
 				   magicard_sta_requests[i].key);
 
-		if ((ret = send_data(ctx->dev, ctx->endp_down,
+		if ((ret = send_data(ctx->conn,
 				     buf, ret)))
 			return ret;
 
 		memset(buf, 0, sizeof(buf));
 
-		ret = read_data(ctx->dev, ctx->endp_up,
+		ret = read_data(ctx->conn,
 				buf, sizeof(buf), &num);
 
 		if (ret < 0)
@@ -433,18 +429,13 @@ static void* magicard_init(void)
 	return ctx;
 }
 
-static int magicard_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			   uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int magicard_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct magicard_ctx *ctx = vctx;
 
 	UNUSED(jobid);
-	UNUSED(iface);
 
-	ctx->dev = dev;
-	ctx->endp_up = endp_up;
-	ctx->endp_down = endp_down;
-	ctx->type = type;
+	ctx->conn = conn;
 
 	ctx->marker.color = "#00FFFF#FF00FF#FFFF00";  // XXX YMCK too!
 	ctx->marker.name = "Unknown"; // LC1/LC3/LC6/LC8
@@ -848,11 +839,11 @@ static int magicard_main_loop(void *vctx, const void *vjob) {
 
 	copies = job->copies;
 top:
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     job->databuf, job->hdr_len)))
 		return CUPS_BACKEND_FAILED;
 
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     job->databuf + job->hdr_len, job->datalen - job->hdr_len)))
 		return CUPS_BACKEND_FAILED;
 
@@ -935,7 +926,7 @@ static const char *magicard_prefixes[] = {
 
 struct dyesub_backend magicard_backend = {
 	.name = "Magicard family",
-	.version = "0.16",
+	.version = "0.17",
 	.uri_prefixes = magicard_prefixes,
 	.cmdline_arg = magicard_cmdline_arg,
 	.cmdline_usage = magicard_cmdline,

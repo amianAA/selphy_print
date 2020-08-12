@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.107"
+#define BACKEND_VERSION "0.108"
 #ifndef URI_PREFIX
 #error "Must Define URI_PREFIX"
 #endif
@@ -226,22 +226,22 @@ char *dict_find(const char *key, int dlen, struct deviceid_dict* dict)
 }
 
 /* I/O functions */
-int read_data(struct libusb_device_handle *dev, uint8_t endp,
-	      uint8_t *buf, int buflen, int *readlen)
+
+int read_data(struct dyesub_connection *conn, uint8_t *buf, int buflen, int *readlen)
 {
 	int ret;
 
 	/* Clear buffer */
 	memset(buf, 0, buflen);
 
-	ret = libusb_bulk_transfer(dev, endp,
+	ret = libusb_bulk_transfer(conn->dev, conn->endp_up,
 				   buf,
 				   buflen,
 				   readlen,
 				   xfer_timeout);
 
 	if (ret < 0) {
-		ERROR("Failure to receive data from printer (libusb error %d: (%d/%d from 0x%02x))\n", ret, *readlen, buflen, endp);
+		ERROR("Failure to receive data from printer (libusb error %d: (%d/%d from 0x%02x))\n", ret, *readlen, buflen, conn->endp_up);
 		goto done;
 	}
 
@@ -270,8 +270,7 @@ done:
 	return ret;
 }
 
-int send_data(struct libusb_device_handle *dev, uint8_t endp,
-	      const uint8_t *buf, int len)
+int send_data(struct dyesub_connection *conn, const uint8_t *buf, int len)
 {
 	int num = 0;
 
@@ -299,12 +298,12 @@ int send_data(struct libusb_device_handle *dev, uint8_t endp,
 			DEBUG2("\n");
 		}
 
-		int ret = libusb_bulk_transfer(dev, endp,
+		int ret = libusb_bulk_transfer(conn->dev, conn->endp_down,
 					       (uint8_t*) buf, len2,
 					       &num, xfer_timeout);
 
 		if (ret < 0) {
-			ERROR("Failure to send data to printer (libusb error %d: (%d/%d to 0x%02x))\n", ret, num, len2, endp);
+			ERROR("Failure to send data to printer (libusb error %d: (%d/%d to 0x%02x))\n", ret, num, len2, conn->endp_down);
 			return ret;
 		}
 		len -= num;
@@ -405,8 +404,7 @@ static int probe_device(struct libusb_device *device,
 			const char *prefix, const char *manuf_override,
 			int found, int num_claim_attempts,
 			int scan_only, const char *match_serno,
-			uint8_t *r_iface, uint8_t *r_altset,
-			uint8_t *r_endp_up, uint8_t *r_endp_down,
+			struct dyesub_connection *conn,
 			struct dyesub_backend *backend)
 {
 	struct libusb_device_handle *dev;
@@ -613,9 +611,13 @@ candidate:
 		sanitize_string(buf);
 		serial = url_encode(buf);
 	} else if (backend->query_serno) { /* Get from backend hook */
-		buf[0] = 0;
-		/* Ignore result since a failure isn't critical here */
-		backend->query_serno(dev, endp_up, endp_down, iface, buf, STR_LEN_MAX);
+		struct dyesub_connection c2;
+		c2.dev = dev;
+		c2.iface = iface;
+		c2.altset = altset;
+		c2.endp_up = endp_up;
+		c2.endp_down = endp_down;
+		backend->query_serno(&c2, buf, STR_LEN_MAX);
 		serial = url_encode(buf);
 	}
 
@@ -660,11 +662,11 @@ candidate:
 		DEBUG("VID: %04X PID: %04X Manuf: '%s' Product: '%s' Serial: '%s' found: %d\n",
 		      desc->idVendor, desc->idProduct, manuf, product, serial, found);
 
-	if (found != -1) {
-		if (r_iface) *r_iface = iface;
-		if (r_altset) *r_altset = altset;
-		if (r_endp_up) *r_endp_up = endp_up;
-		if (r_endp_up) *r_endp_down = endp_down;
+	if (found != -1 && conn) {
+		conn->iface = iface;
+		conn->altset = altset;
+		conn->endp_up = endp_up;
+		conn->endp_down = endp_down;
 	}
 
 	/* Free things up */
@@ -751,19 +753,18 @@ static int find_and_enumerate(struct libusb_context *ctx,
 			      const char *match_serno,
 			      const char *prefix,
 			      int scan_only, int num_claim_attempts,
-			      uint8_t *r_iface, uint8_t *r_altset,
-			      uint8_t *r_endp_up, uint8_t *r_endp_down)
+			      struct dyesub_connection *conn)
 {
 	int num;
 	int i, j = 0, k;
 	int found = -1;
 
-	if (test_mode >= TEST_MODE_NOATTACH) {
+	if (test_mode >= TEST_MODE_NOATTACH && conn) {
 		found = 1;
-		*r_endp_up = 0x82;
-		*r_endp_down = 0x01;
-		*r_iface = 0;
-		*r_altset = 0;
+		conn->endp_up = 0x82;
+		conn->endp_down = 0x01;
+		conn->iface = 0;
+		conn->altset = 0;
 		return found;
 	}
 
@@ -835,8 +836,7 @@ static int find_and_enumerate(struct libusb_context *ctx,
 				     URI_PREFIX, backends[k]->devices[j].manuf_str,
 				     found, num_claim_attempts,
 				     scan_only, match_serno,
-				     r_iface, r_altset,
-				     r_endp_up, r_endp_down,
+				     conn,
 				     backends[k]);
 		foundprefix = NULL;
 		if (found != -1 && !scan_only)
@@ -1068,8 +1068,8 @@ void print_help(const char *argv0, const struct dyesub_backend *backend)
 		DEBUG("\t[ -d copies ] [ infile | - ]\n");
 	}
 
-	/* Probe for printers */
-	find_and_enumerate(ctx, &list, backend, NULL, ptr, 1, 1, NULL, NULL, NULL, NULL);
+	/* Scan for all printers for the specified backend */
+	find_and_enumerate(ctx, &list, backend, NULL, ptr, 1, 1, NULL);
 	libusb_free_device_list(list, 1);
 }
 
@@ -1250,13 +1250,11 @@ int main (int argc, char **argv)
 {
 	struct libusb_context *ctx = NULL;
 	struct libusb_device **list = NULL;
-	struct libusb_device_handle *dev = NULL;
 
 	struct dyesub_backend *backend = NULL;
 	void * backend_ctx = NULL;
 
-	uint8_t endp_up, endp_down;
-	uint8_t iface, altset;
+	struct dyesub_connection conn;
 
 	int ret = CUPS_BACKEND_OK;
 
@@ -1269,7 +1267,6 @@ int main (int argc, char **argv)
 	const char *fname = NULL;
 	char *use_serno = NULL;
 	const char *backend_str = NULL;
-	int  printer_type;
 
 	logger = stderr;
 
@@ -1438,7 +1435,7 @@ int main (int argc, char **argv)
 	}
 
 	/* Enumerate devices */
-	found = find_and_enumerate(ctx, &list, backend, use_serno, backend_str, 0, NUM_CLAIM_ATTEMPTS, &iface, &altset, &endp_up, &endp_down);
+	found = find_and_enumerate(ctx, &list, backend, use_serno, backend_str, 0, NUM_CLAIM_ATTEMPTS, &conn);
 
 	if (found == -1) {
 		ERROR("Printer open failure (No matching printers found!)\n");
@@ -1453,7 +1450,7 @@ int main (int argc, char **argv)
 	}
 
 	/* Open an appropriate device */
-	ret = libusb_open(list[found], &dev);
+	ret = libusb_open(list[found], &conn.dev);
 	if (ret) {
 		ERROR("Printer open failure (Need to be root?) (%d)\n", ret);
 		ret = CUPS_BACKEND_RETRY_CURRENT;
@@ -1461,8 +1458,8 @@ int main (int argc, char **argv)
 	}
 
 	/* Detach the kernel driver */
-	if (libusb_kernel_driver_active(dev, iface)) {
-		ret = libusb_detach_kernel_driver(dev, iface);
+	if (libusb_kernel_driver_active(conn.dev, conn.iface)) {
+		ret = libusb_detach_kernel_driver(conn.dev, conn.iface);
 		if (ret && (ret != LIBUSB_ERROR_NOT_SUPPORTED)) {
 			ERROR("Printer open failure (Could not detach printer from kernel) (%d)\n", ret);
 			ret = CUPS_BACKEND_RETRY_CURRENT;
@@ -1471,7 +1468,7 @@ int main (int argc, char **argv)
 	}
 
 	/* Claim the interface so we can start using this! */
-	ret = backend_claim_interface(dev, iface, NUM_CLAIM_ATTEMPTS);
+	ret = backend_claim_interface(conn.dev, conn.iface, NUM_CLAIM_ATTEMPTS);
 	if (ret) {
 		ERROR("Printer open failure (Unable to claim interface) (%d)\n", ret);
 		ret = CUPS_BACKEND_RETRY;
@@ -1479,8 +1476,8 @@ int main (int argc, char **argv)
 	}
 
 	/* Use the appropriate altesetting! */
-	if (altset != 0) {
-		ret = libusb_set_interface_alt_setting(dev, iface, altset);
+	if (conn.altset != 0) {
+		ret = libusb_set_interface_alt_setting(conn.dev, conn.iface, conn.altset);
 		if (ret) {
 			ERROR("Printer open failure (Unable to issue altsettinginterface) (%d)\n", ret);
 			ret = CUPS_BACKEND_RETRY;
@@ -1498,24 +1495,25 @@ bypass:
 		struct libusb_device *device;
 		struct libusb_device_descriptor desc;
 
-		device = libusb_get_device(dev);
+		device = libusb_get_device(conn.dev);
 		libusb_get_device_descriptor(device, &desc);
 
-		printer_type = lookup_printer_type(backend,
-						   desc.idVendor, desc.idProduct);
+		conn.type = lookup_printer_type(backend,
+						desc.idVendor, desc.idProduct);
 	} else {
-		printer_type = lookup_printer_type(backend,
-						   extra_vid, extra_pid);
+		conn.type = lookup_printer_type(backend,
+						extra_vid, extra_pid);
 	}
 
-	if (printer_type <= P_UNKNOWN) {
+	if (conn.type <= P_UNKNOWN) {
 		ERROR("Unable to lookup printer type\n");
 		ret = CUPS_BACKEND_FAILED;
 		goto done_claimed;
 	}
 
 	/* Attach backend to device */ // XXX pass backend_str?
-	if (backend->attach(backend_ctx, dev, printer_type, endp_up, endp_down, iface, jobid)) {
+	ret = backend->attach(backend_ctx, &conn, jobid);
+	if (ret) {
 		ERROR("Unable to attach to printer!\n");
 		ret = CUPS_BACKEND_FAILED;
 		goto done_claimed;
@@ -1553,11 +1551,11 @@ bypass:
 
 done_claimed:
 	if (test_mode < TEST_MODE_NOATTACH)
-		libusb_release_interface(dev, iface);
+		libusb_release_interface(conn.dev, conn.iface);
 
 done_close:
 	if (test_mode < TEST_MODE_NOATTACH)
-		libusb_close(dev);
+		libusb_close(conn.dev);
 done:
 
 	if (backend && backend_ctx) {

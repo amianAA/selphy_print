@@ -69,11 +69,7 @@ struct updneo_sts {
 };
 
 struct updneo_ctx {
-	struct libusb_device_handle *dev;
-	uint8_t endp_up;
-	uint8_t endp_down;
-	int iface;
-	int type;
+	struct dyesub_connection *conn;
 
 	int native_bpp;
 
@@ -113,19 +109,14 @@ static void* updneo_init(void)
 	return ctx;
 }
 
-static int updneo_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			 uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct updneo_ctx *ctx = vctx;
 	int ret;
 
 	UNUSED(jobid);
 
-	ctx->dev = dev;
-	ctx->endp_up = endp_up;
-	ctx->endp_down = endp_down;
-	ctx->type = type;
-	ctx->iface = iface;
+	ctx->conn = conn;
 
 	if (test_mode < TEST_MODE_NOATTACH) {
 		if ((ret = updneo_get_status(ctx))) {
@@ -133,7 +124,7 @@ static int updneo_attach(void *vctx, struct libusb_device_handle *dev, int type,
 		}
 	}
 
-	if (ctx->type == P_SONY_UPD898) {
+	if (ctx->conn->type == P_SONY_UPD898) {
 		ctx->marker.color = "#000000";  /* Ie black! */
 		ctx->native_bpp = 1;
 
@@ -334,7 +325,7 @@ static struct deviceid_dict dict[MAX_DICT];
 
 static int updneo_get_status(struct updneo_ctx *ctx)
 {
-	char *ieee_id = get_device_id(ctx->dev, ctx->iface);
+	char *ieee_id = get_device_id(ctx->conn->dev, ctx->conn->iface);
 	int i;
 
 	if (!ieee_id)
@@ -488,17 +479,17 @@ top:
 	}
 
 	/* Send over header */
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     job->hdrbuf, job->hdrlen)))
 		return CUPS_BACKEND_FAILED;
 
 	/* Send over data */
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     job->databuf, job->datalen)))
 		return CUPS_BACKEND_FAILED;
 
 	/* Send over footer */
-	if ((ret = send_data(ctx->dev, ctx->endp_down,
+	if ((ret = send_data(ctx->conn,
 			     job->ftrbuf, job->ftrlen)))
 		return CUPS_BACKEND_FAILED;
 
@@ -569,17 +560,13 @@ static int updneo_cmdline_arg(void *vctx, int argc, char **argv)
 	return CUPS_BACKEND_OK;
 }
 
-static int updneo_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len)
+static int updneo_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	int ret;
 	char *ptr;
 	struct updneo_ctx ctx = {
-		.dev = dev,
-		.endp_up = endp_up,
-		.endp_down = endp_down,
+		.conn = conn,
 	};
-
-	UNUSED(iface);
 
 	if ((ret = updneo_get_status(&ctx))) {
 		return ret;
@@ -605,7 +592,7 @@ static int updneo_query_markers(void *vctx, struct marker **markers, int *count)
 		return ret;
 	}
 
-	if (ctx->type != P_SONY_UPD898) {
+	if (ctx->conn->type != P_SONY_UPD898) {
 		ctx->marker.levelnow = ctx->sts.scmds[4];
 	}
 
@@ -629,7 +616,7 @@ static const char *sonyupdneo_prefixes[] = {
 
 struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
-	.version = "0.10",
+	.version = "0.11",
 	.uri_prefixes = sonyupdneo_prefixes,
 	.cmdline_arg = updneo_cmdline_arg,
 	.cmdline_usage = updneo_cmdline,

@@ -91,12 +91,8 @@ struct kodak68x0_media_readback {
 
 /* Private data structure */
 struct kodak6800_ctx {
-	struct libusb_device_handle *dev;
-	int iface;
-	uint8_t endp_up;
-	uint8_t endp_down;
+	struct dyesub_connection *conn;
 
-	int type;
 	int supports_sub4x6;
 
 	uint8_t jobid;
@@ -122,12 +118,12 @@ static int kodak6800_do_cmd(struct kodak6800_ctx *ctx,
         int ret;
 
         /* Write command */
-        if ((ret = send_data(ctx->dev, ctx->endp_down,
+        if ((ret = send_data(ctx->conn,
                              cmd, cmd_len)))
                 return (ret < 0) ? ret : -99;
 
         /* Read response */
-        ret = read_data(ctx->dev, ctx->endp_up,
+        ret = read_data(ctx->conn,
                         resp, resp_len, actual_len);
         if (ret < 0)
                 return ret;
@@ -314,7 +310,7 @@ static void kodak68x0_dump_status(struct kodak6800_ctx *ctx, struct kodak68x0_st
 	INFO("\tThermal Head  : %u\n", be32_to_cpu(status->maint));
 	INFO("\tCutter        : %u\n", be32_to_cpu(status->cutter));
 
-	if (ctx->type == P_KODAK_6850) {
+	if (ctx->conn->type == P_KODAK_6850) {
 		int max = kodak6_mediamax(ctx->media_type);
 
 		INFO("\tMedia         : %u\n", be32_to_cpu(status->media));
@@ -541,13 +537,10 @@ done:
 	return ret;
 }
 
-static int kodak6800_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len)
+static int kodak6800_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	struct kodak6800_ctx ctx = {
-		.dev = dev,
-		.endp_up = endp_up,
-		.endp_down = endp_down,
-		.iface = iface,
+		.conn = conn,
 	};
 
 	int ret;
@@ -679,16 +672,11 @@ static void *kodak6800_init(void)
 	return ctx;
 }
 
-static int kodak6800_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			    uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int kodak6800_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct kodak6800_ctx *ctx = vctx;
 
-	ctx->dev = dev;
-	ctx->endp_up = endp_up;
-	ctx->endp_down = endp_down;
-	ctx->iface = iface;
-	ctx->type = type;
+	ctx->conn = conn;
 
         /* Ensure jobid is sane */
         ctx->jobid = jobid & 0x7f;
@@ -702,7 +690,7 @@ static int kodak6800_attach(void *vctx, struct libusb_device_handle *dev, int ty
 			return CUPS_BACKEND_FAILED;
 		}
 		uint16_t fw = be16_to_cpu(ctx->sts.main_fw);
-		if (ctx->type == P_KODAK_6850) {
+		if (ctx->conn->type == P_KODAK_6850) {
 			if ((fw >= 878) ||
 			    (fw < 800 && fw >= 678)) {
 				ctx->supports_sub4x6 = 1;
@@ -933,7 +921,7 @@ static int kodak6800_main_loop(void *vctx, const void *vjob) {
 	}
 
 	/* This command is unknown, sort of a secondary status query */
-	if (ctx->type == P_KODAK_6850) {
+	if (ctx->conn->type == P_KODAK_6850) {
 		ret = kodak6850_send_unk(ctx);
 		if (ret)
 			return ret;
@@ -968,7 +956,7 @@ static int kodak6800_main_loop(void *vctx, const void *vjob) {
 
 //	sleep(1); // Appears to be necessary for reliability
 	INFO("Sending image data\n");
-	if ((send_data(ctx->dev, ctx->endp_down,
+	if ((send_data(ctx->conn,
 			     job->databuf, job->datalen)) != 0)
 		return CUPS_BACKEND_FAILED;
 
@@ -1031,7 +1019,7 @@ static int kodak6800_query_stats(void *vctx,  struct printerstats *stats)
 	if (kodak6800_query_markers(ctx, NULL, NULL))
 		return CUPS_BACKEND_FAILED;
 
-	switch (ctx->type) {
+	switch (ctx->conn->type) {
 	case P_KODAK_6800:
 		stats->mfg = "Kodak";
 		stats->model = "6800";
@@ -1046,8 +1034,7 @@ static int kodak6800_query_stats(void *vctx,  struct printerstats *stats)
 		break;
 	}
 
-	if (kodak6800_query_serno(ctx->dev, ctx->endp_up,
-				  ctx->endp_down, ctx->iface,
+	if (kodak6800_query_serno(ctx->conn,
 				  ctx->serial, sizeof(ctx->serial)))
 		return CUPS_BACKEND_FAILED;
 
@@ -1079,7 +1066,7 @@ static const char *kodak6800_prefixes[] = {
 /* Exported */
 struct dyesub_backend kodak6800_backend = {
 	.name = "Kodak 6800/6850",
-	.version = "0.79" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.80" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak6800_prefixes,
 	.cmdline_usage = kodak6800_cmdline,
 	.cmdline_arg = kodak6800_cmdline_arg,

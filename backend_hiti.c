@@ -362,11 +362,8 @@ struct hiti_printjob {
 };
 
 struct hiti_ctx {
-	struct libusb_device_handle *dev;
-	uint8_t endp_up;
-	uint8_t endp_down;
-	int iface;
-	int type;
+	struct dyesub_connection *conn;
+
 	int jobid;
 
 	char serno[32];
@@ -407,7 +404,7 @@ static int hiti_query_unk8010(struct hiti_ctx *ctx);
 static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp);
 static int hiti_query_markers(void *vctx, struct marker **markers, int *count);
 
-static int hiti_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len);
+static int hiti_query_serno(struct dyesub_connection *conn, char *buf, int buf_len);
 
 static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16_t buf_len, uint16_t *rsplen)
 {
@@ -423,14 +420,14 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 		memcpy(cmd->payload, buf, buf_len);
 
 	/* Send over command */
-	if ((ret = send_data(ctx->dev, ctx->endp_down, (uint8_t*) cmd, buf_len + 3 + 3))) {
+	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, buf_len + 3 + 3))) {
 		return ret;
 	}
 
 	__usleep(10*1000);
 
 	/* Read back command */
-	ret = read_data(ctx->dev, ctx->endp_up, cmdbuf, 6, &num);
+	ret = read_data(ctx->conn, cmdbuf, 6, &num);
 	if (ret)
 		return ret;
 
@@ -473,7 +470,7 @@ static int hiti_docmd_resp(struct hiti_ctx *ctx, uint16_t cmdid,
 	__usleep(10*1000);
 
 	/* Read back the data*/
-	ret = read_data(ctx->dev, ctx->endp_up, respbuf, *resplen, &num);
+	ret = read_data(ctx->conn, respbuf, *resplen, &num);
 	if (ret)
 		return ret;
 
@@ -507,14 +504,14 @@ static int hiti_sepd(struct hiti_ctx *ctx, uint32_t buf_len,
 	cmd->numLines = cpu_to_be16(numLines);
 
 	/* Send over command */
-	if ((ret = send_data(ctx->dev, ctx->endp_down, (uint8_t*) cmd, sizeof(*cmd)))) {
+	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, sizeof(*cmd)))) {
 		return ret;
 	}
 
 	__usleep(10*1000);
 
 	/* Read back command */
-	ret = read_data(ctx->dev, ctx->endp_up, cmdbuf, 6, &num);
+	ret = read_data(ctx->conn, cmdbuf, 6, &num);
 	if (ret)
 		return ret;
 
@@ -894,17 +891,12 @@ static void *hiti_init(void)
 	return ctx;
 }
 
-static int hiti_attach(void *vctx, struct libusb_device_handle *dev, int type,
-		       uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct hiti_ctx *ctx = vctx;
 	int ret;
 
-	ctx->dev = dev;
-	ctx->endp_up = endp_up;
-	ctx->endp_down = endp_down;
-	ctx->iface = iface;
-	ctx->type = type;
+	ctx->conn = conn;
 
 	/* Ensure jobid is sane */
 	ctx->jobid = (jobid & 0x7fff);
@@ -915,8 +907,8 @@ static int hiti_attach(void *vctx, struct libusb_device_handle *dev, int type,
 		/* P52x firmware v1.19+ lose their minds when Linux
 		   issues a routine CLEAR_ENDPOINT_HALT.  Printer can recover
 		   if it is reset.  Unclear what the side effects are.. */
-		if (ctx->type == P_HITI_52X)
-			libusb_reset_device(dev);
+		if (ctx->conn->type == P_HITI_52X)
+			libusb_reset_device(ctx->conn->dev);
 
 		ret = hiti_query_unk8010(ctx);
 		if (ret)
@@ -939,7 +931,7 @@ static int hiti_attach(void *vctx, struct libusb_device_handle *dev, int type,
 		ret = hiti_query_hilightadj(ctx);
 		if (ret)
 			return ret;
-		ret = hiti_query_serno(ctx->dev, ctx->endp_up, ctx->endp_down, ctx->iface, ctx->serno, sizeof(ctx->serno));
+		ret = hiti_query_serno(ctx->conn, ctx->serno, sizeof(ctx->serno));
 		if (ret)
 			return ret;
 
@@ -985,7 +977,7 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 	int mediaver = ctx->ribbonvendor & 0x3f;
 	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
 
-	switch (ctx->type)
+	switch (ctx->conn->type)
 	{
 	case P_HITI_51X:
 		if (!mediatype) {
@@ -1136,14 +1128,14 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 	cmd->plane = plane;
 
 	/* Send over command */
-	if ((ret = send_data(ctx->dev, ctx->endp_down, (uint8_t*) cmd, sizeof(*cmd)))) {
+	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, sizeof(*cmd)))) {
 		return ret;
 	}
 
 	__usleep(10*1000);
 
 	/* Read back command */
-	ret = read_data(ctx->dev, ctx->endp_up, cmdbuf, 6, &num);
+	ret = read_data(ctx->conn, cmdbuf, 6, &num);
 	if (ret)
 		return ret;
 
@@ -1151,7 +1143,7 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 
 	/* Send payload, if any */
 	if (buf_len && !ret) {
-		ret = send_data(ctx->dev, ctx->endp_down, buf, buf_len);
+		ret = send_data(ctx->conn, buf, buf_len);
 	}
 
 	return ret;
@@ -1169,7 +1161,7 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 
 	// XXX if field_0x70 != 100) send blank/empty tables..
 	// no idea what sets this field.
-	switch (ctx->type)
+	switch (ctx->conn->type)
 	{
 	case P_HITI_51X:
 		if (!mediatype) {
@@ -1499,7 +1491,7 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 		job->copies = job->hdr.copies;
 
 	/* Sanity check printer type vs job type */
-	switch(ctx->type)
+	switch(ctx->conn->type)
 	{
 	case P_HITI_52X:
 		if (job->hdr.model != 520) {
@@ -1809,7 +1801,7 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 	// XXX send ESD_SHTPC  w/ heat table.  Unknown.
 	// CMD_ESD_SHPTC // Heating Parameters & Tone Curve (~7Kb, seen on windows..)
 	/* Send heat table data  */
-	if (ctx->type == P_HITI_51X) {
+	if (ctx->conn->type == P_HITI_51X) {
 		ret = hiti_send_heat_data(ctx, job->hdr.quality, job->hdr.overcoat);
 	}
 
@@ -1821,7 +1813,7 @@ resend_y:
 	ret = hiti_sepd(ctx, rows * cols, startLine, numLines);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	ret = send_data(ctx->dev, ctx->endp_down, job->databuf + sent, rows * cols);
+	ret = send_data(ctx->conn, job->databuf + sent, rows * cols);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 	__usleep(200*1000);
@@ -1847,7 +1839,7 @@ resend_m:
 	ret = hiti_sepd(ctx, rows * cols, startLine, numLines);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	ret = send_data(ctx->dev, ctx->endp_down, job->databuf + sent, rows * cols);
+	ret = send_data(ctx->conn, job->databuf + sent, rows * cols);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 	sent += rows * cols;
@@ -1873,7 +1865,7 @@ resend_c:
 	ret = hiti_sepd(ctx, rows * cols, startLine, numLines);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	ret = send_data(ctx->dev, ctx->endp_down, job->databuf + sent, rows * cols);
+	ret = send_data(ctx->conn, job->databuf + sent, rows * cols);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 	__usleep(200*1000);
@@ -2236,18 +2228,14 @@ static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp)
 	return CUPS_BACKEND_OK;
 }
 
-static int hiti_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len)
+static int hiti_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	int ret;
 	uint16_t rsplen = 18;
 	uint8_t rspbuf[18];
 
-	UNUSED(iface);
-
 	struct hiti_ctx ctx = {
-		.dev = dev,
-		.endp_up = endp_up,
-		.endp_down = endp_down,
+		.conn = conn
 	};
 
 	uint8_t arg = sizeof(rspbuf);
@@ -2348,7 +2336,7 @@ static const char *hiti_prefixes[] = {
 
 struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.21",
+	.version = "0.22",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,

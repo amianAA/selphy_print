@@ -624,7 +624,7 @@ static int get_tonecurve(struct shinkos2145_ctx *ctx, int type, char *fname)
 
 	i = 0;
 	while (i < resp.total_size) {
-		ret = read_data(ctx->dev.dev, ctx->dev.endp_up,
+		ret = read_data(ctx->dev.conn,
 				data + i,
 				resp.total_size * 2 - i,
 				&num);
@@ -715,7 +715,7 @@ static int set_tonecurve(struct shinkos2145_ctx *ctx, int target, char *fname)
 	}
 
 	/* Sent transfer */
-	if ((ret = send_data(ctx->dev.dev, ctx->dev.endp_down,
+	if ((ret = send_data(ctx->dev.conn,
 			     (uint8_t *) data, TONE_CURVE_SIZE * sizeof(uint16_t)))) {
 		goto done;
 	}
@@ -830,16 +830,11 @@ static void *shinkos2145_init(void)
 	return ctx;
 }
 
-static int shinkos2145_attach(void *vctx, struct libusb_device_handle *dev, int type,
-			      uint8_t endp_up, uint8_t endp_down, int iface, uint8_t jobid)
+static int shinkos2145_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct shinkos2145_ctx *ctx = vctx;
 
-	ctx->dev.dev = dev;
-	ctx->dev.endp_up = endp_up;
-	ctx->dev.endp_down = endp_down;
-	ctx->dev.type = type;
-	ctx->dev.iface = iface;
+	ctx->dev.conn = conn;
 	ctx->dev.error_codes = &error_codes;
 
 	/* Ensure jobid is sane */
@@ -1050,7 +1045,7 @@ top:
 		}
 
 		INFO("Sending image data to printer\n");
-		if ((ret = send_data(ctx->dev.dev, ctx->dev.endp_down,
+		if ((ret = send_data(ctx->dev.conn,
 				     job->databuf, job->datalen)))
 			return CUPS_BACKEND_FAILED;
 
@@ -1101,17 +1096,15 @@ printer_error:
 	return CUPS_BACKEND_FAILED;
 }
 
-static int shinkos2145_query_serno(struct libusb_device_handle *dev, uint8_t endp_up, uint8_t endp_down, int iface, char *buf, int buf_len)
+static int shinkos2145_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	struct sinfonia_cmd_hdr cmd;
 	struct s2145_getunique_resp resp;
 	int ret, num = 0;
 
 	struct sinfonia_usbdev sdev = {
-		.dev = dev,
-		.endp_up = endp_up,
-		.endp_down = endp_down,
-		.iface = iface,
+		.conn = conn,
+		.error_codes = &error_codes,
 	};
 
 	cmd.cmd = cpu_to_le16(SINFONIA_CMD_GETUNIQUE);
@@ -1183,8 +1176,7 @@ static int shinkos2145_query_stats(void *vctx,  struct printerstats *stats)
 	stats->mfg = "Sinfonia";
 	stats->model = "S2 / S2145";
 
-	if (sinfonia_query_serno(ctx->dev.dev, ctx->dev.endp_up,
-				 ctx->dev.endp_down, ctx->dev.iface,
+	if (sinfonia_query_serno(ctx->dev.conn,
 				 ctx->serial, sizeof(ctx->serial)))
 		return CUPS_BACKEND_FAILED;
 
@@ -1236,7 +1228,7 @@ static const char *shinkos2145_prefixes[] = {
 
 struct dyesub_backend shinkos2145_backend = {
 	.name = "Shinko/Sinfonia CHC-S2145/S2",
-	.version = "0.65" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.66" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos2145_prefixes,
 	.cmdline_usage = shinkos2145_cmdline,
 	.cmdline_arg = shinkos2145_cmdline_arg,
