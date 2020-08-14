@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.108"
+#define BACKEND_VERSION "0.109"
 #ifndef URI_PREFIX
 #error "Must Define URI_PREFIX"
 #endif
@@ -401,7 +401,7 @@ static char *url_decode(char *str) {
 static int probe_device(struct libusb_device *device,
 			struct libusb_device_descriptor *desc,
 			const char *make,
-			const char *prefix, const char *manuf_override,
+			const char *uri_prefix, const char *manuf_override,
 			int found, int num_claim_attempts,
 			int scan_only, const char *match_serno,
 			struct dyesub_connection *conn,
@@ -535,6 +535,8 @@ candidate:
 		dlen = parse1284_data(ieee_id, dict);
 	}
 
+//	if (!old_uri) goto bypass;
+
 	/* Look up mfg string. */
 	if (manuf_override && strlen(manuf_override)) {
 		manuf = url_encode(manuf_override);  /* Backend supplied */
@@ -596,6 +598,8 @@ candidate:
 		free(manuf3);
 	}
 
+//bypass:
+
 	/* Look up serial number */
 	if ((serial = dict_find("SERIALNUMBER", dlen, dict))) {
 		serial = url_encode(serial);
@@ -632,7 +636,7 @@ candidate:
 	if (scan_only) {
 		if (!old_uri) {
 			fprintf(stdout, "direct %s://%s/%s \"%s\" \"%s\" \"%s\" \"\"\n",
-				prefix, make, serial,
+				uri_prefix, make, serial,
 				descr, descr,
 				ieee_id ? ieee_id : "");
 		} else {
@@ -647,7 +651,7 @@ candidate:
 			strncpy(buf + k, product, sizeof(buf)-k);
 
 			fprintf(stdout, "direct %s://%s?serial=%s&backend=%s \"%s\" \"%s\" \"%s\" \"\"\n",
-				prefix, buf, serial, make,
+				uri_prefix, buf, serial, make,
 				descr, descr,
 				ieee_id? ieee_id : "");
 		}
@@ -751,7 +755,7 @@ static int find_and_enumerate(struct libusb_context *ctx,
 			      struct libusb_device ***list,
 			      const struct dyesub_backend *backend,
 			      const char *match_serno,
-			      const char *prefix,
+			      const char *make,
 			      int scan_only, int num_claim_attempts,
 			      struct dyesub_connection *conn)
 {
@@ -773,25 +777,24 @@ static int find_and_enumerate(struct libusb_context *ctx,
 	/* Enumerate and find suitable device */
 	num = libusb_get_device_list(ctx, list);
 
-	/* See if we can actually match on the supplied prefix! */
-	if (backend && prefix) {
+	/* See if we can actually match on the supplied make! */
+	if (backend && make) {
 		int match = 0;
 		for (j = 0 ; backend->devices[j].vid ; j++) {
-			if (!strcmp(prefix,backend->devices[j].prefix)) {
+			if (!strcmp(make,backend->devices[j].make)) {
 				match = 1;
 				break;
 			}
 		}
 		/* If not, clear it */
 		if (!match)
-			prefix = NULL;
+			make = NULL;
 	} else {
-		prefix = NULL; /* Explicitly clear it */
+		make = NULL; /* Explicitly clear it */
 	}
 
 	for (i = 0 ; i < num ; i++) {
-		const char *foundprefix = NULL;
-		const char *probeprefix = NULL;
+		const char *foundmake = NULL;
 
 		struct libusb_device_descriptor desc;
 		libusb_get_device_descriptor((*list)[i], &desc);
@@ -810,7 +813,7 @@ static int find_and_enumerate(struct libusb_context *ctx,
 					    extra_vid == desc.idVendor &&
 					    extra_pid == desc.idProduct) {
 						found = i;
-						prefix = backends[k]->uri_prefixes[0];
+						make = backends[k]->uri_prefixes[0];
 						goto match;
 					}
 				}
@@ -819,9 +822,9 @@ static int find_and_enumerate(struct libusb_context *ctx,
 				if (desc.idVendor == backends[k]->devices[j].vid &&
 				    (desc.idProduct == backends[k]->devices[j].pid ||
 				     desc.idProduct == 0xffff) &&
-				    (!prefix || !strcmp(prefix,backends[k]->devices[j].prefix))) {
+				    (!make || !strcmp(make,backends[k]->devices[j].make))) {
 					    found = i;
-					    foundprefix = backends[k]->devices[j].prefix;
+					    foundmake = backends[k]->devices[j].make;
 					    goto match;
 				}
 			}
@@ -830,15 +833,13 @@ static int find_and_enumerate(struct libusb_context *ctx,
 		continue;
 
 	match:
-		probeprefix = foundprefix ? foundprefix : prefix;
-
-		found = probe_device((*list)[i], &desc, probeprefix,
+		found = probe_device((*list)[i], &desc, (foundmake ? foundmake : make),
 				     URI_PREFIX, backends[k]->devices[j].manuf_str,
 				     found, num_claim_attempts,
 				     scan_only, match_serno,
 				     conn,
 				     backends[k]);
-		foundprefix = NULL;
+		foundmake = NULL;
 		if (found != -1 && !scan_only)
 			break;
 	}
@@ -865,7 +866,7 @@ static struct dyesub_backend *find_backend(const char *uri_prefix)
 				return backend;
 		}
 		for (j = 0 ; backend->devices[j].vid ; j++) {
-			if (!strcmp(uri_prefix,backend->devices[j].prefix)) {
+			if (!strcmp(uri_prefix,backend->devices[j].make)) {
 				return backend;
 			}
 		}
@@ -1059,7 +1060,7 @@ void print_help(const char *argv0, const struct dyesub_backend *backend)
 		for (alias = backend->uri_prefixes ; alias && *alias ; alias++)
 			DEBUG2("%s ", *alias);
 		for (j = 0 ; backend->devices[j].vid ; j++)
-			DEBUG2("%s ", backend->devices[j].prefix);
+			DEBUG2("%s ", backend->devices[j].make);
 		DEBUG2("\n");
 
 		DEBUG("\t[ -D ] [ -G ] [ -f ]\n");

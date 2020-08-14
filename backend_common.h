@@ -165,7 +165,7 @@ struct device_id {
 	uint16_t pid;
 	int type;  /* P_** */
 	const char *manuf_str;
-	const char *prefix;
+	const char *make;
 };
 
 struct marker {
