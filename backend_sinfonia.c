@@ -896,6 +896,8 @@ const char *sinfonia_print_methods (uint8_t v) {
 		return "2up";
 	case PRINT_METHOD_COMBO_3:
 		return "3up";
+	case PRINT_METHOD_COMBO_4:
+		return "4up";
 	case PRINT_METHOD_SPLIT:
 		return "Split";
 	case PRINT_METHOD_DOUBLE:
