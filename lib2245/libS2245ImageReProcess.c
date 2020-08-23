@@ -39,7 +39,7 @@
 
 */
 
-#define LIB_VERSION "0.1.0"
+#define LIB_VERSION "0.1.1"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -1108,7 +1108,7 @@ static int CImageProc_CropPicDotSeq(struct CImageProc *this, uint8_t *destPtr,
 	if (!scratch)
 		return -1;
 
-	for (row = 0, offset = 0; row < (cropConf->startRow + cropConf->numRows) ; row++) {
+	for (row = cropConf->startRow, offset = 0; row < (cropConf->startRow + cropConf->numRows) ; row++) {
 		int col;
 		for (col = cropConf->startCol; col < (cropConf->startCol + cropConf->numCols) ; col++) {
 			uint32_t srcOffset = picData->bytes_pp * (col + row * picData->outCols);
@@ -1183,31 +1183,31 @@ static bool CImageProc_AddBorder(struct CImageProc *this, uint8_t *destPtr, uint
 {
 	/* If this is a 5x7 print.. */
 	if (this->conf.borderCapable == 0x02 &&
-	    this->conf.width == 1548 &&
-	    this->conf.height == 2140) {
+	    this->srcWidth == 1548 &&
+	    this->srcHeight == 2140) {
 		struct pic_data borderPicData;
 		struct crop_conf cropConf;
 		struct pic_data cropPicData;
 
-		cropPicData.inCols = 0x60c;
-		cropPicData.inRows = 0x85c;
-		cropPicData.outCols = 0x60c;
-		cropPicData.outRows = 0x85c;
+		cropPicData.inCols = 1548;
+		cropPicData.inRows = 2140;
+		cropPicData.outCols = 1548;
+		cropPicData.outRows = 2140;
 		cropPicData.bytes_pp = 3;
 		cropPicData.srcPtr = srcRGBPtr;
 
-		cropConf.startCol = 0x0018;
-		cropConf.startRow = 0x0012;
-		cropConf.numCols = 0x05e0;
-		cropConf.numRows = 0x0838;
+		cropConf.startCol = 24;
+		cropConf.startRow = 18;
+		cropConf.numCols = 1504;
+		cropConf.numRows = 2104;
 
 		if (CImageProc_CropPicDotSeq(this, destPtr, &cropPicData, &cropConf))
 			return 0;
 
-		borderPicData.inCols = 0x5e0;
-		borderPicData.inRows = 0x838;
-		borderPicData.outCols = 0x734;
-		borderPicData.outRows = 0x982;
+		borderPicData.inCols = 1504;
+		borderPicData.inRows = 2104;
+		borderPicData.outCols = 1844;
+		borderPicData.outRows = 2434;
 		borderPicData.bytes_pp = 3;
 		borderPicData.srcPtr = destPtr;
 		if (CImageProc_AddBorderEx(this, destPtr, destPtr, &borderPicData))
