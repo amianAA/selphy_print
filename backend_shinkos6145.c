@@ -1406,13 +1406,18 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 		job->copies = copies;
 
 	/* S6145 can only combine 2* 4x6 -> 8x6.
-	   2x6 strips and 3.5x5 -> 5x7 can't. */
+	   2x6 strips and 3.5x5 -> 5x7 can't.
+	   S2245 can combine 2x6 strips too!
+	*/
 	if (job->jp.columns == 1844 &&
 	    job->jp.rows == 1240 &&
-	    job->jp.method == PRINT_METHOD_STD &&
 	    (ctx->media.ribbon_code == RIBBON_6x8 ||
 	     ctx->media.ribbon_code == RIBBON_6x9)) {
-		job->can_combine = 1;
+
+		if (model == 6145 && job->jp.method == PRINT_METHOD_STD)
+			job->can_combine = 1;
+		else if (model == 2245)
+			job->can_combine = 1;
 	}
 
 	/* Extended spool format to re-purpose an unused header field.
@@ -1452,9 +1457,6 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 
 #define JOB_EQUIV(__x)  if (job1->__x != job2->__x) goto done
 
-// XXX this code could be "generic sinfonia?"
-// but only the S6145 and S2245 can't automatically combine
-// or rewind.  So it's really only useful here.
 static void *shinkos6145_combine_jobs(const void *vjob1,
 				      const void *vjob2)
 {
@@ -1478,8 +1480,6 @@ static void *shinkos6145_combine_jobs(const void *vjob1,
 
 	switch (job1->jp.rows) {
 	case 1240:  /* 4x6 */
-		if (job1->jp.method != PRINT_METHOD_STD)
-			goto done;
 		newrows = 2492;
 		newpad = 12;
 		break;
@@ -1497,7 +1497,11 @@ static void *shinkos6145_combine_jobs(const void *vjob1,
 
 	newjob->jp.rows = newrows;
 	newjob->jp.media = CODE_6x8;
-	newjob->jp.method = PRINT_METHOD_SPLIT;
+
+	if (job1->jp.method == PRINT_METHOD_SPLIT) /* 4x6-div2 -> 8x6-div4 */
+		newjob->jp.method = PRINT_METHOD_COMBO_4;
+	else /* 4x6 -> 8x6-div2 */
+		newjob->jp.method = PRINT_METHOD_SPLIT;
 
 	/* Allocate new buffer */
 	newjob->databuf = malloc(newjob->jp.rows * newjob->jp.columns * 3);
@@ -2036,7 +2040,7 @@ static const char *shinkos6145_prefixes[] = {
 
 struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.44" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.45" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
