@@ -284,6 +284,12 @@ static void *dnp_combine_jobs(const void *vjob1,
 		new_h = 3102;
 		gap_bytes = 30;
 		break;
+	case MULTICUT_A4x5:
+		new_multicut = MULTICUT_A4x5X2;
+		new_w = 2560;
+		new_h = 3102;
+		gap_bytes = 30;
+		break;
 	case MULTICUT_8x6:
 		new_multicut = MULTICUT_8x6X2;
 		new_w = 2560;
@@ -3397,7 +3403,7 @@ static const char *dnpds40_prefixes[] = {
 /* Exported */
 struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.134",
+	.version = "0.135",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
