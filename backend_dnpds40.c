@@ -1896,7 +1896,6 @@ parsed:
 			/* A4xn and A5 can be rewound */
 			if (job->multicut == MULTICUT_A4x4 ||
 			    job->multicut == MULTICUT_A4x5 ||
-			    job->multicut == MULTICUT_A4x6 ||
 			    job->multicut == MULTICUT_A5)
 				job->can_rewind = 1;
 			break;
