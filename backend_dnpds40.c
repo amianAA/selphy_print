@@ -1893,9 +1893,9 @@ parsed:
 				dnpds40_cleanup_job(job);
 				return CUPS_BACKEND_CANCEL;
 			}
-			/* A4xn and A5 can be rewound */
-			if (job->multicut == MULTICUT_A4x4 ||
-			    job->multicut == MULTICUT_A4x5 ||
+			/* Only A4x4 and A5 can be rewound */
+			// XXX we can fake more with fancy multicuts...
+			if (job->multicut == MULTICUT_A4x5 ||
 			    job->multicut == MULTICUT_A5)
 				job->can_rewind = 1;
 			break;
