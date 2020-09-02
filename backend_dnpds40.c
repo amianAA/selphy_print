@@ -290,6 +290,12 @@ static void *dnp_combine_jobs(const void *vjob1,
 		new_h = 3102;
 		gap_bytes = 30;
 		break;
+	case MULTICUT_A5:
+		new_multicut = MULTICUT_A5X2;
+		new_w = 2560;
+		new_h = 3598;
+		gap_bytes = 30;
+		break;
 	case MULTICUT_8x6:
 		new_multicut = MULTICUT_8x6X2;
 		new_w = 2560;
