@@ -178,8 +178,6 @@ static void *selphyneo_init(void)
 	return ctx;
 }
 
-extern struct dyesub_backend selphyneo_backend;
-
 static int selphyneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct selphyneo_ctx *ctx = vctx;
@@ -510,7 +508,7 @@ static const char *canonselphyneo_prefixes[] = {
 	NULL
 };
 
-struct dyesub_backend canonselphyneo_backend = {
+const struct dyesub_backend canonselphyneo_backend = {
 	.name = "Canon SELPHY CP (new)",
 	.version = "0.21",
 	.uri_prefixes = canonselphyneo_prefixes,

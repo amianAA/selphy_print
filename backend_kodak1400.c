@@ -620,7 +620,7 @@ static const char *kodak1400_prefixes[] = {
 	NULL,
 };
 
-struct dyesub_backend kodak1400_backend = {
+const struct dyesub_backend kodak1400_backend = {
 	.name = "Kodak 1400/805",
 	.version = "0.41",
 	.uri_prefixes = kodak1400_prefixes,

@@ -301,7 +301,7 @@ enum {
 };
 
 #if defined(BACKEND)
-extern struct dyesub_backend BACKEND;
+extern const struct dyesub_backend BACKEND;
 #endif
 
 /* CUPS compatibility */

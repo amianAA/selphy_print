@@ -1488,7 +1488,7 @@ static const char *mitsu9550_prefixes[] = {
 };
 
 /* Exported */
-struct dyesub_backend mitsu9550_backend = {
+const struct dyesub_backend mitsu9550_backend = {
 	.name = "Mitsubishi CP9xxx family",
 	.version = "0.56" " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsu9550_prefixes,

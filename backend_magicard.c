@@ -924,7 +924,7 @@ static const char *magicard_prefixes[] = {
 	NULL
 };
 
-struct dyesub_backend magicard_backend = {
+const struct dyesub_backend magicard_backend = {
 	.name = "Magicard family",
 	.version = "0.17",
 	.uri_prefixes = magicard_prefixes,

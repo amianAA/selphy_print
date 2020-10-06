@@ -2334,7 +2334,7 @@ static const char *hiti_prefixes[] = {
 #define USB_PID_HITI_P310W   0x050A
 #define USB_PID_HITI_X610    0x0800
 
-struct dyesub_backend hiti_backend = {
+const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
 	.version = "0.22",
 	.uri_prefixes = hiti_prefixes,

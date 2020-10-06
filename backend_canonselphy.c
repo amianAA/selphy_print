@@ -1123,7 +1123,7 @@ static const char *canonselphy_prefixes[] = {
 	NULL
 };
 
-struct dyesub_backend canonselphy_backend = {
+const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
 	.version = "0.106",
 	.uri_prefixes = canonselphy_prefixes,

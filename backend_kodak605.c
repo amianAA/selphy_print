@@ -892,7 +892,7 @@ static const char *kodak605_prefixes[] = {
 };
 
 /* Exported */
-struct dyesub_backend kodak605_backend = {
+const struct dyesub_backend kodak605_backend = {
 	.name = "Kodak 605/70xx",
 	.version = "0.55" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak605_prefixes,

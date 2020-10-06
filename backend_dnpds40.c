@@ -3415,7 +3415,7 @@ static const char *dnpds40_prefixes[] = {
 #define USB_PID_DNP_QW410 0x9201
 
 /* Exported */
-struct dyesub_backend dnpds40_backend = {
+const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
 	.version = "0.136",
 	.uri_prefixes = dnpds40_prefixes,

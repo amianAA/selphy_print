@@ -604,7 +604,7 @@ static const char *mitsup95d_prefixes[] = {
 };
 
 /* Exported */
-struct dyesub_backend mitsup95d_backend = {
+const struct dyesub_backend mitsup95d_backend = {
 	.name = "Mitsubishi P93D/P95D",
 	.version = "0.15",
 	.uri_prefixes = mitsup95d_prefixes,

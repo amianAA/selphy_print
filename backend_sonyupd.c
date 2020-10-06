@@ -595,7 +595,7 @@ static const char *sonyupd_prefixes[] = {
 #define USB_PID_SONY_UPD895  0x0049
 #define USB_PID_SONY_UPD897  0x01E7
 
-struct dyesub_backend sonyupd_backend = {
+const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
 	.version = "0.40",
 	.uri_prefixes = sonyupd_prefixes,

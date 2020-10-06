@@ -2038,7 +2038,7 @@ static const char *shinkos6145_prefixes[] = {
 	NULL
 };
 
-struct dyesub_backend shinkos6145_backend = {
+const struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
 	.version = "0.45" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,

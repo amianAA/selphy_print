@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.109"
+#define BACKEND_VERSION "0.110"
 #ifndef URI_PREFIX
 #error "Must Define URI_PREFIX"
 #endif

@@ -1064,7 +1064,7 @@ static const char *kodak6800_prefixes[] = {
 };
 
 /* Exported */
-struct dyesub_backend kodak6800_backend = {
+const struct dyesub_backend kodak6800_backend = {
 	.name = "Kodak 6800/6850",
 	.version = "0.80" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak6800_prefixes,

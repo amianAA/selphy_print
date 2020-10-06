@@ -2334,7 +2334,7 @@ static const char *mitsu70x_prefixes[] = {
 };
 
 /* Exported */
-struct dyesub_backend mitsu70x_backend = {
+const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
 	.version = "0.100" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
