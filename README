@@ -104,28 +104,34 @@
   This intelligent backend is needed to utilize many common dye-sublimation
   photo printers under Linux, OSX, and other UNIX-like operating systems.
 
-  Although these printers advertise themselves as standard USB Printer Class
-  devices, they do not actually obey those specifications and require
-  special two-way handshaking in order to successfully print.
+  Although these printers advertise themselves as standard USB Printer
+  Class devices, they do not actually obey those specifications and
+  require special two-way handshaking in order to successfully print.
 
-  This backend can only be used in conjunction with Gutenprint 5.2.10 or
-  newer. Please see the Gutenprint README file (section II D) for more
-  information on use of this backend and integration into CUPS.
+  This backend only handles the low-level communication with these
+  printers; it is not able to "render" arbitrary image data into a
+  format these printers will accept, along with associated printing
+  parameters/options.
 
-  While this repository is considered the canonical upstream source for
-  this code, code snapshots are bundled with each Gutenprint release.
-  Generally speaking, the code in this repository will require the current
-  Gutenprint release (or pre-release) to generate the actual print jobs.
+  Consequently, this backend can only be used in conjunction with 
+  Gutenprint (http://gimp-print.sf.net), version 5.2.10 or newer. Code 
+  snapshots of this backend are bundled with Gutenprint, although this
+  repository is the canonical upstream source and is developed 
+  independently.
 
   As such, when compared to any given Gutenprint release, the code found
-  here is usually newer, with additional features, device support, and
-  bugfixes.  At the same time, it may have half-developed features that
-  don't quite work, with giant bugs that come out at midnight to eat
-  your cat.
+  here has additional features, device support, and bugfixes.  At the
+  same time, it may have half-developed features that don't quite work,
+  with giant bugs that come out at midnight to eat your cat.
 
-  With few exceptions, all printer support in selphy_print (and Gutenprint)
-  was developed without any assistance from the printer manufactuers,
-  relying on reverse-engineering and a great deal of experimentation.
+  So, while it is safe to use code in this repository with an older
+  Gutenprint release, supporting for newer models or printing options
+  that affect image rendering willl likely requires up-to-date
+  Gutenprint code,
+
+  Most printer support in selphy_print (and Gutenprint) was developed
+  without any assistance from the printer manufactuers, relying on
+  reverse-engineering and a great deal of experimentation.
 
   On that note, please keep in mind that this software distributed
   in the hope that it will be useful, but WITHOUT ANY WARRANTY WHATSOEVER.
