@@ -68,6 +68,7 @@
    Sony UP-DR200
    Sony UP-D895
    Sony UP-D897
+   Sony UP-D898 series
    Stryker SDP1000
 
   Work-in-progress Printers:
@@ -96,7 +97,6 @@
    Shinko CHC-S6145-5A (aka Sinfonia CS2-c)
    Shinko CHC-S6245 (aka Sinfonia CE1)
    Sony UP-CR20L (aka DNP DS-SL20)
-   Sony UP-D898 series
    Sony UP-DR80
 
  ***************************************************************************
@@ -893,6 +893,7 @@
 
     Sony UP-DR80MD
     Stryker SDP1000
+    Sony UP-D898 / UP-X898
 
   Work-in-progress printers
 
@@ -900,7 +901,6 @@
 
   Work-in-progress printers (Lack USB PIDs)
 
-    Sony UP-D898 / UP-X898
     Sony UP-CR20L
     DNP DS-SL20
 
