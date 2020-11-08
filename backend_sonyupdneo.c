@@ -148,6 +148,7 @@ static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t job
 		} else if (ctx->conn->type == P_SONY_UPDR80) {
 			strcpy(ctx->sts.scsyi, "0A300E5609A00C7809A00C78012D00");
 		}
+		// XXX don't forget cr20l here.
 	}
 
 	if (test_mode >= TEST_MODE_NOATTACH && getenv("MEDIA_CODE"))
@@ -334,21 +335,32 @@ static int updneo_read_parse(void *vctx, const void **vjob, int data_fd, int cop
 		char w[5], h[5];
 		uint16_t mw, mh;
 		uint16_t jw, jh;
-		memcpy(h, ctx->sts.scsyi, 4);
+		memcpy(w, ctx->sts.scsyi, 4);
 		h[4] = 0;
-		memcpy(w, ctx->sts.scsyi + 4, 4);
+		memcpy(h, ctx->sts.scsyi + 4, 4);
 		w[4] = 0;
-		mw = strtol(w, NULL, 16);
-		mh = strtol(h, NULL, 16);
 
-		memcpy(&jw, job->databuf + 40, 2);
-		memcpy(&jh, job->databuf + 40 + 2, 2);
+		if (ctx->conn->type == P_SONY_UPD898) {
+			mw = strtol(h, NULL, 16);
+			mh = strtol(w, NULL, 16);
+		} else {
+			mw = strtol(w, NULL, 16);
+			mh = strtol(h, NULL, 16);
+		}
+
+		if (ctx->conn->type == P_SONY_UPDR80) {
+			memcpy(&jw, job->databuf + 84, 2);
+			memcpy(&jh, job->databuf + 84 + 2, 2);
+		} else {
+			memcpy(&jw, job->databuf + 40, 2);
+			memcpy(&jh, job->databuf + 40 + 2, 2);
+		}
 
 		jw = be16_to_cpu(jw);
 		jh = be16_to_cpu(jh);
 
-		if (jw > mw || jh > mh) {
-			ERROR("Job (%dx%d) exceeds max dimensions(%d/%d)\n",
+		if (mw && mh && (jw > mw || jh > mh)) {
+			ERROR("Job (%d/%d) exceeds max dimensions(%d/%d)\n",
 			      jw,jh,mw,mh);
 			updneo_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
