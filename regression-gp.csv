@@ -211,10 +211,10 @@ sony-upd897,0x054c,0x01e7,,PageSize=w284h284
 sony-upd897,0x054c,0x01e7,,PageSize=w426h284
 sony-upd897,0x054c,0x01e7,,PageSize=w907h284
 #
-sony-upd898,0x054c,0xabcd,,PageSize=w213h284
-sony-upd898,0x054c,0xabcd,,PageSize=w284h284
-sony-upd898,0x054c,0xabcd,,PageSize=w426h284
-sony-upd898,0x054c,0xabcd,,PageSize=w907h284
+sony-upd898,0x054c,0x0877,,PageSize=w213h284
+sony-upd898,0x054c,0x0877,,PageSize=w284h284
+sony-upd898,0x054c,0x0877,,PageSize=w426h284
+sony-upd898,0x054c,0x0877,,PageSize=w907h284
 sony-upcr20l,0x054c,0xbcde,,PageSize=w288h432
 sony-upcr20l,0x054c,0xbcde,,PageSize=w432h576
 sony-upcr20l,0x054c,0xbcde,,PageSize=w432h576-div2
