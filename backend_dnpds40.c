@@ -982,7 +982,7 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 		ctx->supports_mediaclassrfid = 1;
 		if (FW_VER_CHECK(0,50))
 			ctx->supports_gamma = 1;
-		if (FW_VER_CHECK(1,07)) // XXX might be 1.06
+		if (FW_VER_CHECK(1,06))
 			ctx->supports_a4x6 = 1;
 		break;
 	case P_DNP_QW410:
