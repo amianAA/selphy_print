@@ -58,6 +58,7 @@ struct sony_updsts {
 #define UPD_STS1_DOOROPEN  0x08
 #define UPD_STS1_NOPAPER   0x40
 #define UPD_STS1_PRINTING  0x80
+#define UPD_STS1_UNK       0xC0  /* UP-DR200, maybe others?  Prints successfully */
 
 /* Private data structures */
 struct upd_printjob {
@@ -433,11 +434,13 @@ top:
 	}
 
 	/* Check for idle */
-	if (ctx->stsbuf.sts1 != 0x00) {
-		if (ctx->stsbuf.sts1 == 0x80) {
+	if (ctx->stsbuf.sts1 != UPD_STS1_IDLE) {
+		if (ctx->stsbuf.sts1 == UPD_STS1_PRINTING) {
 			INFO("Waiting for printer idle...\n");
 			sleep(1);
 			goto top;
+		} else {
+			// XXX some sort of error?
 		}
 	}
 
@@ -569,8 +572,8 @@ static int upd_query_markers(void *vctx, struct marker **markers, int *count)
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 
-	if (ctx->stsbuf.sts1 == 0x40 ||
-	    ctx->stsbuf.sts1 == 0x08) {
+	if (ctx->stsbuf.sts1 == UPD_STS1_NOPAPER ||
+	    ctx->stsbuf.sts1 == UPD_STS1_DOOROPEN) {
 		ctx->marker.levelnow = 0;
 	} else {
 		ctx->marker.levelnow = CUPS_MARKER_UNKNOWN_OK;
