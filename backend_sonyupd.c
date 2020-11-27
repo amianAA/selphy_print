@@ -491,6 +491,7 @@ retry:
 	switch (ctx->stsbuf.sts1) {
 	case UPD_STS1_IDLE:
 		goto done;
+	case UPD_STS1_UNK: // XXX is this correct?
 	case UPD_STS1_PRINTING:
 		break;
 	default:
@@ -600,7 +601,7 @@ static const char *sonyupd_prefixes[] = {
 
 const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
-	.version = "0.40",
+	.version = "0.41",
 	.uri_prefixes = sonyupd_prefixes,
 	.cmdline_arg = upd_cmdline_arg,
 	.cmdline_usage = upd_cmdline,
