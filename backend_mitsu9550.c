@@ -1555,7 +1555,7 @@ const struct dyesub_backend mitsu9550_backend = {
    ~~~ Header 3 (9550, 9800-S, and CP30 only..)
 
    1b 57 22 2e 00 QQ 00 00  00 00 00 XX 00 00 00 00 :: XX = 00 normal, 01 FineDeep
-   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: QQ = 0xf0 on 9500, 0x00 on CP30, 0x40 on the rest
+   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: QQ = 0xf0 on 9500, 0x40 on the rest
    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
    00 00
 
