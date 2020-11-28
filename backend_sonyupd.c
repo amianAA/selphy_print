@@ -37,10 +37,10 @@ struct sony_updsts {
 	uint8_t  zero1;    /* 0x00 */
 	uint8_t  printing; /* UPD_PRINTING_* */
 	uint8_t  remain;   /* Number of remaining pages */
-	uint8_t  zero2;
+	uint8_t  sts0;     /* UPD_STS0_* */
 	uint8_t  sts1;     /* UPD_STS1_* */
-	uint8_t  sts2;     /* seconday status */
-	uint8_t  sts3;     /* tertiary status */
+	uint8_t  sts2;     /* UPD_STS2_* */
+	uint8_t  sts3;     /* UPD_STS3_* */
 	uint8_t  ribbon;   /* 0x04 = R206/6x8 */
 	uint8_t  paper;    /* 0x38 = EMPTY, 0xa8 = loaded */
 	uint16_t max_cols; /* BE */
@@ -55,11 +55,17 @@ struct sony_updsts {
 #define UPD_PRINTING_O     0x20
 #define UPD_PRINTING_IDLE  0x00
 
+/* Confirmed on UP-DR200 */
+#define UPD_STS0_OK        0x00
+#define UPD_STS0_NORIBBON  0x10
+#define UPD_STS0_NOPAPER   0x20
+#define UPD_STS0_DOOROPEN  0x40
+
 #define UPD_STS1_IDLE      0x00
 #define UPD_STS1_DOOROPEN  0x08
 #define UPD_STS1_NOPAPER   0x40
 #define UPD_STS1_PRINTING  0x80
-#define UPD_STS1_UNK       0xC0  /* UP-DR200, maybe others?  Prints successfully */
+#define UPD_STS1_UNK       0xC0  // XXX this is _wrong_.
 
 #define UPD_RIBBON_R206    0x04
 
@@ -110,6 +116,12 @@ static const char *upd_papers(int type, uint8_t code)
 // 2UPC-R155         (335)
 // 2UPC-R156         (295)
 
+// UP-CR10L
+
+// 2UPC-C13          (300)
+// 2UPC-C14          (200)
+// 2UPC-C15          (172)
+
 // print order:  ->YMCO->
 // current prints (power on)
 // total prints (lifetime)
@@ -126,6 +138,22 @@ static const char* upd895_statuses(uint8_t code)
 		return "No paper";
 	case UPD_STS1_PRINTING:
 		return "Printing";
+	default:
+		return "Unknown";
+	}
+}
+
+static const char* updr200_statuses(uint8_t code)
+{
+	switch (code) {
+	case UPD_STS0_OK:
+		return "OK";
+	case UPD_STS0_DOOROPEN:
+		return "Door open";
+	case UPD_STS0_NOPAPER:
+		return "No paper";
+	case UPD_STS0_NORIBBON:
+		return "No ribbon";
 	default:
 		return "Unknown";
 	}
@@ -525,8 +553,11 @@ retry:
 	case UPD_STS1_PRINTING:
 		break;
 	default:
-		ERROR("Printer error: %s (%02x)\n", upd895_statuses(ctx->stsbuf.sts1),
-		      ctx->stsbuf.sts1);
+		if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
+			ERROR("Printer error: %s (%02x)\n", upd895_statuses(ctx->stsbuf.sts1), ctx->stsbuf.sts1);
+		} else {
+			ERROR("Printer error: %s (%02x)\n", updr200_statuses(ctx->stsbuf.sts0), ctx->stsbuf.sts0);
+		}
 		return CUPS_BACKEND_STOP;
 	}
 
@@ -556,7 +587,12 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 	if (ret < 0)
 		return CUPS_BACKEND_FAILED;
 
-	INFO("Printer status: %s (%02x)\n", upd895_statuses(ctx->stsbuf.sts1), ctx->stsbuf.sts1);
+	if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
+		INFO("Printer status: %s (%02x)\n", upd895_statuses(ctx->stsbuf.sts1), ctx->stsbuf.sts1);
+	} else {
+		INFO("Printer status: %s (%02x)\n", updr200_statuses(ctx->stsbuf.sts0), ctx->stsbuf.sts0);
+	}
+
 	if (ctx->stsbuf.printing != UPD_PRINTING_IDLE &&
 	    ctx->stsbuf.sts1 == UPD_STS1_PRINTING)
 		INFO("Remaining copies: %d\n", ctx->stsbuf.remain);
@@ -717,12 +753,12 @@ const struct dyesub_backend sonyupd_backend = {
    SET PARAM
 
  <- 1b c0 00 NN LL 00 00    # LL is response length, NN is number.
- <- [ NN bytes]
+ <- [ LL bytes]
 
    QUERY PARAM
 
  <- 1b c1 00 NN LL 00 00    # LL is response length, NN is number.
- -> [ NN bytes ]
+ -> [ LL bytes ]
 
       PARAMS SEEN:
     03, len 5    [ 02 03 00 01 XX ]                   (UPDR200, 00 = normal, 02 is multicut/div2 print, 01 seen at end of stream too..
@@ -1021,12 +1057,6 @@ Other commands seen:
 
  <-- 1b 17 00 00 00 00 00   -- Unknown?
 
-   UP-CR10L
-
-   2UPC-C13          (300)
-   2UPC-C14          (200)
-   2UPC-C15          (172)
-
  CR10L: status progression when printing:
 
  0e 00 00 00 00 00 00 00  04 a0 04 e0 07 38 00
@@ -1042,8 +1072,13 @@ Other commands seen:
  UP-DR200 comms protocol:
 
  <-- 1b e0 00 00 00 0f 00
- --> 0e 00 XX YY 00 SS RR 01  RT PT CC CC RR RR %%
+ --> 0e 00 XX NN E0 E1 00 E3  RT PT CC CC RR RR %%
 
+  XX : Print state (eg Y/M/C/O -- see UPD_PRINTING_* )
+  E0 : Error code0 (see UPD_STS0_*)
+  E1 : Error code1 (see UPD_STS1_*)
+  E3 : Unknown (00 or 01)
+  NN : Number of remaining copies  (00 when complete/idle)
   CC : Max Cols (0x0800 on 6" ribbon)
   RR : Max Rows (0x0aa4 on 6x8)
   RT : Ribbon type (04 = R206/8x6)
@@ -1058,5 +1093,7 @@ Other commands seen:
  0e 00 00 00 10 08 00 00  00 a8 08 00 0a a4 00   LOAD RIBBON
 
  0e 00 00 01 00 c0 00 01  04 a8 08 00 0a a4 00   BAD JOB (I)
- 0e 00 20 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (II)
+ 0e 00 40 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (II)
+ 0e 00 c0 01 00 c0 00 01  04 a8 08 00 0a a4 00   BAD JOB (III)
+ 0e 00 20 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (IV)
 */
