@@ -193,8 +193,8 @@ sony-upcr10l,0x054c,0x0226,,PageSize=w260h504
 #
 sony-updr200,0x054c,0x035f,,PageSize=w288h432
 sony-updr200,0x054c,0x035f,,PageSize=w288h432-div2
-sony-updr200,0x054c,0x035f,,PageSize=w432h576
-sony-updr200,0x054c,0x035f,,PageSize=w432h576-div2
+sony-updr200,0x054c,0x035f,0x04,PageSize=w432h576
+sony-updr200,0x054c,0x035f,0x04,PageSize=w432h576-div2
 sony-updr200,0x054c,0x035f,,PageSize=B7
 sony-updr200,0x054c,0x035f,,PageSize=w360h504
 sony-updr200,0x054c,0x035f,,PageSize=w360h504-div2

@@ -104,6 +104,7 @@ sonyupdr150,0x054c,0x01e8,sony_updr150_4x6.raw,
 sonyupdr150,0x054c,0x01e8,sony_updr150_8x6.raw,
 sonyupdr200,0x054c,0x035f,sony_updr200_2x6.raw,
 sonyupdr200,0x054c,0x035f,sony_updr200_4x6.raw,
+sonyupdr200,0x054c,0x035f,sony_updr200_8x6.raw,0x04
 sony-upd895,0x054c,0x0049,sony_upd895-1280x960.raw,
 sony-upd895,0x054c,0x0049,sony_upd895-1280x1280.raw,
 sony-upd897,0x054c,0x01e7,sony_upd897-1280x960.raw,

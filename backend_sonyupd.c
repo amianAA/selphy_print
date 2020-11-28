@@ -41,7 +41,8 @@ struct sony_updsts {
 	uint8_t  sts1;     /* UPD_STS1_* */
 	uint8_t  sts2;     /* seconday status */
 	uint8_t  sts3;     /* tertiary status */
-	uint16_t unk;      /* seen 0x04a0 UP-CR10L, 0x04a8 on UP-DR150 */
+	uint8_t  ribbon;   /* 0x04 = R206/6x8 */
+	uint8_t  paper;    /* 0x38 = EMPTY, 0xa8 = loaded */
 	uint16_t max_cols; /* BE */
 	uint16_t max_rows; /* BE */
 	uint8_t  percent;  /* 0-99, if job is printing (UP-D89x) */
@@ -59,6 +60,8 @@ struct sony_updsts {
 #define UPD_STS1_NOPAPER   0x40
 #define UPD_STS1_PRINTING  0x80
 #define UPD_STS1_UNK       0xC0  /* UP-DR200, maybe others?  Prints successfully */
+
+#define UPD_RIBBON_R206    0x04
 
 /* Private data structures */
 struct upd_printjob {
@@ -81,50 +84,18 @@ struct upd_ctx {
 	struct marker marker;
 };
 
-/* Now for the code */
-static void* upd_init(void)
+static const char *upd_papers(int type, uint8_t code)
 {
-	struct upd_ctx *ctx = malloc(sizeof(struct upd_ctx));
-	if (!ctx) {
-		ERROR("Memory Allocation Failure!\n");
-		return NULL;
-	}
-	memset(ctx, 0, sizeof(struct upd_ctx));
-	return ctx;
-}
-
-static int upd_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
-{
-	struct upd_ctx *ctx = vctx;
-
-	UNUSED(jobid);
-
-	ctx->conn = conn;
-
-	if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
-		ctx->marker.color = "#000000";  /* Ie black! */
-		ctx->native_bpp = 1;
-	} else {
-		ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
-		ctx->native_bpp = 3;
+	if (type == P_SONY_UPD895 || type == P_SONY_UPD897) {
+		return "UP-110 Roll";
 	}
 
-	ctx->marker.name = "Unknown";
-	ctx->marker.numtype = -1;
-	ctx->marker.levelmax = CUPS_MARKER_UNAVAILABLE;
-	ctx->marker.levelnow = CUPS_MARKER_UNKNOWN;
+	/* CR10L/DR200/DR150 */
+	if (code == UPD_RIBBON_R206) {
+		return "R206 (8x6)";
+	}
 
-	return CUPS_BACKEND_OK;
-}
-
-static void upd_cleanup_job(const void *vjob)
-{
-	const struct upd_printjob *job = vjob;
-
-	if (job->databuf)
-		free(job->databuf);
-
-	free((void*)job);
+	return "Unknown";
 }
 
 // UP-DR200
@@ -160,6 +131,8 @@ static const char* upd895_statuses(uint8_t code)
 	}
 }
 
+/* Now for the code */
+
 static int sony_get_status(struct upd_ctx *ctx, struct sony_updsts *buf)
 {
 	int ret, num = 0;
@@ -188,6 +161,63 @@ static int sony_get_status(struct upd_ctx *ctx, struct sony_updsts *buf)
 	ctx->stsbuf.max_rows = be16_to_cpu(ctx->stsbuf.max_rows);
 
 	return CUPS_BACKEND_OK;
+}
+
+static void* upd_init(void)
+{
+	struct upd_ctx *ctx = malloc(sizeof(struct upd_ctx));
+	if (!ctx) {
+		ERROR("Memory Allocation Failure!\n");
+		return NULL;
+	}
+	memset(ctx, 0, sizeof(struct upd_ctx));
+	return ctx;
+}
+
+static int upd_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
+{
+	struct upd_ctx *ctx = vctx;
+
+	UNUSED(jobid);
+
+	ctx->conn = conn;
+
+	if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
+		ctx->marker.color = "#000000";  /* Ie black! */
+		ctx->native_bpp = 1;
+	} else {
+		ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
+		ctx->native_bpp = 3;
+	}
+
+	if (test_mode < TEST_MODE_NOATTACH) {
+		int ret;
+		if ((ret = sony_get_status(ctx, &ctx->stsbuf))) {
+			return ret;
+		}
+	}
+
+	if (test_mode >= TEST_MODE_NOATTACH && getenv("MEDIA_CODE")) {
+		ctx->marker.numtype = atoi(getenv("MEDIA_CODE"));
+	} else {
+		ctx->marker.numtype = ctx->stsbuf.paper;
+	}
+
+	ctx->marker.name = upd_papers(ctx->conn->type, ctx->stsbuf.paper);
+	ctx->marker.levelmax = CUPS_MARKER_UNAVAILABLE;
+	ctx->marker.levelnow = CUPS_MARKER_UNKNOWN;
+
+	return CUPS_BACKEND_OK;
+}
+
+static void upd_cleanup_job(const void *vjob)
+{
+	const struct upd_printjob *job = vjob;
+
+	if (job->databuf)
+		free(job->databuf);
+
+	free((void*)job);
 }
 
 #define MAX_PRINTJOB_LEN (2048*2764*3 + 2048)
@@ -531,6 +561,8 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 	    ctx->stsbuf.sts1 == UPD_STS1_PRINTING)
 		INFO("Remaining copies: %d\n", ctx->stsbuf.remain);
 
+	INFO("Media: %s (%02x)\n", upd_papers(ctx->conn->type, ctx->stsbuf.paper), ctx->stsbuf.paper);
+
 	return CUPS_BACKEND_OK;
 }
 
@@ -601,7 +633,7 @@ static const char *sonyupd_prefixes[] = {
 
 const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
-	.version = "0.41",
+	.version = "0.42",
 	.uri_prefixes = sonyupd_prefixes,
 	.cmdline_arg = upd_cmdline_arg,
 	.cmdline_usage = upd_cmdline,
@@ -995,16 +1027,36 @@ Other commands seen:
    2UPC-C14          (200)
    2UPC-C15          (172)
 
- Status progression when printing:
+ CR10L: status progression when printing:
 
- 0e 00 00 00 00 00 00 00 04 a0 04 e0 07 38 00
- 0e 00 00 01 00 80 00 01 04 a0 04 e0 07 38 64
- 0e 00 40 01 00 80 00 01 04 a0 04 e0 07 38 64  <-- Y
- 0e 00 80 01 00 80 00 01 04 a0 04 e0 07 38 64  <-- M
- 0e 00 c0 01 00 80 00 01 04 a0 04 e0 07 38 64  <-- C
- 0e 00 20 01 00 80 00 01 04 a0 04 e0 07 38 64  <-- O
- 0e 00 20 01 00 80 00 01 04 a0 04 e0 07 38 00
- 0e 00 00 01 00 80 00 01 04 a0 04 e0 07 38 00
- 0e 00 00 00 00 00 00 00 04 a0 04 e0 07 38 00
+ 0e 00 00 00 00 00 00 00  04 a0 04 e0 07 38 00
+ 0e 00 00 01 00 80 00 01  04 a0 04 e0 07 38 64
+ 0e 00 40 01 00 80 00 01  04 a0 04 e0 07 38 64  <-- Y
+ 0e 00 80 01 00 80 00 01  04 a0 04 e0 07 38 64  <-- M
+ 0e 00 c0 01 00 80 00 01  04 a0 04 e0 07 38 64  <-- C
+ 0e 00 20 01 00 80 00 01  04 a0 04 e0 07 38 64  <-- O
+ 0e 00 20 01 00 80 00 01  04 a0 04 e0 07 38 00
+ 0e 00 00 01 00 80 00 01  04 a0 04 e0 07 38 00
+ 0e 00 00 00 00 00 00 00  04 a0 04 e0 07 38 00
 
+ UP-DR200 comms protocol:
+
+ <-- 1b e0 00 00 00 0f 00
+ --> 0e 00 XX YY 00 SS RR 01  RT PT CC CC RR RR %%
+
+  CC : Max Cols (0x0800 on 6" ribbon)
+  RR : Max Rows (0x0aa4 on 6x8)
+  RT : Ribbon type (04 = R206/8x6)
+  PT : Paper type  (38 = empty, a8 = 6")
+  %% : Percentage complete (0-99)
+
+ Seen on UP-DR200:
+
+ 0e 00 00 00 00 00 00 00  04 a8 08 00 0a a4 00   READY   (R206 6x8 ribbon)
+ 0e 00 00 00 40 00 00 00  04 a8 08 00 0a a4 00   DOOR OPEN
+ 0e 00 00 00 20 00 00 00  04 38 08 00 0a a4 00   LOAD PAPER
+ 0e 00 00 00 10 08 00 00  00 a8 08 00 0a a4 00   LOAD RIBBON
+
+ 0e 00 00 01 00 c0 00 01  04 a8 08 00 0a a4 00   BAD JOB (I)
+ 0e 00 20 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (II)
 */
