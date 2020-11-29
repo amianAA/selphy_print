@@ -65,16 +65,18 @@ struct sony_updsts {
 #define UPD_STS1_DOOROPEN  0x08
 #define UPD_STS1_NOPAPER   0x40
 #define UPD_STS1_PRINTING  0x80
-#define UPD_STS1_UNK       0xC0  // XXX this is _wrong_.
+#define UPD_STS1_PRINTING2 0xC0
 
 #define UPD_RIBBON_R206    0x04
 
 /* Private data structures */
 struct upd_printjob {
+	size_t jobsize;
+	int copies;
+
 	uint8_t *databuf;
 	int datalen;
 
-	int copies;
 	uint16_t rows;
 	uint16_t cols;
 	uint32_t imglen;
@@ -90,7 +92,7 @@ struct upd_ctx {
 	struct marker marker;
 };
 
-static const char *upd_papers(int type, uint8_t code)
+static const char *upd_ribbons(int type, uint8_t code)
 {
 	if (type == P_SONY_UPD895 || type == P_SONY_UPD897) {
 		return "UP-110 Roll";
@@ -137,6 +139,7 @@ static const char* upd895_statuses(uint8_t code)
 	case UPD_STS1_NOPAPER:
 		return "No paper";
 	case UPD_STS1_PRINTING:
+	case UPD_STS1_PRINTING2:
 		return "Printing";
 	default:
 		return "Unknown";
@@ -231,7 +234,7 @@ static int upd_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 		ctx->marker.numtype = ctx->stsbuf.paper;
 	}
 
-	ctx->marker.name = upd_papers(ctx->conn->type, ctx->stsbuf.paper);
+	ctx->marker.name = upd_ribbons(ctx->conn->type, ctx->stsbuf.ribbon);
 	ctx->marker.levelmax = CUPS_MARKER_UNAVAILABLE;
 	ctx->marker.levelnow = CUPS_MARKER_UNKNOWN;
 
@@ -549,8 +552,8 @@ retry:
 	switch (ctx->stsbuf.sts1) {
 	case UPD_STS1_IDLE:
 		goto done;
-	case UPD_STS1_UNK: // XXX is this correct?
 	case UPD_STS1_PRINTING:
+	case UPD_STS1_PRINTING2:
 		break;
 	default:
 		if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
@@ -597,7 +600,7 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 	    ctx->stsbuf.sts1 == UPD_STS1_PRINTING)
 		INFO("Remaining copies: %d\n", ctx->stsbuf.remain);
 
-	INFO("Media: %s (%02x)\n", upd_papers(ctx->conn->type, ctx->stsbuf.paper), ctx->stsbuf.paper);
+	INFO("Media: %s (%02x)\n", upd_ribbons(ctx->conn->type, ctx->stsbuf.ribbon), ctx->stsbuf.ribbon);
 
 	return CUPS_BACKEND_OK;
 }
@@ -669,7 +672,7 @@ static const char *sonyupd_prefixes[] = {
 
 const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
-	.version = "0.42",
+	.version = "0.43",
 	.uri_prefixes = sonyupd_prefixes,
 	.cmdline_arg = upd_cmdline_arg,
 	.cmdline_usage = upd_cmdline,
@@ -1092,8 +1095,11 @@ Other commands seen:
  0e 00 00 00 20 00 00 00  04 38 08 00 0a a4 00   LOAD PAPER
  0e 00 00 00 10 08 00 00  00 a8 08 00 0a a4 00   LOAD RIBBON
 
- 0e 00 00 01 00 c0 00 01  04 a8 08 00 0a a4 00   BAD JOB (I)
- 0e 00 40 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (II)
- 0e 00 c0 01 00 c0 00 01  04 a8 08 00 0a a4 00   BAD JOB (III)
- 0e 00 20 01 00 c0 00 01  04 a8 08 00 0a a4 64   BAD JOB (IV)
+ 0e 00 00 01 00 c0 00 01  04 a8 08 00 0a a4 00   PRINT START
+ 0e 00 40 01 00 c0 00 01  04 a8 08 00 0a a4 %%   PRINT Y
+ 0e 00 80 01 00 c0 00 01  04 a8 08 00 0a a4 %%   PRINT M
+ 0e 00 c0 01 00 c0 00 01  04 a8 08 00 0a a4 %%   PRINT C
+ 0e 00 20 01 00 c0 00 01  04 a8 08 00 0a a4 %%   PRINT OC
+ 0e 00 00 00 00 00 00 00  04 a8 08 00 0a a4 00   PRINT DONE / READY
+
 */
