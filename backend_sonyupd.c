@@ -283,7 +283,7 @@ static int upd_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 		ctx->marker.levelmax = CUPS_MARKER_UNAVAILABLE;
 		ctx->marker.levelnow = CUPS_MARKER_UNKNOWN;
 	} else {
-		ctx->marker.levelmax = sonyupd_media_maxes(ctx->conn->type, ctx->stsbuf.paper);
+		ctx->marker.levelmax = sonyupd_media_maxes(ctx->conn->type, ctx->stsbuf.ribbon);
 		ctx->marker.levelnow = ctx->printbuf.remain;
 	}
 
@@ -642,6 +642,10 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 	if (ret < 0)
 		return CUPS_BACKEND_FAILED;
 
+	if (ctx->conn->type != P_SONY_UPD895 && ctx->conn->type != P_SONY_UPD897 && (ret = sony_get_prints(ctx, &ctx->printbuf))) {
+		return CUPS_BACKEND_FAILED;
+	}
+
 	if (ctx->conn->type == P_SONY_UPD895 || ctx->conn->type == P_SONY_UPD897) {
 		INFO("Printer status: %s (%02x)\n", upd895_statuses(ctx->stsbuf.sts1), ctx->stsbuf.sts1);
 	} else {
@@ -650,10 +654,13 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 
 	if (ctx->stsbuf.printing != UPD_PRINTING_IDLE &&
 	    ctx->stsbuf.sts1 == UPD_STS1_PRINTING)
-		INFO("Remaining copies: %d\n", ctx->stsbuf.remain);
+		INFO("Remaining copies to print: %d\n", ctx->stsbuf.remain);
 
 	INFO("Media: %s (%02x)\n", upd_ribbons(ctx->conn->type, ctx->stsbuf.ribbon), ctx->stsbuf.ribbon);
 
+	if (ctx->conn->type != P_SONY_UPD895 && ctx->conn->type != P_SONY_UPD897) {
+		INFO("Media remaining: %d/%d", ctx->printbuf.remain, sonyupd_media_maxes(ctx->conn->type, ctx->stsbuf.ribbon));
+	}
 	return CUPS_BACKEND_OK;
 }
 
