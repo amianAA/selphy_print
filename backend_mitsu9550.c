@@ -153,7 +153,7 @@ struct mitsu9550_ctx {
 #define CP9XXX_STS_MEDIA   0x24  /* struct mitsu9550_media */
 #define CP9XXX_STS_x26     0x26
 #define CP9XXX_STS_x30     0x30  /* struct mitsu9550_status */
-#define CP9XXX_STS_SERNO   0x32
+#define CP9XXX_STS_x32     0x32  /* struct mitsucp30_status */
 
 struct mitsu9550_media {
 	uint8_t  hdr[2];  /* 24 2e */
@@ -183,6 +183,32 @@ struct mitsu9550_status {
 	uint8_t  nulle[2];
 } __attribute__((packed));
 
+struct mitsucp30_status {
+	uint8_t  hdr[2]; /* 32 2e */
+	uint8_t  zero[2];
+	uint16_t serno[13]; /* UTF16, BE */
+	uint8_t  sts;     /* CP30_STS_* */
+	uint8_t  sts2;
+	uint8_t  zerob;
+	uint16_t err;     /* CP30_ERR_* */
+	uint8_t  zeroc[2];
+	uint8_t  remain;  /* on media */
+	uint8_t  zerod[9];
+} __attribute__((packed));
+
+#define CP30_STS_IDLE     0x00
+#define CP30_STS_PRINT    0x20
+
+#define CP30_STS_PRINT_A  0x10  //Load
+#define CP30_STS_PRINT_B  0x20  //Y
+#define CP30_STS_PRINT_C  0x30  //M
+#define CP30_STS_PRINT_D  0x40  //C
+#define CP30_STS_PRINT_E  0x60  //Eject?
+
+#define CP30_ERR_OK       0x0000
+#define CP30_ERR_NOPC     0x0303
+#define CP30_ERR_NORIBBON 0x0101
+
 struct mitsu9550_status2 {
 	uint8_t  hdr[2]; /* 21 2e */
 	uint8_t  unk[40];
@@ -197,11 +223,11 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob);
 
 #define QUERY_STATUS_I							\
 	struct mitsu9550_status *sts = (struct mitsu9550_status*) rdbuf; \
-	/* struct mitsu9550_status2 *sts2 = (struct mitsu9550_status2*) rdbuf; */ \
+	struct mitsucp30_status *sts30 = (struct mitsucp30_status*) rdbuf; \
 	struct mitsu9550_media *media = (struct mitsu9550_media *) rdbuf; \
 	uint16_t donor;							\
 	/* media */							\
-	ret = mitsu9550_get_status(ctx, rdbuf,  CP9XXX_STS_MEDIA);	\
+	ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_MEDIA);	\
 	if (ret < 0)							\
 		return CUPS_BACKEND_FAILED;				\
 									\
@@ -221,28 +247,49 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob);
 	}								\
 
 #define QUERY_STATUS_II				\
-	/* status2 */							\
-	ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x21);	\
-	if (ret < 0)							\
-		return CUPS_BACKEND_FAILED;				\
-	/// XXX validate status2 ?
+	if (1 && ctx->conn->type != P_MITSU_CP30D) {				\
+		/* struct mitsu9550_status2 *sts2 = (struct mitsu9550_status2*) rdbuf; */ \
+		ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x21);	\
+		if (ret < 0)							\
+			return CUPS_BACKEND_FAILED;				\
+		/* XXX validate status2 ? */				\
+	}
 
 #define QUERY_STATUS_III			\
 		/* Check for known errors */				\
 		if (sts->sts2 != 0) {					\
 			ERROR("Printer cover open!\n");			\
 			return CUPS_BACKEND_STOP;			\
-		}							\
+		}
+
+#define QUERY_STATUS_IIIB						\
+		/* Check for known errors */				\
+		if (sts30->err == CP30_ERR_NOPC) {			\
+			ERROR("No Paper Cassette!\n");			\
+			return CUPS_BACKEND_STOP;			\
+		} else if (sts30->err == CP30_ERR_NORIBBON) {		\
+			ERROR("Ribbon not loader!\n");			\
+			return CUPS_BACKEND_STOP;			\
+		}
 
 #define QUERY_STATUS_IV				\
-	if (ctx->conn->type != P_MITSU_CP30D) {				\
-		/* status */						\
+	if (ctx->conn->type == P_MITSU_CP30D) {				\
+		ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x32); \
+		if (ret < 0)						\
+			return CUPS_BACKEND_FAILED;			\
+									\
+		if (sts30->sts != CP30_STS_IDLE) {			\
+			sleep(1);					\
+			goto top;					\
+		}							\
+		QUERY_STATUS_IIIB;					\
+	} else {							\
 		ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x30); \
 		if (ret < 0)						\
 			return CUPS_BACKEND_FAILED;			\
 									\
 		/* Make sure we're idle */				\
-		if (sts->sts5 != 0) {  /* Printer ready for another job */ \
+		if (sts->sts5 != 0) {					\
 			sleep(1);					\
 			goto top;					\
 		}							\
@@ -557,7 +604,8 @@ hdr_done:
 		if (plane->cmd[0] != 0x1b ||
 		    plane->cmd[1] != 0x5a ||
 		    plane->cmd[2] != 0x54) {
-			ERROR("Unrecognized data read (%02x%02x%02x%02x)!\n",
+			ERROR("Unrecognized data read @%d (%02x%02x%02x%02x)!\n",
+			      job->datalen,
 			      plane->cmd[0], plane->cmd[1], plane->cmd[2], plane->cmd[3]);
 			mitsu9550_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
@@ -1243,10 +1291,31 @@ top:
 
 	/* Status loop, run until printer reports completion */
 	while(1) {
+		sleep(1);
+
 		QUERY_STATUS_I;
 		QUERY_STATUS_II;
 
-		if (ctx->conn->type != P_MITSU_CP30D) {
+		if (ctx->conn->type == P_MITSU_CP30D) {
+			ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x32);
+			if (ret < 0)
+				return CUPS_BACKEND_FAILED;
+
+			// XXX figure out remaining copy count?
+			// print copy remaining
+
+			if (sts30->sts == CP30_STS_IDLE)  /* If printer transitions to idle */
+				break;
+
+			// XXX if (fast_return && copies_remaining == 0) break...
+
+			if (fast_return && sts30->sts != CP30_STS_IDLE) {
+				INFO("Fast return mode enabled.\n");
+				break;
+			}
+
+			QUERY_STATUS_IIIB;
+		} else {
 			ret = mitsu9550_get_status(ctx, rdbuf, CP9XXX_STS_x30);
 			if (ret < 0)
 				return CUPS_BACKEND_FAILED;
@@ -1261,13 +1330,12 @@ top:
 				break;
 			}
 
-			if (fast_return && !sts->sts5) { /* Ready for another job */
+			if (fast_return && !sts->sts5) {
 				INFO("Fast return mode enabled.\n");
 				break;
 			}
 			QUERY_STATUS_III;
 		}
-		sleep(1);
 	}
 
 	INFO("Print complete\n");
@@ -1294,6 +1362,14 @@ static void mitsu9550_dump_status(struct mitsu9550_status *resp)
 	     resp->sts5, resp->sts6, resp->sts7);
 }
 
+static void mitsucp30_dump_status(struct mitsucp30_status *resp)
+{
+	INFO("Printer status   : %02x %02x\n",
+	     resp->sts, resp->sts2);
+	INFO("Printer error    : %04x\n",
+	     be16_to_cpu(resp->err));
+}
+
 static void mitsu9550_dump_status2(struct mitsu9550_status2 *resp)
 {
 	INFO("Prints remaining on media : %03d\n",
@@ -1313,19 +1389,6 @@ static int mitsu9550_query_media(struct mitsu9550_ctx *ctx)
 	return ret;
 }
 
-static int mitsu9550_query_status(struct mitsu9550_ctx *ctx)
-{
-	struct mitsu9550_status resp;
-	int ret;
-
-	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x30);
-
-	if (!ret)
-		mitsu9550_dump_status(&resp);
-
-	return ret;
-}
-
 static int mitsu9550_query_status2(struct mitsu9550_ctx *ctx)
 {
 	struct mitsu9550_status2 resp;
@@ -1335,6 +1398,29 @@ static int mitsu9550_query_status2(struct mitsu9550_ctx *ctx)
 
 	if (!ret && ctx->conn->type != P_MITSU_CP30D)
 		mitsu9550_dump_status2(&resp);
+
+	return ret;
+}
+
+static int mitsu9550_query_status(struct mitsu9550_ctx *ctx)
+{
+	int ret;
+
+	if (ctx->conn->type == P_MITSU_CP30D) {
+		struct mitsucp30_status resp;
+		ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x32);
+		if (!ret) {
+			mitsucp30_dump_status(&resp);
+			ret = mitsu9550_query_status2(ctx);
+		}
+	} else {
+		struct mitsu9550_status resp;
+		ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x30);
+		if (!ret) {
+			mitsu9550_dump_status(&resp);
+			ret = mitsu9550_query_status2(ctx);
+		}
+	}
 
 	return ret;
 }
@@ -1357,7 +1443,7 @@ static int mitsu9550_query_statusX(struct mitsu9550_ctx *ctx)
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_FWVER);
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x22);
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x26);
-	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_SERNO);
+	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXX_STS_x32);
 #endif
 	return ret;
 }
@@ -1448,10 +1534,7 @@ static int mitsu9550_cmdline_arg(void *vctx, int argc, char **argv)
 			j = mitsu9550_query_media(ctx);
 			break;
 		case 's':
-			if (ctx->conn->type != P_MITSU_CP30D)
-				j = mitsu9550_query_status(ctx);
-			if (!j)
-				j = mitsu9550_query_status2(ctx);
+			j = mitsu9550_query_status(ctx);
 			INFO("Firmware Version: %s\n", ctx->fwver);
 			break;
 		case 'X':
@@ -1480,9 +1563,9 @@ static int mitsu9550_query_markers(void *vctx, struct marker **markers, int *cou
 		return CUPS_BACKEND_FAILED;
 
 	if (ctx->conn->type == P_MITSU_CP30D) {
-		ctx->marker.levelnow = be16_to_cpu(media.remain);
-	} else {
 		ctx->marker.levelnow = be16_to_cpu(media.remain2);
+	} else {
+		ctx->marker.levelnow = be16_to_cpu(media.remain);
 	}
 
 	*markers = &ctx->marker;
@@ -1576,7 +1659,7 @@ const struct dyesub_backend mitsu9550_backend = {
    WW 00 WW 00 00 00 00 00  00 00 00 00 00 00 00 00 :: RR = 0x01 on 9550/98x0/CP30, 0x00 on 9600  [ "ignore errors? ]
    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: SS = 0x01 on 9800S, 0x00 otherwise.
    00 00
-                                                    :: ZZ = Unknown; 0x01 [9550S] & 0x00 [9500].
+                                                    :: ZZ = Unknown; 0x01 [9550S/CP30] & 0x00 [9500].
                                                     :: TT = 0x80 on CP30, 0x00 otherwise
                                                     :: VV = 0x80 on CP30, 0x00 otherwise
                                                     :: WW = 0x10 on CP30, 0x00 otherwise
@@ -1682,7 +1765,7 @@ const struct dyesub_backend mitsu9550_backend = {
     00 00 00 00 00 00 00 00  00 00 NN NN 0A 00 00 01 :: NN NN = Remaining media
 
     21 2e 00 00 00 20 08 02  00 00 00 00 00 00 00 00   [ CP30 ]
-    00 00 00 00 00 00 00 00  00 00 00 01 00 00 00 00
+    00 00 00 00 00 00 00 00  00 00 00 XX 00 00 00 00  :: XX == seen 01 and 02.  Unknown.
     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 
   [[ Status Query D (unknown, possibly lifetime print count?) ]]
@@ -1702,7 +1785,7 @@ const struct dyesub_backend mitsu9550_backend = {
   MEDIA INFO
 
  -> 1b 56 24 00
- <- 24 2e 00 00 00 00 00 00  00 00 00 00 00 00 TT 00 :: TT = Type (!CP30)
+ <- 24 2e 00 00 00 00 00 00  00 00 00 00 XX 00 TT 00 :: TT = Type (!CP30) ; XX = 0x02 on CP30, 0x00 otherwise.
     00 00 00 00 00 00 00 00  00 00 00 00 MM MM N1 N1 :: MM MM = Max prints
     NN NN 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: NN NN = Remaining (!CP30) ; N1 N1 = Remaining (CP30)
 
@@ -1720,12 +1803,13 @@ const struct dyesub_backend mitsu9550_backend = {
     QQ RR SS 00 00 00 00 00  00 00 00 00 00 00 00 00 :: QQ, RR, SS
     00 00 00 00 00 00 00 00  00 00 00 00 TT UU 00 00 :: TT, UU
 
-  SERIAL NUMBER
+  Status Query [CP30]
 
- -> 1b 56 32 00                                         [ CP30 ]
- <- 31 2e 00 00 00 43 00 50 00 33 00 30 00 44 00 20  :: Unicode, "CP30D 204578"
-    00 32 00 30 00 34 00 35 00 37 00 38 00 00 00 00
-    00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00
+ -> 1b 56 32 00
+ <- 32 2e 00 00 00 43 00 50 00 33 00 30 00 44 00 20  :: Unicode, "CP30D 204578"
+    00 32 00 30 00 34 00 35 00 37 00 38 00 00 SS SS  :: SS SS = status code (see CP30_STS_*)
+    00 EE EE 00 00 00 NN 00 00 00 00 00 00 00 00 00  :: NN = remaining prints on paper
+                                                     :: EE EE = error code  (see CP30_ERR_*)
 
   Status Query X (unknown)
 
