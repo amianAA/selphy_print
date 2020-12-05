@@ -328,6 +328,15 @@ mitsubishi-9810dw,0x06d3,0x3b21,0x4,PageSize=B7;StpPrintSpeed=Fine
 mitsubishi-9810dw,0x06d3,0x3b21,0x4,PageSize=B7;StpPrintSpeed=FineHG
 mitsubishi-9810dw,0x06d3,0x3b21,0x4,PageSize=B7;StpPrintSpeed=SuperFine
 #
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h204
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpUseLUT=False
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpUseLUT=True
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpSharpen=0
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpSharpen=9
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpPrintSpeed=Normal
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpPrintSpeed=PowerSave
+#
 mitsubishi-d90dw,0x06d3,0x3b60,0x5,PageSize=w144h432
 mitsubishi-d90dw,0x06d3,0x3b60,0x5,PageSize=w288h432
 mitsubishi-d90dw,0x06d3,0x3b60,0x5,PageSize=w288h432-div2
