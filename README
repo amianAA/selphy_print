@@ -1058,7 +1058,7 @@
 
     Mitsubishi CP9000D/DW
     Mitsubishi CP9500D/DW
-    Mitsubishi CP30DW
+    Mitsubishi CP30DW                                [2]
     Mitsubishi CP9600DW-S/DZ/DZ-S
 
    Valid commands:
@@ -1086,6 +1086,11 @@
     Mitsubishi was *NOT* involved in the creation of this library, and is
     not responsible in any way for the library or any deficiencies in its
     output.  They will provide no support if it is used.
+
+    [2]  **** VERY IMPORTANT ****
+
+    The CPD30 family also relies on the lib70x library in order to do the
+    3D LUT and sharpening transforms.  All of the above disclaimers apply.
 
  ***************************************************************************
   BACKEND=mitsup9x

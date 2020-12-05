@@ -37,6 +37,11 @@
 
      * Mitsubishi CP-M1
 
+   Finally, the CP-D30 family utilizes this library.  This includes these
+   models:
+
+     * Mitsubishi CP-D30DW
+
    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **
 
    This program is free software; you can redistribute it and/or modify it
@@ -62,7 +67,7 @@
 #ifndef __MITSU_D70_H
 #define __MITSU_D70_H
 
-#define LIB_APIVERSION 7
+#define LIB_APIVERSION 8
 
 #include <stdint.h>
 
@@ -129,6 +134,8 @@ void CColorConv3D_Destroy3DColorTable(struct CColorConv3D *this);
 
 /* Run a packed 8bpp rgb or bgr image through the LUT */
 void CColorConv3D_DoColorConv(struct CColorConv3D *this, uint8_t *data, uint16_t cols, uint16_t rows, uint32_t bytes_per_row, int rgb_bgr);
+/* Run a planar rgb image through the LUT */
+void CColorConv3D_DoColorConvPlane(struct CColorConv3D *this, uint8_t *data_r, uint8_t *data_g, uint8_t *data_b, uint32_t planelen);
 
 /* CP98xx family stuff */
 struct mitsu98xx_data;  /* Forward declaration */
@@ -158,5 +165,17 @@ struct M1CPCData *M1_GetCPCData(const char *corrtable_path,
 				const char *filename,
 				const char *gammafilename);
 void M1_DestroyCPCData(struct M1CPCData *dat);
+
+
+/* CPD30 family stuff */
+struct mitsu_cpd30_data;  /* Forward declaration */
+
+struct mitsu_cpd30_data *CPD30_GetData(const char *filename);
+void CPD30_DestroyData(const struct mitsu_cpd30_data *data);
+
+int CPD30_DoConvert(const struct mitsu_cpd30_data *table,
+		     const struct BandImage *input,
+		     struct BandImage *output,
+		     uint8_t type, int sharpness);
 
 #endif /* __MITSU_D70_H */

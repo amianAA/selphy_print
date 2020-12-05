@@ -34,6 +34,10 @@
      * Mitsubishi CP9810DW
      * Mitsubishi CP9820DW-S
 
+   Finally, the CP30D family uses this library too.  This includes tehse models:
+
+     * Mitsubishi CP30D/DW
+
    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **
 
    This program is free software; you can redistribute it and/or modify it
@@ -53,7 +57,7 @@
 
 */
 
-#define LIB_VERSION "0.9.4"
+#define LIB_VERSION "0.10.0"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -301,7 +305,7 @@ static void CColorConv3D_DoColorConvPixel(struct CColorConv3D *this, uint8_t *re
 		 + 2048) >> 12;
 }
 
-/* Perform a total conversion on an entire image */
+/* Perform a total conversion on an entire image, packed rgb/bgr */
 void CColorConv3D_DoColorConv(struct CColorConv3D *this, uint8_t *data, uint16_t cols, uint16_t rows, uint32_t stride, int rgb_bgr)
 {
 	uint16_t i, j;
@@ -321,6 +325,18 @@ void CColorConv3D_DoColorConv(struct CColorConv3D *this, uint8_t *data, uint16_t
 			ptr += 3;
 		}
 		data += stride;
+	}
+}
+
+/* Perform a total conversion on an entire image, planar */
+void CColorConv3D_DoColorConvPlane(struct CColorConv3D *this, uint8_t *data_r, uint8_t *data_g, uint8_t *data_b,
+				   uint32_t planelen)
+{
+	uint32_t i;
+
+	for ( i = 0; i < planelen ; i++ )
+	{
+		CColorConv3D_DoColorConvPixel(this, &data_r[i], &data_g[i], &data_b[i]);
 	}
 }
 
@@ -2930,4 +2946,43 @@ abort:
 done_free:
 	free(data);
 	return NULL;
+}
+
+/* CP-D30 family */
+
+struct mitsu_cpd30_data {  /* XXX All of these are PLACEHOLDERS! */
+	int16_t mask[8][6];
+	int unsharp;
+	int mpx10;
+};
+
+struct mitsu_cpd30_data *CPD30_GetData(const char *filename)
+{
+        UNUSED(filename);
+	return NULL;
+}
+
+void CPD30_DestroyData(const struct mitsu_cpd30_data *data)
+{
+	if (data) free((void*)data);
+}
+
+int CPD30_DoConvert(const struct mitsu_cpd30_data *table,
+		     const struct BandImage *input,
+		     struct BandImage *output,
+		     uint8_t type, int sharpness)
+{
+        UNUSED(table);
+        UNUSED(input);
+        UNUSED(output);
+        UNUSED(type);
+
+	/* Sharpen, as needed */
+	if (sharpness > 0) {
+//		struct CP98xx_AptParams APT;
+//		CP98xx_InitAptParams(table, &APT, sharpness);
+		// XXX DoAptMWithParams();
+	}
+
+	return 0; /* 1 if successful */
 }

@@ -133,6 +133,7 @@ struct mitsu9550_ctx {
 
 	int is_s;
 	int is_98xx;
+	int need_lib;
 	int footer_len;
 	const char *lut_fname;
 
@@ -359,10 +360,14 @@ static int mitsu9550_attach(void *vctx, struct dyesub_connection *conn, uint8_t 
 	    ctx->conn->type == P_MITSU_9800S ||
 	    ctx->conn->type == P_MITSU_9810) {
 		ctx->is_98xx = 1;
+		ctx->need_lib = 1;
 		ctx->lut_fname = MITSU_M98xx_LUT_FILE;
 	}
 
-	if (ctx->is_98xx) {
+	if (ctx->conn->type == P_MITSU_CP30D) {
+		ctx->need_lib = 1;
+	}
+	if (ctx->need_lib) {
 #if defined(WITH_DYNAMIC)
 		/* Attempt to open the library */
 		if (mitsu_loadlib(&ctx->lib, ctx->conn->type))
@@ -556,10 +561,10 @@ hdr_done:
 
 	if (job->is_raw) {
 		/* We have three planes + headers and the final terminator to read */
-		remain = 3 * (planelen + sizeof(struct mitsu9550_plane)) + sizeof(struct mitsu9550_cmd);
+		remain = 3 * (planelen + sizeof(struct mitsu9550_plane)) + ctx->footer_len;
 	} else {
 		/* We have one plane + header and the final terminator to read */
-		remain = planelen * 3 + sizeof(struct mitsu9550_plane) + sizeof(struct mitsu9550_cmd);
+		remain = planelen * 3 + sizeof(struct mitsu9550_plane) +  ctx->footer_len;
 	}
 
 	/* Mitsu9600 windows spool uses more, smaller blocks, but plane data is the same */
@@ -686,12 +691,26 @@ hdr_done:
 		}
 	}
 
+	/* One bit of fixup */
+	if (ctx->conn->type == P_MITSU_CP30D)
+		job->is_raw = 0;
+
 	/* Apply LUT, if job calls for it.. */
 	if (ctx->lut_fname && !job->is_raw && job->hdr2.unkc[9]) {
-		int ret = mitsu_apply3dlut(&ctx->lib, ctx->lut_fname,
-					   job->databuf + sizeof(struct mitsu9550_plane),
-					   job->cols, job->rows,
-					   job->cols * 3, COLORCONV_BGR);
+		int ret;
+		if (ctx->conn->type == P_MITSU_CP30D) {
+			uint32_t planelen = job->rows * job->cols + sizeof(struct mitsu9550_plane);
+			ret = mitsu_apply3dlut_plane(&ctx->lib, ctx->lut_fname,
+						     job->databuf + sizeof(struct mitsu9550_plane),
+						     job->databuf + (planelen + sizeof(struct mitsu9550_plane)),
+						     job->databuf + (planelen * 2 + sizeof(struct mitsu9550_plane)),
+						     job->cols, job->rows);
+		} else {
+			ret = mitsu_apply3dlut_packed(&ctx->lib, ctx->lut_fname,
+						      job->databuf + sizeof(struct mitsu9550_plane),
+						      job->cols, job->rows,
+						      job->cols * 3, COLORCONV_BGR);
+		}
 		if (ret) {
 			mitsu9550_cleanup_job(job);
 			return ret;
@@ -1003,6 +1022,9 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob) {
 	/* Okay, let's do this thing */
 	ptr = job->databuf;
 
+	int sharpness = job->hdr2.unkc[7];
+	job->hdr2.unkc[7] = 0;  /* Clear "sharpness" parameter */
+
 	/* Do the 98xx processing here */
 	if (!ctx->is_98xx || job->is_raw)
 		goto non_98xx;
@@ -1045,8 +1067,6 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob) {
 	output.imgbuf = convbuf;
 	output.bytes_per_row = job->cols * 3 * sizeof(uint16_t);
 
-	int sharpness = job->hdr2.unkc[7];
-
 	if (!ctx->lib.CP98xx_DoConvert(ctx->m98xxdata, &input, &output, job->hdr2.mode, sharpness, job->hdr2.unkc[8])) {
 		free(convbuf);
 		free(newbuf);
@@ -1058,7 +1078,6 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob) {
 	if (job->hdr2.mode == 0x11)
 		job->hdr2.mode = 0x10;
 	job->hdr2.unkc[8] = 0;  /* Clear "already reversed" flag */
-	job->hdr2.unkc[7] = 0;  /* Clear "sharpness" parameter */
 
 	/* Library is done, but its output is packed YMC16.
 	   We need to convert this to planar YMC16, with a header for
