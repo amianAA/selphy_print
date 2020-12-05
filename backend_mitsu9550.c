@@ -136,6 +136,8 @@ struct mitsu9550_ctx {
 	int footer_len;
 	const char *lut_fname;
 
+	char fwver[7];  /* 6 + null */
+
 	struct marker marker;
 
 	/* CP98xx stuff */
@@ -147,7 +149,7 @@ struct mitsu9550_ctx {
 #define CP9XXXX_STS_STS3    0x20
 #define CP9XXXX_STS_STS2    0x21  /* mitsu9550_status2 */
 #define CP9XXXX_STS_STS5    0x22
-#define CP9XXXX_STS_STS4    0x23
+#define CP9XXXX_STS_FWVER   0x23
 #define CP9XXXX_STS_MEDIA   0x24  /* mitsu9550_media */
 #define CP9XXXX_STS_STS1    0x30  /* mitsu9550_status */
 
@@ -323,8 +325,16 @@ static int mitsu9550_attach(void *vctx, struct dyesub_connection *conn, uint8_t 
 	}
 
 	if (test_mode < TEST_MODE_NOATTACH) {
+		uint8_t buf[48];
 		if (mitsu9550_get_status(ctx, (uint8_t*) &media, CP9XXXX_STS_MEDIA))
 			return CUPS_BACKEND_FAILED;
+
+		/* Get FW Version */
+		if (mitsu9550_get_status(ctx, buf, CP9XXXX_STS_FWVER))
+			return CUPS_BACKEND_FAILED;
+		memcpy(ctx->fwver, &buf[6], 6);
+		ctx->fwver[6] = 0;
+		// XXX get serial number too?
 	} else {
 		int media_code = 0x2;
 		if (getenv("MEDIA_CODE"))
@@ -334,6 +344,7 @@ static int mitsu9550_attach(void *vctx, struct dyesub_connection *conn, uint8_t 
 		media.remain = cpu_to_be16(330);
 		media.remain2 = cpu_to_be16(330);
 		media.type = media_code;
+		ctx->fwver[0] = 0;
 	}
 
 	ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
@@ -1375,7 +1386,7 @@ static int mitsu9550_query_status2(struct mitsu9550_ctx *ctx)
 
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXXX_STS_STS2);
 
-	if (!ret)
+	if (!ret && ctx->conn->type != P_MITSU_CP30D)
 		mitsu9550_dump_status2(&resp);
 
 	return ret;
@@ -1387,7 +1398,7 @@ static int mitsu9550_query_statusX(struct mitsu9550_ctx *ctx)
 	int ret;
 
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXXX_STS_STS3);
-	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXXX_STS_STS4);
+	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXXX_STS_FWVER);
 	ret = mitsu9550_get_status(ctx, (uint8_t*) &resp, CP9XXXX_STS_STS5);
 
 	return ret;
@@ -1461,6 +1472,7 @@ static void mitsu9550_cmdline(void)
 	DEBUG("\t\t[ -m ]           # Query media\n");
 	DEBUG("\t\t[ -s ]           # Query status\n");
 	DEBUG("\t\t[ -X ]           # Cancel current job\n");
+//	DEBUG("\t\t[ -Z ]           # Dump all parameters\n");
 }
 
 static int mitsu9550_cmdline_arg(void *vctx, int argc, char **argv)
@@ -1471,22 +1483,24 @@ static int mitsu9550_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "msX")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "msXZ")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'm':
 			j = mitsu9550_query_media(ctx);
 			break;
 		case 's':
-			if (ctx->conn->type == P_MITSU_CP30D)
-				j = mitsu9550_query_statusX(ctx);
-			else
+			if (ctx->conn->type != P_MITSU_CP30D)
 				j = mitsu9550_query_status(ctx);
 			if (!j)
 				j = mitsu9550_query_status2(ctx);
+			INFO("Firmware Version: %s\n", ctx->fwver);
 			break;
 		case 'X':
 			j = mitsu9550_cancel_job(ctx);
+			break;
+		case 'Z':
+			j = mitsu9550_query_statusX(ctx);
 			break;
 		default:
 			break;  /* Ignore completely */
@@ -1600,10 +1614,11 @@ const struct dyesub_backend mitsu9550_backend = {
 
    ~~~ Header 4 (all but 9550-S and 9800-S, involves error policy?)
 
-   1b 57 26 2e 00 QQ TT 00  00 00 00 SS RR 01 VV WW :: QQ = 0x70 on 9550/98x0, 0x60 on 9600 or 9800S, 0x3f on CP30
-   WW 00 WW 00 00 00 00 00  00 00 00 00 00 00 00 00 :: RR = 0x01 on 9550/98x0/CP30, 0x00 on 9600
+   1b 57 26 2e 00 QQ TT 00  00 00 00 SS RR ZZ VV WW :: QQ = 0x70 on 9550/98x0, 0x60 on 9600 or 9800S, 0x3f on CP30 [also seen 0x20 & 0x00 on 9550S]
+   WW 00 WW 00 00 00 00 00  00 00 00 00 00 00 00 00 :: RR = 0x01 on 9550/98x0/CP30, 0x00 on 9600  [ "ignore errors? ]
    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: SS = 0x01 on 9800S, 0x00 otherwise.
    00 00
+                                                    :: ZZ = Unknown; 0x01 [9550S] & 0x00 [9500].
                                                     :: TT = 0x80 on CP30, 0x00 otherwise
                                                     :: VV = 0x80 on CP30, 0x00 otherwise
                                                     :: WW = 0x10 on CP30, 0x00 otherwise
@@ -1659,55 +1674,79 @@ const struct dyesub_backend mitsu9550_backend = {
 
  ***********************************************************************
 
- * Mitsubishi ** CP-9550DW-S/9800DW-S ** Communications Protocol:
+ * Mitsubishi CP-9xxx Communications Protocol:
+
+  JOB CANCEL
+
+ -> 1b 44
+
+  [[ Unknown query ]]
+
+ -> 1b 4b 7f 00
+ <- eb 4b 8f  00 02  00 5e  [[ '02' seems to be a length ]]
+
+  [[ unknown query, 9800-only ]]
+
+ -> 1b 4b 01 00
+ <- e4 4b 01  00 02  00 78
+
+  PRINT START
+
+ -> 1b 50 47 00  [9550S]
+ -> 1b 50 4e 00  [9800S]
+ -> 1b 50 56 00  [9810 Lamination]
+    [[ see "footer" above for other models ]]
 
   [[ Unknown ]]
 
- -> 1b 53 c5 9d
-
-  [[ Unknown, query some parameter? ]]
-
- -> 1b 4b 7f 00
- <- eb 4b 8f 00 02 00 5e  [[ '02' seems to be a length ]]
+ -> 1b 51 c5 9d
 
   [[ Unknown ]]
 
  -> 1b 53 00 00
 
-  Query Model & Serial number
+  [[ Unknown ]]
 
- -> 1b 72 6e 00
- <- e4 82 6e 00 LL 39 00 35  00 35 00 30 00 5a 00 20
-    00 41 00 32 00 30 00 30  00 36 00 37 00
+ -> 1b 53 c5 9d
 
-     'LL' is length.  Data is returned in 16-bit unicode, LE.
-     Contents are model ('9550Z'), then space, then serialnum ('A20067')
+  [[ Status Query B ]]
 
-  Query FW Version?
+ -> 1b 56 20 00                                        [ CP30 ]
+ <- 20 2e 00 0a 10 00 00 00 00 00 00 00 CC CC RR RR :: CC == cols
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 :: RR == rows (04b0 for L??)
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 
- -> 1b 72 01 00
- <- e4 82 01 00 LL 39 00 35  00 35 00 30 00 5a 00 20
-    00 41 00 32 00 30 00 30  00 36 00 37 00
+  [[ Status Query C ]]
 
-     'LL' is length.  Data is returned in 16-bit unicode, LE.
-     Contents are model ('9550Z'), then space, then serialnum ('A20067')
+ -> 1b 56 21 00                                       [ Most models ]
+ <- 21 2e 00 80 00 22 a8 0b  00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00  00 00 00 QQ 00 00 00 00 :: QQ == Prints in job?
+    00 00 00 00 00 00 00 00  00 00 NN NN 0A 00 00 01 :: NN NN = Remaining media
 
-  Media Query
+    21 2e 00 00 00 20 08 02  00 00 00 00 00 00 00 00   [ CP30 ]
+    00 00 00 00 00 00 00 00  00 00 00 01 00 00 00 00
+    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+  [[ Status Query D (unknown, possibly lifetime print count?) ]]
+
+ -> 1b 56 22 00                                       [ CP30 ]
+ <- 22 2e 00 40 00 00 00 00  00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+  FIRWARE VERSIONS
+
+ -> 1b 56 23 00                                       [ CP30 ]
+ <- 23 2e 00 00 00 00 32 32  33 46 31 30 32 32 34 42   223F10 224B10 ... 222A10
+    31 30 00 00 00 00 00 00  32 32 32 41 31 30 00 00
+    00 00 00 05 d9 3f 79 20  00 00 13 97 00 00 00 00
+
+  MEDIA INFO
 
  -> 1b 56 24 00
  <- 24 2e 00 00 00 00 00 00  00 00 00 00 00 00 TT 00 :: TT = Type (!CP30)
     00 00 00 00 00 00 00 00  00 00 00 00 MM MM N1 N1 :: MM MM = Max prints
     NN NN 00 00 00 00 00 00  00 00 00 00 00 00 00 00 :: NN NN = Remaining (!CP30) ; N1 N1 = Remaining (CP30)
-
-  [[ unknown query, 9800-only ]]
-
- -> 1b 4b 01 00
- <- e4 4b 01 00 02 00 78
-
-  [[ Unknown query.. "Printer number" related? ]]
-
- -> 1b 72 10 00
- <- e4 82 10 00 LL [ 10 unknown bytes.  guess. ]
 
   Status Query  [All models except CP30]
 
@@ -1716,52 +1755,15 @@ const struct dyesub_backend mitsu9550_backend = {
     QQ RR SS 00 00 00 00 00  00 00 00 00 00 00 00 00 :: QQ, RR, SS
     00 00 00 00 00 00 00 00  00 00 00 00 TT UU 00 00 :: TT, UU
 
-  Status Query B
-
- -> 1b 56 20 00                                        [ CP30 ]
- <- 20 2e 00 0a 10 00 00 00 00 00 00 00 CC CC RR RR :: CC == cols
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 :: RR == rows (04b0 for L??)
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-  Status Query C
-
- -> 1b 56 21 00                                       [ Most models ]
- <- 21 2e 00 80 00 22 a8 0b  00 00 00 00 00 00 00 00
-    00 00 00 00 00 00 00 00  00 00 00 QQ 00 00 00 00 :: QQ == Prints in job?
-    00 00 00 00 00 00 00 00  00 00 NN NN 0A 00 00 01 :: NN NN = Remaining media
-
-    21 2e 00 00 00 20 08 02 00 00 00 00 00 00 00 00  [ CP30 ]
-    00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-  Status Query D (unknown, possibly lifetime print count?)
-
- -> 1b 56 22 00                                       [ CP30 ]
- <- 22 2e 00 40 00 00 00 00 00 00 00 00 00 00 00 00
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-  Status Query E (unknown, possibly firmware versions?)
-
- -> 1b 56 23 00                                       [ CP30 ]
- <- 23 2e 00 00 00 00 32 32 33 46 31 30 32 32 34 42   223F10 224B10 ... 222A10
-    31 30 00 00 00 00 00 00 32 32 32 41 31 30 00 00
-    00 00 00 05 d9 3f 79 20 00 00 13 97 00 00 00 00
-
   Status Query X (unknown)
-
- -> 1b 56 36 00
- <- ??? 48 bytes?
-
-
-  Status Query Y (unknown)
 
  -> 1b 56 33 00
  <- ??? 48 bytes?
 
-  [[ Job Cancel ]]
+  Status Query Y (unknown)
 
- -> 1b 44
+ -> 1b 56 36 00
+ <- ??? 48 bytes?
 
   [[ Header 1 -- See above ]]
 
@@ -1775,34 +1777,48 @@ const struct dyesub_backend mitsu9550_backend = {
 
  -> 1b 57 22 2e ....
 
-  [[ Unknown -- Start Data ? ]]
+  [[ Header 4 -- See above ]]
+
+ -> 1b 57 26 2e ....
+
+  DATA Start  [[ Or maybe it's "DATA Clear" ? ]]
 
  -> 1b 5a 43 00
 
-  [[ Plane header #1 (Blue) ]]
+  PLANE Data
 
- -> 1b 5a 54 00 00 00 00 00  XX XX YY YY :: XX XX == Columns, YY YY == Rows
+ -> 1b 5a 54 ?? 00 00 00 00  XX XX YY YY :: XX XX == Columns, YY YY == Rows
+                                         :: ?? == x00 8bpp, x10 16bpp
 
-    Followed by image plane #1 (Blue), XXXX * YYYY bytes
+    Followed by image plane data, XXXX * YYYY [ * 2 ] bytes
 
-  [[ Plane header #2 (Green) ]]
+    [ Three planes are needed! ]
 
- -> 1b 5a 54 00 00 00 00 00  XX XX YY YY :: XX XX == Columns, YY YY == Rows
+  Query Model & FW Version (XXX Confirm this!)
 
-    Followed by image plane #2 (Green), XXXX * YYYY bytes
+ -> 1b 72 01 00
+ <- e4 82 01 00 LL 39 00 35  00 35 00 30 00 5a 00 20
+    00 41 00 32 00 30 00 30  00 36 00 37 00
 
-  [[ Plane header #3 (Red) ]]
+     'LL' is length.  Data is returned in 16-bit unicode, LE.
+     Contents are model ('9550Z'), then space, then serialnum ('A20067')
 
- -> 1b 5a 54 00 00 00 00 00  XX XX YY YY :: XX XX == Columns, YY YY == Rows
+  [[ Unknown query.. "Printer number" related?  Seen in driver dump ]]
 
-    Followed by image plane #3 (Red), XXXX * YYYY bytes
+ -> 1b 72 10 00
+ <- e4 82 10 00 LL [ 10 unknown bytes.  guess. ]
 
-  [[ Footer -- End Data aka START print?  See above for other models ]]
+  Query Model & Serial number
 
- -> 1b 50 47 00  [9550S]
- -> 1b 50 4e 00  [9800S]
+ -> 1b 72 6e 00
+ <- e4 82 6e 00 LL 39 00 35  00 35 00 30 00 5a 00 20
+    00 41 00 32 00 30 00 30  00 36 00 37 00
 
-  [[ At this point, loop status/status b/media queries until printer idle ]]
+     'LL' is length.  Data is returned in 16-bit unicode, LE.
+     Contents are model ('9550Z'), then space, then serialnum ('A20067')
+
+
+  **** After print starts, loop status/status b/media queries until printer idle
 
     MM, QQ RR SS, TT UU
 
@@ -1843,10 +1859,6 @@ const struct dyesub_backend mitsu9550_backend = {
     31  be 80 01  80 4b
      [...]
 
-  Seen on 9600DW
-
-    ZZ == 08  Door open
-
  Working theory of interpreting the status flags:
 
   MM :: 00 is idle, else mechanical printer state.
@@ -1856,6 +1868,7 @@ const struct dyesub_backend mitsu9550_backend = {
   SS :: ?? 0x00 means "ready for another print" but 0x01 is "busy"
   TT :: ?? seen values between 0x7c through 0x96)
   UU :: ?? seen values between 0x43 and 0x4c -- temperature?
+  ZZ :: ?? Error code  (08 = Door open on 9600)
 
   ***
 
@@ -1863,13 +1876,9 @@ const struct dyesub_backend mitsu9550_backend = {
 
   [[ Set error policy ?? aka "header 4" ]]
 
- -> 1b 57 26 2e 00 QQ 00 00  00 00 00 00 RR SS 00 00 :: QQ/RR/SS 00 00 00 [9550S]
+ -> 1b 57 26 2e 00 QQ 00 00  00 00 00 00 RR ZZ 00 00 :: QQ/RR/ZZ 00 00 00 [9550S]
     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 ::          20 01 00 [9550S w/ ignore failures on]
     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 ::          70 01 01 [9550]
     00 00
-
-  [[ Unknown command, seen in driver as esc_q ]]
-
- -> 1b 51
 
  */

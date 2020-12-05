@@ -113,10 +113,10 @@
   format these printers will accept, along with associated printing
   parameters/options.
 
-  Consequently, this backend can only be used in conjunction with 
-  Gutenprint (http://gimp-print.sf.net), version 5.2.10 or newer. Code 
+  Consequently, this backend can only be used in conjunction with
+  Gutenprint (http://gimp-print.sf.net), version 5.2.10 or newer. Code
   snapshots of this backend are bundled with Gutenprint, although this
-  repository is the canonical upstream source and is developed 
+  repository is the canonical upstream source and is developed
   independently.
 
   As such, when compared to any given Gutenprint release, the code found
