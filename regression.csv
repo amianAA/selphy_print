@@ -133,6 +133,7 @@ mitsu9800,0x06d3,0x03ae,mitsu_9800_4x6-8bpp.raw,0x2
 mitsu9810,0x06d3,0x3b21,mitsu_9800_4x6-8bpp.raw,0x2
 mitsu9810,0x06d3,0x3b21,mitsu_9800_4x6-12bpp.raw,0x2
 #mitsu9820s,0x06d3,PID,mitsu_9800_4x6-8bpp.raw, ### NEED USB PID
+mitsubishi-cp30dw,0x06d3,0x03ab,mitsu_cp30-l.raw,0x0
 #
 # 'mitsu70x'
 #
