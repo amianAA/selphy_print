@@ -209,6 +209,7 @@ struct mitsucp30_status {
 #define CP30_ERR_OK       0x0000
 #define CP30_ERR_NOPC     0x0303
 #define CP30_ERR_NORIBBON 0x0101
+#define CP30_ERR_TRAYFULL 0x1404
 
 struct mitsu9550_status2 {
 	uint8_t  hdr[2]; /* 21 2e */
@@ -218,6 +219,17 @@ struct mitsu9550_status2 {
 } __attribute__((packed));
 
 static int mitsu9550_main_loop(void *vctx, const void *vjob);
+
+static const char *cp30_errors(uint16_t err)
+{
+	switch(err){
+	case CP30_ERR_OK: return "None";
+	case CP30_ERR_NOPC: return "No Paper Cassette";
+	case CP30_ERR_NORIBBON: return "No Ribbon Loaded";
+	case CP30_ERR_TRAYFULL: return "Output Tray Full";
+	default: return "Unknown";
+	}
+}
 
 #define CMDBUF_LEN   64
 #define READBACK_LEN 128
@@ -265,11 +277,8 @@ static int mitsu9550_main_loop(void *vctx, const void *vjob);
 
 #define QUERY_STATUS_IIIB						\
 		/* Check for known errors */				\
-		if (sts30->err == CP30_ERR_NOPC) {			\
-			ERROR("No Paper Cassette!\n");			\
-			return CUPS_BACKEND_STOP;			\
-		} else if (sts30->err == CP30_ERR_NORIBBON) {		\
-			ERROR("Ribbon not loader!\n");			\
+		if (sts30->err != CP30_ERR_OK) {			\
+			ERROR("%s (%04x)!\n", cp30_errors(be16_to_cpu(sts30->err)), be16_to_cpu(sts30->err)); \
 			return CUPS_BACKEND_STOP;			\
 		}
 
@@ -1320,6 +1329,10 @@ top:
 			if (ret < 0)
 				return CUPS_BACKEND_FAILED;
 
+			if (sts30->err == CP30_ERR_TRAYFULL) {
+				ERROR("Output Tray Full!\n");
+				return CUPS_BACKEND_STOP;
+			}
 			// XXX figure out remaining copy count?
 			// print copy remaining
 
@@ -1385,7 +1398,8 @@ static void mitsucp30_dump_status(struct mitsucp30_status *resp)
 {
 	INFO("Printer status   : %02x %02x\n",
 	     resp->sts, resp->sts2);
-	INFO("Printer error    : %04x\n",
+	INFO("Printer error    : %s (%04x)\n",
+	     cp30_errors(be16_to_cpu(resp->err)),
 	     be16_to_cpu(resp->err));
 }
 
@@ -1603,7 +1617,7 @@ static const char *mitsu9550_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu9550_backend = {
 	.name = "Mitsubishi CP9xxx family",
-	.version = "0.59" " (lib " LIBMITSU_VER ")",
+	.version = "0.60" " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsu9550_prefixes,
 	.cmdline_usage = mitsu9550_cmdline,
 	.cmdline_arg = mitsu9550_cmdline_arg,
