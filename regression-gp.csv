@@ -333,7 +333,7 @@ mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357
 mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpUseLUT=False
 mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpUseLUT=True
 mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpSharpen=0
-mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpSharpen=9
+mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpSharpen=8
 mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpPrintSpeed=Normal
 mitsubishi-cp30dw,0x06d3,0x03ab,0x0,PageSize=w272h357;StpPrintSpeed=PowerSave
 #
