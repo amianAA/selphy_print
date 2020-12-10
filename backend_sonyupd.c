@@ -659,7 +659,7 @@ static int upd895_dump_status(struct upd_ctx *ctx)
 	INFO("Media: %s (%02x)\n", upd_ribbons(ctx->conn->type, ctx->stsbuf.ribbon), ctx->stsbuf.ribbon);
 
 	if (ctx->conn->type != P_SONY_UPD895 && ctx->conn->type != P_SONY_UPD897) {
-		INFO("Media remaining: %d/%d", ctx->printbuf.remain, sonyupd_media_maxes(ctx->conn->type, ctx->stsbuf.ribbon));
+		INFO("Media remaining: %d/%d\n", ctx->printbuf.remain, sonyupd_media_maxes(ctx->conn->type, ctx->stsbuf.ribbon));
 	}
 	return CUPS_BACKEND_OK;
 }
