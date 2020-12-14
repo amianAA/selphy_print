@@ -92,8 +92,7 @@ E=true
 endif
 
 # Flags
-CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOU
-RCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
+CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
 LDFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --libs libusb-1.0)
 CPPFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --cflags libusb-1.0)
 # CPPFLAGS += -DLIBUSB_PRE_1_0_10
