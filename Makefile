@@ -214,7 +214,7 @@ install: all
 
 clean:
 	@$(E) "   CLEAN  " all
-	$(Q)$(RM) $(EXEC_NAME) $(BACKENDS) $(LIBRARIES) $(SOURCES:.c=.o) $(LIBS6145_SOURCES:.c=.o) $(LIB70X_SOURCES:.c=.o)
+	$(Q)$(RM) $(EXEC_NAME) $(BACKENDS) $(LIBRARIES) $(SOURCES:.c=.o) $(LIBS6145_SOURCES:.c=.o) $(LIBS2245_SOURCES:.c=.o) $(LIB70X_SOURCES:.c=.o)
 	$(Q)$(RM) -Rf $(DATAFILES_TMP)
 
 release:
