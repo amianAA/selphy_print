@@ -362,7 +362,8 @@ mitsubishi-cpm1,0x06d3,0x3b80,0x4,PageSize=B7
 mitsubishi-cpm1,0x06d3,0x3b80,0x4,PageSize=w360h360
 mitsubishi-cpm1,0x06d3,0x3b80,0x4,PageSize=w360h504
 mitsubishi-cpm1,0x06d3,0x3b80,0xf,PageSize=432h576;StpSharpen=0;StpUseLUT=False;StpLaminate=Glossy;StpPrintSpeed=Fast
-mitsubishi-cpm1,0x06d3,0x3b80,0xf,PageSize=432h576;StpSharpen=0;StpUseLUT=False;StpColorMatching=True;StpLaminate=Glossy
+mitsubishi-cpm1,0x06d3,0x3b80,0xf,PageSize=432h576;StpSharpen=0;StpUseLUT=False;StpColorMatching=Natural;StpLaminate=Glossy
+mitsubishi-cpm1,0x06d3,0x3b80,0xf,PageSize=432h576;StpSharpen=0;StpUseLUT=False;StpColorMatching=Vivid;StpLaminate=Glossy
 mitsubishi-cpm1,0x06d3,0x3b80,0xf,PageSize=432h576;StpSharpen=7;StpUseLUT=True;StpLaminate=Matte
 #
 kodak-305,0x040a,0x404f,0xf,PageSize=w288h432
