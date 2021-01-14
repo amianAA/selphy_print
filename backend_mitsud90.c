@@ -193,14 +193,14 @@ struct mitsud90_job_hdr {
 	uint8_t  sharp_v;   /* Always 0 on M1 */
 	uint8_t  zero_b[4]; /* 0 on D90, on M1, zero_b[3] is the not-raw flag */
 	struct {
-		uint16_t pano_on;   /* 0x0001 when pano is on, or always 0x0002 on M1  */
-		uint8_t  pano_tot;  /* 2 or 3 */
-		uint8_t  pano_pg;   /* 1, 2, 3 */
-		uint16_t pano_rows; /* always 0x097c (BE), ie 2428 ie 8" print */
-		uint16_t pano_rows2; /* Always 0x30 less than pano_rows */
-		uint16_t pano_zero; /* 0x0000 */
-		uint16_t pano_overlap; /* always 0x0258, ie 600 or 2 inches */
-		uint8_t  pano_unk[4];  /* 00 0c 00 06 */
+		uint16_t on;     /* 0x0001 when pano is on, or always 0x0002 on M1  */
+		uint8_t  total;  /* 2 or 3 */
+		uint8_t  page;   /* 1, 2, 3 */
+		uint16_t rows;   /* always 0x097c (BE), ie 2428 ie 8" print */
+		uint16_t rows2;  /* Always 0x30 less than pano_rows */
+		uint16_t zero;   /* 0x0000 */
+		uint16_t overlap; /* always 0x0258, ie 600 or 2 inches */
+		uint8_t  unk[4];  /* 00 0c 00 06 */
 	} pano __attribute__((packed));
 	uint8_t zero_c[7];
 /*@x50*/uint8_t unk_m1;   /* 00 on d90 & m1 Linux, 01 on m1 (windows) */
@@ -464,6 +464,8 @@ struct mitsud90_ctx {
 	struct mitsud90_job_footer holdover;
 	int holdover_on;
 
+	int pano_page;
+
 	/* For the CP-M1 family */
 	struct mitsu_lib lib;
 
@@ -627,7 +629,7 @@ static int mitsud90_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 		/* Attempt to open the library */
 		if (mitsu_loadlib(&ctx->lib, ctx->conn->type))
 #endif
-			WARNING("Dynamic library support not loaded, will be unable to print.");
+			WARNING("Dynamic library support not loaded, will be unable to print.\n");
 	}
 
 	// XXX do some runtime checks for FW versions.
@@ -644,6 +646,9 @@ static int mitsud90_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 static void mitsud90_teardown(void *vctx) {
 	struct mitsud90_ctx *ctx = vctx;
 
+	if (ctx->pano_page) {
+		WARNING("Panorama state left dangling!\n");
+	}
 	if (!ctx)
 		return;
 
@@ -738,11 +743,22 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		return CUPS_BACKEND_CANCEL;
 	}
 
-	/* More sanity checks */
-	if (job->hdr.pano.pano_on && ctx->conn->type != P_MITSU_M1) {
-		ERROR("Unable to handle panorama jobs yet\n");
-		mitsud90_cleanup_job(job);
-		return CUPS_BACKEND_CANCEL;
+	/* Sanity check panorama parameters */
+	if (job->hdr.pano.on &&
+	    ctx->conn->type == P_MITSU_D90) {
+		if ((be16_to_cpu(job->hdr.pano.total) < 2 &&
+		     be16_to_cpu(job->hdr.pano.total) > 3) ||
+		    (be16_to_cpu(job->hdr.pano.page) < 1 &&
+		     be16_to_cpu(job->hdr.pano.page) > 3) ||
+		    be16_to_cpu(job->hdr.pano.page) != (ctx->pano_page + 1) ||
+		    be16_to_cpu(job->hdr.pano.rows != 2428) ||
+		    be16_to_cpu(job->hdr.pano.rows2 != (2428-0x30)) ||
+		    be16_to_cpu(job->hdr.pano.overlap != 600)
+			) {
+			ERROR("Invalid panorama parameters");
+			mitsud90_cleanup_job(job);
+			return CUPS_BACKEND_CANCEL;
+		}
 	}
 
 	/* Sanity check cutlist */
@@ -906,6 +922,28 @@ static int mitsud90_main_loop(void *vctx, const void *vjob) {
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 	copies = job->copies;
+
+	/* Handle panorama state */
+	if (ctx->conn->type == P_MITSU_D90) {
+		if (job->hdr.pano.on) {
+			ctx->pano_page++;
+			if (be16_to_cpu(job->hdr.pano.page) != ctx->pano_page) {
+				ERROR("Invalid panorama state (page %d of %d)\n",
+				      ctx->pano_page, be16_to_cpu(job->hdr.pano.page));
+				return CUPS_BACKEND_FAILED;
+			}
+			if (copies > 1) {
+				WARNING("Cannot print non-collated copies of a panorama job\n");
+				copies = 1;
+			}
+		} else if (ctx->pano_page) {
+			/* Clean up panorama state */
+			WARNING("Dangling panorama state!\n");
+			ctx->pano_page = 0;
+		}
+	} else {
+		ctx->pano_page = 0;
+	}
 
 	if (ctx->conn->type == P_MITSU_M1 && !job->is_raw) {
 		struct BandImage input;
@@ -1119,6 +1157,10 @@ top:
 		if ((ret = send_data(ctx->conn,
 				     (uint8_t*) &job->footer, sizeof(job->footer))))
 			return CUPS_BACKEND_FAILED;
+
+		/* Initiating printing means we're done parsing panorama */
+		if (ctx->pano_page)
+			ctx->pano_page = 0;
 	}
 
 	/* Wait for completion */
@@ -1690,7 +1732,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.30"  " (lib " LIBMITSU_VER ")",
+	.version = "0.31"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
