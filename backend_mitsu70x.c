@@ -2277,10 +2277,17 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 	switch (ctx->conn->type) {
 	case P_MITSU_D70X:
 		stats->mfg = "Mitsubishi";
-		if (ctx->num_decks == 2)
-			stats->model = "CP-D707DW";
-		else
-			stats->model = "CP-D70DW";
+		if (ctx->num_decks == 2) {
+			if (ctx->is_s)
+				stats->model = "CP-D707DW-S";
+			else
+				stats->model = "CP-D707DW";
+		} else {
+			if (ctx->is_s)
+				stats->model = "CP-D70DW-S";
+			else
+				stats->model = "CP-D70DW";
+		}
 		break;
 	case P_MITSU_K60:
 		stats->mfg = "Mitsubishi";
@@ -2288,7 +2295,10 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 		break;
 	case P_MITSU_D80:
 		stats->mfg = "Mitsubishi";
-		stats->model = "CP-D80DW";
+		if (ctx->is_s)
+			stats->model = "CP-D80DW-S";
+		else
+			stats->model = "CP-D80DW";
 		break;
 	case P_KODAK_305:
 		stats->mfg = "Kodak";
@@ -2336,7 +2346,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.100" " (lib " LIBMITSU_VER ")",
+	.version = "0.101" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
