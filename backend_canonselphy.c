@@ -734,10 +734,9 @@ static int canonselphy_read_parse(void *vctx, const void **vjob, int data_fd, in
 	printer_type = parse_printjob(rdbuf, &job->bw_mode, &job->plane_len);
 	/* Special cases for some models */
 	if (printer_type == P_ES40_CP790) {
-		if (ctx->conn->type == P_CP790)
-			printer_type = P_CP790;
-		else
-			printer_type = P_ES40;
+		if (ctx->conn->type == P_CP790 ||
+		    ctx->conn->type == P_ES40)
+			printer_type = ctx->conn->type;
 	}
 
 	if (printer_type != ctx->conn->type) {
@@ -1125,7 +1124,7 @@ static const char *canonselphy_prefixes[] = {
 
 const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
-	.version = "0.106",
+	.version = "0.107",
 	.uri_prefixes = canonselphy_prefixes,
 	.cmdline_usage = canonselphy_cmdline,
 	.cmdline_arg = canonselphy_cmdline_arg,
