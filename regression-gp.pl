@@ -48,6 +48,8 @@ my $rotor = 0;
 my $rotor_circ = 0;
 my $row = 0;
 
+my $pano_mode = 0;
+
 my $quiet = 1;
 my $proc_count = 0;
 my @children = ();
@@ -59,6 +61,7 @@ my $convert_exec = "/usr/bin/convert";
 my $pdftoraster_exec = "/usr/lib/cups/filter/pdftoraster";
 my $rastertogutenprint_exec = "/usr/lib/cups/filter/rastertogutenprint.5.3";
 my $backend_exec = "./dyesub_backend";
+my $pano_exec = "./pano-split.sh";
 
 $ENV{"STP_SUPPRESS_VERBOSE_MESSAGES"} = 1;
 $ENV{"OMP_NUM_THREADS"} = 1;
@@ -149,6 +152,13 @@ if ($proc_count > 1 && $kid > 0) {
 	    $options .= "$x ";
 	}
 
+	# See if we're in panorama mode
+	if (defined($row[5])) {
+	    $pano_mode = 1;
+	    pop(@pages_set);  # 1 "page"
+	    pop(@copies_set); # 1 copy
+	}
+
 	my $rval;
 	my @args;
 
@@ -179,22 +189,39 @@ if ($proc_count > 1 && $kid > 0) {
 	}
 
 	foreach my $pages (@pages_set) {
-	    # generate PDF.
-	    @args = ($convert_exec);
-	    for (my $i = 0 ; $i < $pages ; $i++) {
-		push(@args, $input_image);
-	    }
-	    push(@args, "-density");
-	    push(@args, "300x300");
-	    push(@args, "${work_dir}$currow-${gp_name}.pdf");
-	    if (!$quiet) {
-		print join(":", @args) . "\n";
-	    }
-	    $rval = run \@args;
-	    if (!$rval) {
-		print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' FAIL: convert: $? -- " . join(":", @args) . "\n");
-		$error++;
-		next;
+	    if ($pano_mode) {
+		# XXX generate panorama bitmap
+		my $pano_tmp = $input_image; # XXX
+
+		# Generate PDF by running through script.
+		@args = ($pano_exec, $pano_tmp, "${work_dir}$currow-${gp_name}.pdf", $gp_name, $row[5]);
+		if (!$quiet) {
+		    print join(":", @args) . "\n";
+		}
+		$rval = run \@args;
+		if (!$rval) {
+		    print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' '$row[5]' FAIL: pano-split.sh: $? -- " . join(":", @args) . "\n");
+		    $error++;
+		    next;
+		}
+	    } else {
+		# generate PDF.
+		@args = ($convert_exec);
+		for (my $i = 0 ; $i < $pages ; $i++) {
+		    push(@args, $input_image);
+		}
+		push(@args, "-density");
+		push(@args, "300x300");
+		push(@args, "${work_dir}$currow-${gp_name}.pdf");
+		if (!$quiet) {
+		    print join(":", @args) . "\n";
+		}
+		$rval = run \@args;
+		if (!$rval) {
+		    print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' FAIL: convert: $? -- " . join(":", @args) . "\n");
+		    $error++;
+		    next;
+		}
 	    }
 
 	    # Generate raster from PDF

@@ -7,43 +7,68 @@
 # very naive linear manner.
 
 infile="$1"
+outfile="$2"
+model="$3"
+printsize="$4"
+
+if [ -z "$5" ] ; then
+    dpi=300
+else
+    dpi="$5"
+fi
 
 # D90
-dpi=300
-cols=1852
-drows=2428
-overlap=600
-## 6x20 3-pane
-inrows=6084
-## 6x14 2-pane
-#inrows=4256
-
-#DS620
-#dpi=300
-#cols=1844
-#drows=2436
-#overlap=600
-## 6x20 3-page
-#inrows=6108
-## 6x14 2-page
-#inrows=4272
-
-#DS820
-#dpi=300
-#overlap=600
-#cols=2448
-## 8x18 2-pane
-#drows=3036
-#inrows=5472
-## 8x26 3-pane
-#drows=3036
-#inrows=7908
-## 8x22 2-pane
-#drows=3636
-#inrows=6672
-## 8x32 3-pane
-#drows=3636
-#inrows=9708
+case "${model}" in
+    mitsubishi-d90dw)
+	cols=1852
+	drows=2428
+	overlap=600
+	if [ "${printsize}" eq "6x20" ] ; then
+	    inrows=6084
+	elif [ "${printsize}" eq "6x14" ] ; then
+	    inrows=4256
+	else
+	    echo "D90 supportx 6x20 and 6x14 only"
+	    exit 1
+	fi
+    ;;
+    dnp-ds620)
+	cols=1844
+	drows=2436
+	overlap=600
+	if [ "${printsize}" eq "6x20" ] ; then
+	    inrows=6108
+	elif [ "${printsize}" eq "6x14" ] ; then
+	    inrows=4272
+	else
+	    echo "DS620 supportx 6x20 and 6x14 only"
+	    exit 1
+	fi
+	;;
+    dnp-ds820)
+	overlap=600
+	cols=2448
+	if [ "${printsize}" eq "8x18" ] ; then
+	    drows=3036
+	    inrows=5472
+	elif [ "${printsize}" eq "8x26" ] ; then
+	    drows=3036
+	    inrows=7908
+	elif [ "${printsize}" eq "8x22" ] ; then
+	    drows=3636
+	    inrows=6672
+	elif [ "${printsize}" eq "8x32" ] ; then
+	    drows=3636
+	    inrows=9708
+	else
+	    echo "DS820 supportx 8x18, 8x26, 8x22, and 8x32 only"
+	fi
+	;;
+    *)
+	echo "Unsupported model!"
+	exit 1
+	;;
+esac
 
 # For 600dpi, double everything!
 if [ ${dpi} == 600 ] ; then
@@ -108,4 +133,4 @@ done
 rm ${fadeinname} ${fadeoutname}
 
 ## Create PDF
-gm convert -density ${dpi}x${dpi} ${panels} out.pdf
+gm convert -density ${dpi}x${dpi} ${panels} ${outfile}

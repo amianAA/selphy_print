@@ -1,4 +1,4 @@
-#gp_printername,vid,pid,type,gp_options
+#gp_printername,vid,pid,type,gp_options[,pano_options]
 #
 # The goal here is to cover unique models within gutenprint itself.
 # All print sizes need to be covered.
