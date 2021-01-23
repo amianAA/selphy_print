@@ -5,7 +5,7 @@
  *
  *   The latest version of this program can be found at:
  *
- *     http://git.shaftnet.org/cgit/selphy_print.git
+ *     https://git.shaftnet.org/cgit/selphy_print.git
  *
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
@@ -337,7 +337,7 @@ static char *sanitize_string(char *str) {
 
    These functions are Public Domain code obtained from:
 
-   http://www.geekhideout.com/urlcode.shtml
+   https://www.geekhideout.com/urlcode.shtml
 
 */
 #include <ctype.h>  /* for isalnum() */
