@@ -42,7 +42,7 @@ my @pages_set = (1, 3);
 my @copies_set = (1, 3);
 
 my $valgrind = 0;
-my $work_dir_base = "/tmp/";
+my $work_dir_base = "/tmp";
 
 my $rotor = 0;
 my $rotor_circ = 0;
@@ -131,7 +131,7 @@ if ($proc_count > 1 && $kid > 0) {
 	$ENV{"BACKEND"} = $row[0];
 	$ENV{"EXTRA_VID"} = $row[1];
 	$ENV{"EXTRA_PID"} = $row[2];
-	my $work_dir = "${work_dir_base}/$currow/";
+	my $work_dir = "${work_dir_base}/$currow";
 	if (!mkdir($work_dir)) {
 	    print("cannot crate work dir ${work_dir}\n");
 	    $error++;
@@ -163,7 +163,7 @@ if ($proc_count > 1 && $kid > 0) {
 	my @args;
 
 	# Generate PPD
-	my $ppd_fname = "${work_dir}stp-${gp_name}.5.3.ppd";
+	my $ppd_fname = "${work_dir}/stp-${gp_name}.5.3.ppd";
 
 	$ENV{"PPD"} = $ppd_fname;
 	$ENV{"DEVICE_URI"} = "gutenprint53+usb://$row[0]/12345678";
@@ -190,11 +190,12 @@ if ($proc_count > 1 && $kid > 0) {
 
 	foreach my $pages (@pages_set) {
 	    if ($pano_mode) {
+		print("... $row[0] $row[1] $row[2] $row[3]\n");
 		# XXX generate panorama bitmap
 		my $pano_tmp = $input_image; # XXX
 
 		# Generate PDF by running through script.
-		@args = ($pano_exec, $pano_tmp, "${work_dir}$currow-${gp_name}.pdf", $gp_name, $row[5]);
+		@args = ($pano_exec, $pano_tmp, "${work_dir}/$currow-${gp_name}.pdf", $gp_name, $row[5]);
 		if (!$quiet) {
 		    print join(":", @args) . "\n";
 		}
@@ -212,7 +213,7 @@ if ($proc_count > 1 && $kid > 0) {
 		}
 		push(@args, "-density");
 		push(@args, "300x300");
-		push(@args, "${work_dir}$currow-${gp_name}.pdf");
+		push(@args, "${work_dir}/$currow-${gp_name}.pdf");
 		if (!$quiet) {
 		    print join(":", @args) . "\n";
 		}
@@ -225,14 +226,14 @@ if ($proc_count > 1 && $kid > 0) {
 	    }
 
 	    # Generate raster from PDF
-	    @args = ($pdftoraster_exec, $id, $user, $title, 1, $options, "${work_dir}$currow-${gp_name}.pdf");
+	    @args = ($pdftoraster_exec, $id, $user, $title, 1, $options, "${work_dir}/$currow-${gp_name}.pdf");
 	    if (!$quiet) {
 		print join(":", @args) . "\n";
 	    }
 	    if ($quiet) {
-		$rval = run \@args, ">", "${work_dir}$currow-${gp_name}.raster", "2>", "/dev/null";
+		$rval = run \@args, ">", "${work_dir}/$currow-${gp_name}.raster", "2>", "/dev/null";
 	    } else {
-		$rval = run \@args, ">", "${work_dir}$currow-${gp_name}.raster";
+		$rval = run \@args, ">", "${work_dir}/$currow-${gp_name}.raster";
 	    }
 	    if (!$rval) {
 		print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' FAIL: imagetoraster $?: $pages -- " . join(":", @args) . "\n");
@@ -253,9 +254,9 @@ if ($proc_count > 1 && $kid > 0) {
 		    print join(":", @args) . "\n";
 		}
 		if ($quiet) {
-		    $rval = run \@args, "<", "${work_dir}$currow-${gp_name}.raster", ">", "${work_dir}$currow-${gp_name}.raw", "2>", "/dev/null";
+		    $rval = run \@args, "<", "${work_dir}/$currow-${gp_name}.raster", ">", "${work_dir}/$currow-${gp_name}.raw", "2>", "/dev/null";
 		} else {
-		    $rval = run \@args, "<", "${work_dir}$currow-${gp_name}.raster", ">", "${work_dir}$currow-${gp_name}.raw";
+		    $rval = run \@args, "<", "${work_dir}/$currow-${gp_name}.raster", ">", "${work_dir}/$currow-${gp_name}.raw";
 		}
 		if (!$rval) {
 		    print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' FAIL: rastertogutenorint $?: $pages $copies -- " . join(":", @args) . "\n");
@@ -275,9 +276,9 @@ if ($proc_count > 1 && $kid > 0) {
 		    print join(":", @args) . "\n";
 		}
 		if ($quiet) {
-		    $rval = run \@args, "<", "${work_dir}$currow-${gp_name}.raw", "2>", "/dev/null";
+		    $rval = run \@args, "<", "${work_dir}/$currow-${gp_name}.raw", "2>", "/dev/null";
 		} else {
-		    $rval = run \@args, "<", "${work_dir}$currow-${gp_name}.raw";
+		    $rval = run \@args, "<", "${work_dir}/$currow-${gp_name}.raw";
 		}
 		if (!$rval) {
 		    print("***** $row[0] $row[1] $row[2] $row[3] '$row[4]' FAIL: backend $?: $pages $copies -- " . join(":", @args) . "\n");
@@ -288,9 +289,9 @@ if ($proc_count > 1 && $kid > 0) {
 	}
 	print "***** $row[0] $row[1] $row[2] $row[3] '$row[4]' PASS\n";
 
-	unlink ("${work_dir}$currow-${gp_name}.pdf");
-	unlink ("${work_dir}$currow-${gp_name}.raster");
-	unlink ("${work_dir}$currow-${gp_name}.raw");
+	unlink ("${work_dir}/$currow-${gp_name}.pdf");
+	unlink ("${work_dir}/$currow-${gp_name}.raster");
+	unlink ("${work_dir}/$currow-${gp_name}.raw");
 	unlink ($ppd_fname);
 	rmdir ($work_dir);
     }

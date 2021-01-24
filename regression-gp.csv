@@ -198,8 +198,8 @@ sony-updr200,0x054c,0x035f,0x04,PageSize=w432h576-div2
 sony-updr200,0x054c,0x035f,,PageSize=B7
 sony-updr200,0x054c,0x035f,,PageSize=w360h504
 sony-updr200,0x054c,0x035f,,PageSize=w360h504-div2
-sony-updr200,0x054c,0x035f,,PageSize=B7,StpLaminate=Glossy
-sony-updr200,0x054c,0x035f,,PageSize=B7,StpLaminate=Matte
+sony-updr200,0x054c,0x035f,,PageSize=B7;StpLaminate=Glossy
+sony-updr200,0x054c,0x035f,,PageSize=B7;StpLaminate=Matte
 #
 sony-upd895,0x054c,0x0049,,PageSize=w213h284
 sony-upd895,0x054c,0x0049,,PageSize=w284h284
