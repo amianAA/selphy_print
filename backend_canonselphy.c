@@ -932,14 +932,14 @@ top:
 				ERROR("No ribbon loaded, aborting!\n");
 				return CUPS_BACKEND_STOP;
 			} else if (ribbon != job->paper_code) {
-				ERROR("Incorrect ribbon loaded, aborting job!\n");
+				ERROR("Incorrect ribbon loaded (%02x vs %02x), aborting job!\n", ribbon, job->paper_code);
 				return CUPS_BACKEND_HOLD;
 			}
 			if (paper == 0xf) {
 				ERROR("No paper tray loaded, aborting!\n");
 				return CUPS_BACKEND_STOP;
 			} else if (paper != job->paper_code) {
-				ERROR("Incorrect paper loaded, aborting job!\n");
+				ERROR("Incorrect paper loaded (%02x vs %02x), aborting job!\n", paper, job->paper_code);
 				return CUPS_BACKEND_HOLD;
 			}
 		}
@@ -1124,7 +1124,7 @@ static const char *canonselphy_prefixes[] = {
 
 const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
-	.version = "0.107",
+	.version = "0.108",
 	.uri_prefixes = canonselphy_prefixes,
 	.cmdline_usage = canonselphy_cmdline,
 	.cmdline_arg = canonselphy_cmdline_arg,
