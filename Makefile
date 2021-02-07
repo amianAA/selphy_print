@@ -96,7 +96,7 @@ CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOU
 LDFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --libs libusb-1.0)
 CPPFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --cflags libusb-1.0)
 # CPPFLAGS += -DLIBUSB_PRE_1_0_10
-CPPFLAGS += -DURI_PREFIX=\"$(BACKEND_NAME)\" $(OLD_URI) -DCORRTABLE_PATH=\"$(BACKEND_DATA_DIR)\"
+CPPFLAGS += $(OLD_URI) -DCORRTABLE_PATH=\"$(BACKEND_DATA_DIR)\"
 LIBLDFLAGS = -g -shared
 
 # List of backends

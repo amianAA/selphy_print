@@ -29,10 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.110"
-#ifndef URI_PREFIX
-#error "Must Define URI_PREFIX"
-#endif
+#define BACKEND_VERSION "0.111"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -756,7 +753,8 @@ static struct dyesub_backend *backends[] = {
 	NULL,
 };
 
-static int find_and_enumerate(struct libusb_context *ctx,
+static int find_and_enumerate(const char *argv0,
+			      struct libusb_context *ctx,
 			      struct libusb_device ***list,
 			      const struct dyesub_backend *backend,
 			      const char *match_serno,
@@ -839,7 +837,7 @@ static int find_and_enumerate(struct libusb_context *ctx,
 
 	match:
 		found = probe_device((*list)[i], &desc, (foundmake ? foundmake : make),
-				     URI_PREFIX, backends[k]->devices[j].manuf_str,
+				     argv0, backends[k]->devices[j].manuf_str,
 				     found, num_claim_attempts,
 				     scan_only, match_serno,
 				     conn,
@@ -1030,10 +1028,10 @@ void print_help(const char *argv0, const struct dyesub_backend *backend)
 		DEBUG("Environment variables:\n");
 		DEBUG(" DYESUB_DEBUG EXTRA_PID EXTRA_VID EXTRA_TYPE BACKEND SERIAL OLD_URI_SCHEME BACKEND_QUIET\n");
 		DEBUG("CUPS Usage:\n");
-		DEBUG("\tDEVICE_URI=someuri %s job user title num-copies options [ filename ]\n", URI_PREFIX);
+		DEBUG("\tDEVICE_URI=someuri %s job user title num-copies options [ filename ]\n", ptr);
 		DEBUG("\n");
 		DEBUG("Standalone Usage:\n");
-		DEBUG("\t%s\n", URI_PREFIX);
+		DEBUG("\t%s\n", ptr);
 		DEBUG("  [ -D ] [ -G ] [ -f ] [ -v ]\n");
 		DEBUG("  [ backend_specific_args ] \n");
 		DEBUG("  [ -d copies ] \n");
@@ -1073,7 +1071,7 @@ void print_help(const char *argv0, const struct dyesub_backend *backend)
 	}
 
 	/* Scan for all printers for the specified backend */
-	find_and_enumerate(ctx, &list, backend, NULL, ptr, 1, 1, NULL);
+	find_and_enumerate(argv0, ctx, &list, backend, NULL, ptr, 1, 1, NULL);
 	libusb_free_device_list(list, 1);
 }
 
@@ -1271,6 +1269,14 @@ int main (int argc, char **argv)
 	const char *fname = NULL;
 	char *use_serno = NULL;
 	const char *backend_str = NULL;
+	const char *argv0;
+
+	/* Work out path-less executable name */
+	argv0 = strrchr(argv[0], '/');
+	if (argv0)
+		argv0++;
+	else
+		argv0 = argv[0];
 
 	logger = stderr;
 
@@ -1385,13 +1391,8 @@ int main (int argc, char **argv)
 	} else {  /* Standalone mode */
 
 		/* Try to guess backend from executable name */
-		if (!backend_str) {
-			backend_str = strrchr(argv[0], '/');
-			if (backend_str)
-				backend_str++;
-			else
-				backend_str = argv[0];
-		}
+		if (!backend_str)
+			backend_str = argv0;
 
 		srand(getpid());
 		jobid = rand();
@@ -1426,7 +1427,7 @@ int main (int argc, char **argv)
 
 	/* If we don't have a valid backend, print help and terminate */
 	if (!backend && !stats_only) {
-		print_help(argv[0], NULL); // probes all devices
+		print_help(argv0, NULL); // probes all devices
 		ret = CUPS_BACKEND_OK;
 		goto done;
 	}
@@ -1434,14 +1435,14 @@ int main (int argc, char **argv)
 	/* If we're in standalone mode, print help only if no args */
 	if ((!uri || !strlen(uri)) && !stats_only) {
 		if (argc < 2) {
-			print_help(argv[0], backend); // probes all devices
+			print_help(argv0, backend); // probes all devices
 			ret = CUPS_BACKEND_OK;
 			goto done;
 		}
 	}
 
 	/* Enumerate devices */
-	found = find_and_enumerate(ctx, &list, backend, use_serno, backend_str, 0, NUM_CLAIM_ATTEMPTS, &conn);
+	found = find_and_enumerate(argv0, ctx, &list, backend, use_serno, backend_str, 0, NUM_CLAIM_ATTEMPTS, &conn);
 
 	if (found == -1) {
 		ERROR("Printer open failure (No matching printers found!)\n");
