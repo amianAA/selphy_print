@@ -65,7 +65,12 @@ FILE *logger;
 const char *corrtable_path = CORRTABLE_PATH;
 static int max_xfer_size = URB_XFER_SIZE;
 static int xfer_timeout = XFER_TIMEOUT;
+
+#ifdef OLD_URI
+static int old_uri = 1;
+#else
 static int old_uri = 0;
+#endif
 
 /* Support Functions */
 int backend_claim_interface(struct libusb_device_handle *dev, int iface,
