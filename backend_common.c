@@ -1018,10 +1018,8 @@ void print_help(const char *argv0, const struct dyesub_backend *backend)
 
 	const char *ptr = getenv("BACKEND");
 	if (!ptr)
-		ptr = strrchr(argv0, '/');
-	if (ptr)
-		ptr++;
-	else
+		ptr = getenv("DYESUB_BACKEND");
+	if (!ptr)
 		ptr = argv0;
 
 	if (!backend)
@@ -1291,6 +1289,8 @@ int main (int argc, char **argv)
 		extra_type = atoi(getenv("EXTRA_TYPE"));
 	if (getenv("BACKEND"))
 		backend_str = getenv("BACKEND");
+	else if (getenv("DYESUB_BACKEND"))
+		backend_str = getenv("DYESUB_BACKEND");
 	if (getenv("FAST_RETURN"))
 		fast_return++;
 	if (getenv("MAX_XFER_SIZE"))
