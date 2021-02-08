@@ -200,6 +200,21 @@ static uint8_t es40_error_detect(uint8_t *rdbuf)
 	return 1;
 }
 
+static const char *cp790_pgcode_names(uint8_t *rdbuf, struct printer_data *printer, int *numtype)
+{
+	UNUSED(printer);
+	UNUSED(numtype);
+
+	switch(rdbuf[5]) {
+	case 0x01: return "P";
+	case 0x02: return "L";
+	case 0x03: return "C";
+	case 0x04: return "W";
+	case 0x0f: return "None";
+	default: return "Unknown";
+	}
+}
+
 static uint8_t cp790_error_detect(uint8_t *rdbuf)
 {
 	/* CP790 */
@@ -351,9 +366,9 @@ static struct printer_data selphy_printers[] = {
 	  .paper_code_offset = -1, /* Uses a different technique */
 	  .paper_code_offset2 = -1,
 	  .error_detect = cp790_error_detect,
-	  .pgcode_names = generic_pgcode_names,
+	  .pgcode_names = cp790_pgcode_names,
 	},
-	{ .type = P_CP_XXX,
+	{ .type = P_CPGENERIC,
 	  .model = "SELPHY CP Series (!CP-10/CP790)",
 	  .init_length = 12,
 	  .foot_length = 0,  /* CP900 has four-byte NULL footer that can be safely ignored */
@@ -422,7 +437,7 @@ static void setup_paper_codes(void)
 			selphy_printers[i].paper_codes[0x02] = 0x33;
 			selphy_printers[i].paper_codes[0x03] = 0x44;
 			break;
-		case P_CP_XXX:
+		case P_CPGENERIC:
 			selphy_printers[i].paper_codes[0x01] = 0x11;
 			selphy_printers[i].paper_codes[0x02] = 0x22;
 			selphy_printers[i].paper_codes[0x03] = 0x33;
@@ -490,7 +505,7 @@ static int parse_printjob(uint8_t *buffer, uint8_t *bw_mode, uint32_t *plane_len
 			if (*plane_len == 688480)
 				printer_type = P_CP10;
 			else
-				printer_type = P_CP_XXX;
+				printer_type = P_CPGENERIC;
 		} else {
 			printer_type = P_ES1;
 			*bw_mode = (buffer[2] == 0x20);
@@ -612,7 +627,7 @@ static int canonselphy_attach(void *vctx, struct dyesub_connection *conn, uint8_
 	ctx->conn = conn;
 
 	if (ctx->conn->type == P_CP900) {
-		ctx->conn->type = P_CP_XXX;
+		ctx->conn->type = P_CPGENERIC;
 		ctx->cp900 = 1;
 	}
 	for (i = 0 ; selphy_printers[i].type != -1; i++) {
@@ -893,7 +908,7 @@ top:
 
 		/* Make sure paper/ribbon is correct */
 		if (job->paper_code != -1) {
-			if (ctx->conn->type == P_CP_XXX) {
+			if (ctx->conn->type == P_CPGENERIC) {
 				uint8_t pc = rdbuf[ctx->printer->paper_code_offset];
 				if (((pc >> 4) & 0xf) != (job->paper_code & 0x0f)) {
 
@@ -1124,7 +1139,7 @@ static const char *canonselphy_prefixes[] = {
 
 const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
-	.version = "0.108",
+	.version = "0.109",
 	.uri_prefixes = canonselphy_prefixes,
 	.cmdline_usage = canonselphy_cmdline,
 	.cmdline_arg = canonselphy_cmdline_arg,
@@ -1136,29 +1151,29 @@ const struct dyesub_backend canonselphy_backend = {
 	.query_markers = canonselphy_query_markers,
 	.devices = {
 		{ USB_VID_CANON, USB_PID_CANON_CP10, P_CP10, NULL, "canon-cp10"},
-		{ USB_VID_CANON, USB_PID_CANON_CP100, P_CP_XXX, NULL, "canon-cp100"},
-		{ USB_VID_CANON, USB_PID_CANON_CP200, P_CP_XXX, NULL, "canon-cp200"},
-		{ USB_VID_CANON, USB_PID_CANON_CP220, P_CP_XXX, NULL, "canon-cp220"},
-		{ USB_VID_CANON, USB_PID_CANON_CP300, P_CP_XXX, NULL, "canon-cp300"},
-		{ USB_VID_CANON, USB_PID_CANON_CP330, P_CP_XXX, NULL, "canon-cp330"},
-		{ USB_VID_CANON, USB_PID_CANON_CP400, P_CP_XXX, NULL, "canon-cp400"},
-		{ USB_VID_CANON, USB_PID_CANON_CP500, P_CP_XXX, NULL, "canon-cp500"},
-		{ USB_VID_CANON, USB_PID_CANON_CP510, P_CP_XXX, NULL, "canon-cp510"},
-		{ USB_VID_CANON, USB_PID_CANON_CP520, P_CP_XXX, NULL, "canon-cp520"},
-		{ USB_VID_CANON, USB_PID_CANON_CP530, P_CP_XXX, NULL, "canon-cp530"},
-		{ USB_VID_CANON, USB_PID_CANON_CP600, P_CP_XXX, NULL, "canon-cp600"},
-		{ USB_VID_CANON, USB_PID_CANON_CP710, P_CP_XXX, NULL, "canon-cp710"},
-		{ USB_VID_CANON, USB_PID_CANON_CP720, P_CP_XXX, NULL, "canon-cp720"},
-		{ USB_VID_CANON, USB_PID_CANON_CP730, P_CP_XXX, NULL, "canon-cp730"},
-		{ USB_VID_CANON, USB_PID_CANON_CP740, P_CP_XXX, NULL, "canon-cp740"},
-		{ USB_VID_CANON, USB_PID_CANON_CP750, P_CP_XXX, NULL, "canon-cp750"},
-		{ USB_VID_CANON, USB_PID_CANON_CP760, P_CP_XXX, NULL, "canon-cp760"},
-		{ USB_VID_CANON, USB_PID_CANON_CP770, P_CP_XXX, NULL, "canon-cp770"},
-		{ USB_VID_CANON, USB_PID_CANON_CP780, P_CP_XXX, NULL, "canon-cp780"},
+		{ USB_VID_CANON, USB_PID_CANON_CP100, P_CPGENERIC, NULL, "canon-cp100"},
+		{ USB_VID_CANON, USB_PID_CANON_CP200, P_CPGENERIC, NULL, "canon-cp200"},
+		{ USB_VID_CANON, USB_PID_CANON_CP220, P_CPGENERIC, NULL, "canon-cp220"},
+		{ USB_VID_CANON, USB_PID_CANON_CP300, P_CPGENERIC, NULL, "canon-cp300"},
+		{ USB_VID_CANON, USB_PID_CANON_CP330, P_CPGENERIC, NULL, "canon-cp330"},
+		{ USB_VID_CANON, USB_PID_CANON_CP400, P_CPGENERIC, NULL, "canon-cp400"},
+		{ USB_VID_CANON, USB_PID_CANON_CP500, P_CPGENERIC, NULL, "canon-cp500"},
+		{ USB_VID_CANON, USB_PID_CANON_CP510, P_CPGENERIC, NULL, "canon-cp510"},
+		{ USB_VID_CANON, USB_PID_CANON_CP520, P_CPGENERIC, NULL, "canon-cp520"},
+		{ USB_VID_CANON, USB_PID_CANON_CP530, P_CPGENERIC, NULL, "canon-cp530"},
+		{ USB_VID_CANON, USB_PID_CANON_CP600, P_CPGENERIC, NULL, "canon-cp600"},
+		{ USB_VID_CANON, USB_PID_CANON_CP710, P_CPGENERIC, NULL, "canon-cp710"},
+		{ USB_VID_CANON, USB_PID_CANON_CP720, P_CPGENERIC, NULL, "canon-cp720"},
+		{ USB_VID_CANON, USB_PID_CANON_CP730, P_CPGENERIC, NULL, "canon-cp730"},
+		{ USB_VID_CANON, USB_PID_CANON_CP740, P_CPGENERIC, NULL, "canon-cp740"},
+		{ USB_VID_CANON, USB_PID_CANON_CP750, P_CPGENERIC, NULL, "canon-cp750"},
+		{ USB_VID_CANON, USB_PID_CANON_CP760, P_CPGENERIC, NULL, "canon-cp760"},
+		{ USB_VID_CANON, USB_PID_CANON_CP770, P_CPGENERIC, NULL, "canon-cp770"},
+		{ USB_VID_CANON, USB_PID_CANON_CP780, P_CPGENERIC, NULL, "canon-cp780"},
 		{ USB_VID_CANON, USB_PID_CANON_CP790, P_CP790, NULL, "canon-cp790"},
-		{ USB_VID_CANON, USB_PID_CANON_CP800, P_CP_XXX, NULL, "canon-cp800"},
-		{ USB_VID_CANON, USB_PID_CANON_CP810, P_CP_XXX, NULL, "canon-cp810"},
-		{ USB_VID_CANON, USB_PID_CANON_CP900, P_CP_XXX, NULL, "canon-cp900"},
+		{ USB_VID_CANON, USB_PID_CANON_CP800, P_CPGENERIC, NULL, "canon-cp800"},
+		{ USB_VID_CANON, USB_PID_CANON_CP810, P_CPGENERIC, NULL, "canon-cp810"},
+		{ USB_VID_CANON, USB_PID_CANON_CP900, P_CPGENERIC, NULL, "canon-cp900"},
 		{ USB_VID_CANON, USB_PID_CANON_ES1, P_ES1, NULL, "canon-es1"},
 		{ USB_VID_CANON, USB_PID_CANON_ES2, P_ES2_20, NULL, "canon-es2"},
 		{ USB_VID_CANON, USB_PID_CANON_ES20, P_ES2_20, NULL, "canon-es20"},
