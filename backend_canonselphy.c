@@ -940,8 +940,8 @@ top:
 					return CUPS_BACKEND_HOLD;
 				}
 			} else { /* Everything else */
-				if (rdbuf[ctx->printer->paper_code_offset] !=
-				    job->paper_code) {
+				if (ctx->printer->paper_code_offset != -1 &&
+				    rdbuf[ctx->printer->paper_code_offset] != job->paper_code) {
 					ERROR("Incorrect media/ribbon loaded (%02x vs %02x), aborting job!\n",
 					      job->paper_code,
 					      rdbuf[ctx->printer->paper_code_offset]);
