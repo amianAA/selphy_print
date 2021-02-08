@@ -206,10 +206,10 @@ static const char *cp790_pgcode_names(uint8_t *rdbuf, struct printer_data *print
 	UNUSED(numtype);
 
 	switch(rdbuf[5]) {
-	case 0x01: return "P";
-	case 0x02: return "L";
-	case 0x03: return "C";
-	case 0x04: return "W";
+	case 0x00: return "P";
+	case 0x01: return "L";
+	case 0x02: return "C";
+	case 0x03: return "W";
 	case 0x0f: return "None";
 	default: return "Unknown";
 	}
