@@ -546,6 +546,8 @@ done:
 
 /* Private data structure */
 struct canonselphy_printjob {
+	size_t jobsize;
+	int copies;
 	int16_t paper_code;
 	uint8_t bw_mode;
 
@@ -556,8 +558,6 @@ struct canonselphy_printjob {
 	uint8_t *plane_m;
 	uint8_t *plane_c;
 	uint8_t *footer;
-
-	int copies;
 };
 
 struct canonselphy_ctx {
@@ -712,6 +712,7 @@ static int canonselphy_read_parse(void *vctx, const void **vjob, int data_fd, in
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
+	job->jobsize = sizeof(*job);
 	job->copies = copies;
 
 	/* The CP900 job *may* have a 4-byte null footer after the
