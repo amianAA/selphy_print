@@ -1,7 +1,7 @@
 /*
  *   Kodak Professional 1400/805 CUPS backend -- libusb-1.0 version
  *
- *   (c) 2013-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2013-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
@@ -65,12 +65,13 @@ struct kodak1400_hdr {
 
 /* Private data structure */
 struct kodak1400_printjob {
+	size_t jobsize;
+	int copies;
+
 	struct kodak1400_hdr hdr;
 	uint8_t *plane_r;
 	uint8_t *plane_g;
 	uint8_t *plane_b;
-
-	int copies;
 };
 
 struct kodak1400_ctx {
@@ -327,8 +328,10 @@ static int kodak1400_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	/* Read in then validate header */
 	ret = read(data_fd, &job->hdr, sizeof(job->hdr));
 	if (ret < 0 || ret != sizeof(job->hdr)) {
-		if (ret == 0)
+		if (ret == 0) {
+			kodak1400_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
+		}
 		ERROR("Read failed (%d/%d/%d)\n",
 		      ret, 0, (int)sizeof(job->hdr));
 		perror("ERROR: Read failed");
@@ -622,7 +625,7 @@ static const char *kodak1400_prefixes[] = {
 
 const struct dyesub_backend kodak1400_backend = {
 	.name = "Kodak 1400/805",
-	.version = "0.41",
+	.version = "0.42",
 	.uri_prefixes = kodak1400_prefixes,
 	.cmdline_usage = kodak1400_cmdline,
 	.cmdline_arg = kodak1400_cmdline_arg,
