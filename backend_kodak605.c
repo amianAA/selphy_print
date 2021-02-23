@@ -1,7 +1,7 @@
 /*
  *   Kodak 605 Photo Printer CUPS backend -- libusb-1.0 version
  *
- *   (c) 2013-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2013-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
@@ -355,6 +355,13 @@ static void *kodak605_init(void)
 	ctx->media = malloc(MAX_MEDIA_LEN);
 
 	return ctx;
+}
+
+static void kodak605_teardown(void *vctx)
+{
+	struct kodak605_ctx *ctx = vctx;
+	free(ctx->media);
+	free(ctx);
 }
 
 static int kodak605_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
@@ -894,11 +901,12 @@ static const char *kodak605_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak605_backend = {
 	.name = "Kodak 605/70xx",
-	.version = "0.55" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.56" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak605_prefixes,
 	.cmdline_usage = kodak605_cmdline,
 	.cmdline_arg = kodak605_cmdline_arg,
 	.init = kodak605_init,
+	.teardown = kodak605_teardown,
 	.attach = kodak605_attach,
 	.cleanup_job = sinfonia_cleanup_job,
 	.read_parse = kodak605_read_parse,
