@@ -715,6 +715,17 @@ dnp-qw410,0x1452,0x9201,161,PageSize=w324h576;StpPrintSpeed=LowSpeed
 dnp-qw410,0x1452,0x9201,161,PageSize=w324h576;StpDeCurl=True
 dnp-qw410,0x1452,0x9201,161,PageSize=w324h576;StpDeCurl=False
 #
+hiti-p510l,0x0d16,0x000b,1,PageSize=w288h432
+hiti-p510l,0x0d16,0x000b,1,PageSize=w288h432-div2
+hiti-p510l,0x0d16,0x000b,2,PageSize=B7
+hiti-p510l,0x0d16,0x000b,2,PageSize=w360h504
+hiti-p510l,0x0d16,0x000b,2,PageSize=w360h504-div2
+hiti-p510l,0x0d16,0x000b,4,PageSize=w432h576
+hiti-p510l,0x0d16,0x000b,3,PageSize=w432h576-div2
+hiti-p510l,0x0d16,0x000b,3,PageSize=w432h648
+hiti-p510l,0x0d16,0x000b,1,PageSize=w288h432;StpLaminate=Matte
+hiti-p510l,0x0d16,0x000b,1,PageSize=w288h432;StpPrintSpeed=Fine
+#
 hiti-p520l,0x0d16,0x0502,1,PageSize=w288h432
 hiti-p520l,0x0d16,0x0502,1,PageSize=w288h432-div2
 hiti-p520l,0x0d16,0x0502,2,PageSize=B7
