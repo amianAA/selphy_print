@@ -78,7 +78,7 @@
    HiTi P110 series
    HiTi P510 series
    HiTi M610 (not X610!)
-   HiTi P720L
+   HiTi P720L / P728L
    HiTi P750L
    HiTi P910L
    HiTi CS-200e
@@ -1236,8 +1236,10 @@ Notes:
 
    Model IDs recognized:
 
+      hiti-p510k hiti-p510l hiti-p510s hiti-p510si
+      hiti-p518a hiti-p518s
       hiti-p520l hiti-p525l hiti-p52x
-      hiti-p720l hiti-p750l
+      hiti-p720l hiti-p728l hiti-p750l
 
    Verified supported printers:
 
@@ -1246,13 +1248,14 @@ Notes:
 
    Theoretically supported printers (Untested)
 
-     HiTi P720L
+     HiTi P510 series
+     HiTi P518 series
+     HiTi P720L / P728L
      HiTi P750L
 
    Work-in-progress printers
 
      HiTi P110 series
-     HiTi P510 series
 
    This backend supports additional commands:
 

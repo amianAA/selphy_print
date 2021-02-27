@@ -274,11 +274,32 @@
 # Fujifilm ASK-300
 0x04cb 0x5006 blacklist
 
+# HiTi P510K
+0x0d16 0x0007 blacklist
+
+# HiTi P510L
+0x0d16 0x000b blacklist
+
+# HiTi P518A
+0x0d16 0x000d blacklist
+
+# HiTi P510S
+0x0d16 0x010e blacklist
+
+# HiTi P510Si
+0x0d16 0x0111 blacklist
+
+# HiTi P518S
+0x0d16 0x0112 blacklist
+
 # HiTi P520L / P525L
 0x0d16 0x0502 blacklist
 
 # HiTi P720L
 0x0d16 0x0009 blacklist
+
+# HiTi P728L
+0x0d16 0x000a blacklist
 
 # HiTi P750L
 0x0d16 0x0501 blacklist

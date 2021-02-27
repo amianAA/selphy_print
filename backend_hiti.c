@@ -236,9 +236,9 @@ struct hiti_heattable {
 	uint8_t pad1[30];
 	uint8_t c[2050];
 	uint8_t pad2[30];
-	uint8_t o[2050];
+	uint8_t o[2050]; /* Overcoat Glossy */
 	uint8_t pad3[30];
-	uint8_t om[2050];
+	uint8_t om[2050]; /* Overcoat Matte */
 	uint8_t pad4[30];
 	uint8_t cvd[582];
 	uint8_t pad5[26];
@@ -1164,7 +1164,7 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 	switch (ctx->conn->type)
 	{
 	case P_HITI_51X:
-		if (!mediatype) {
+		if (!mediatype) { /* DNP media */
 			if (mode) {
 				fname = "P51x_heatqhra.bin";
 				break;
@@ -1172,37 +1172,37 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 				fname = "P51x_heatthra.bin";
 				break;
 			}
-		} else {
+		} else { /* CHC media */
 			if (mode) {
 				switch(mediaver) {
 				case 0:
-					fname = "P51x_hea0qhra.bin";
+					fname = "P51x_hea0qcra.bin";
 					break;
 				case 1:
-					fname = "P51x_hea1qhra.bin";
+					fname = "P51x_hea1qcra.bin";
 					break;
 				case 2:
-					fname = "P51x_hea2qhra.bin";
+					fname = "P51x_hea2qcra.bin";
 					break;
 				case 3:
 				default:
-					fname = "P51x_hea3qhra.bin";
+					fname = "P51x_hea3qcra.bin";
 					break;
 				}
 			} else {
 				switch(mediaver) {
 				case 0:
-					fname = "P51x_hea0thra.bin";
+					fname = "P51x_hea0tcra.bin";
 					break;
 				case 1:
-					fname = "P51x_hea1thra.bin";
+					fname = "P51x_hea1tcra.bin";
 					break;
 				case 2:
-					fname = "P51x_hea2thra.bin";
+					fname = "P51x_hea2tcra.bin";
 					break;
 				case 3:
 				default:
-					fname = "P51x_hea3thra.bin";
+					fname = "P51x_hea3tcra.bin";
 					break;
 				}
 			}
@@ -1493,6 +1493,13 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 	/* Sanity check printer type vs job type */
 	switch(ctx->conn->type)
 	{
+	case P_HITI_51X:
+		if (job->hdr.model != 510) {
+			ERROR("Unrecognized header!\n");
+			hiti_cleanup_job(job);
+			return CUPS_BACKEND_CANCEL;
+		}
+		break;
 	case P_HITI_52X:
 		if (job->hdr.model != 520) {
 			ERROR("Unrecognized header!\n");
@@ -1789,10 +1796,14 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 
 	uint8_t chs[2] = { 0, 1 }; /* Fixed..? */
 
-	resplen = 0;
-	ret = hiti_docmd(ctx, CMD_EFD_CHS, chs, sizeof(chs), &resplen);
-	if (ret)
-		return CUPS_BACKEND_FAILED;
+	if (ctx->conn->type == P_HITI_51X) {
+		ret = hiti_send_heat_data(ctx, job->hdr.quality, job->hdr.overcoat);
+	} else {
+		resplen = 0;
+		ret = hiti_docmd(ctx, CMD_EFD_CHS, chs, sizeof(chs), &resplen);
+		if (ret)
+			return CUPS_BACKEND_FAILED;
+	}
 
 	ret = hiti_docmd(ctx, CMD_EPC_SP, NULL, 0, &resplen);
 	if (ret)
@@ -1801,9 +1812,6 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 	// XXX send ESD_SHTPC  w/ heat table.  Unknown.
 	// CMD_ESD_SHPTC // Heating Parameters & Tone Curve (~7Kb, seen on windows..)
 	/* Send heat table data  */
-	if (ctx->conn->type == P_HITI_51X) {
-		ret = hiti_send_heat_data(ctx, job->hdr.quality, job->hdr.overcoat);
-	}
 
 resend_y:
 	INFO("Sending yellow plane\n");
@@ -2336,7 +2344,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.22",
+	.version = "0.23",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
@@ -2349,9 +2357,16 @@ const struct dyesub_backend hiti_backend = {
 	.query_markers = hiti_query_markers,
 	.query_stats = hiti_query_stats,
 	.devices = {
+		{ USB_VID_HITI, USB_PID_HITI_P510K, P_HITI_51X, NULL, "hiti-p510k"},
+		{ USB_VID_HITI, USB_PID_HITI_P510L, P_HITI_51X, NULL, "hiti-p510l"},
+		{ USB_VID_HITI, USB_PID_HITI_P518A, P_HITI_51X, NULL, "hiti-p518a"},
+		{ USB_VID_HITI, USB_PID_HITI_P510S, P_HITI_51X, NULL, "hiti-p510s"},
+		{ USB_VID_HITI, USB_PID_HITI_P510SI, P_HITI_51X, NULL, "hiti-p510si"},
+		{ USB_VID_HITI, USB_PID_HITI_P518S, P_HITI_51X, NULL, "hiti-p518s"},
 		{ USB_VID_HITI, USB_PID_HITI_P52X, P_HITI_52X, NULL, "hiti-p520l"},
 		{ USB_VID_HITI, USB_PID_HITI_P52X, P_HITI_52X, NULL, "hiti-p525l"}, /* Duplicate */
 		{ USB_VID_HITI, USB_PID_HITI_P720, P_HITI_720, NULL, "hiti-p720l"},
+		{ USB_VID_HITI, USB_PID_HITI_P728, P_HITI_720, NULL, "hiti-p728l"},
 		{ USB_VID_HITI, USB_PID_HITI_P750, P_HITI_750, NULL, "hiti-p750l"},
 		{ 0, 0, 0, NULL, NULL}
 	}
@@ -2382,7 +2397,7 @@ const struct dyesub_backend hiti_backend = {
       * Use external "Cube LUT" implementation?
    - Commands 8008, 8011, EST_SEHT, ESD_SHTPC, RDC_ROC, PCC_STP, CMD_EDM_*
    - Test with P525, P720, P750
-   - Further investigation into P110 & P510 series
+   - Further investigation into P110 series
    - Start research into P530D, X610
    - Incorporate changes for CS-series card printers
    - More "Matrix table" decoding work
