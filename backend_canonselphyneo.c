@@ -536,34 +536,32 @@ const struct dyesub_backend canonselphyneo_backend = {
 	Stream formats and readback codes for supported printers
 
  ***************************************************************************
- Selphy CP820/CP910/CP1000/CP1200:
+ Selphy CP820/CP910/CP1000/CP1200/CP1300:
 
-  Radically different spool file format!  300dpi, same print sizes, but also
-  adding a 50x50mm sticker and 22x17.3mm ministickers, though I think the
-  driver treats all of those as 'C' sizes for printing purposes.
+  Radically different spool file format from older Selphy models.
+  300dpi, same nominal print sizes but slightly different dimensions.
+
+  There is also a "mini" 50mm sticker media, but I think the printer
+  treats them as 'C' size.
 
   32-byte header:
 
   0f 00 00 40 00 00 00 00  00 00 00 00 00 00 01 00
   01 00 TT 00 00 00 00 ZZ  XX XX XX XX YY YY YY YY
 
-                           cols (le32) rows (le32)
+        size               cols (le32) rows (le32)
         50                 e0 04       50 07          1248 * 1872  (P)
         4c                 80 04       c0 05          1152 * 1472  (L)
         43                 40 04       9c 02          1088 * 668   (C)
 
-  TT == 50  (P)
-     == 4c  (L)
-     == 43  (C)
-
   ZZ == 00  Y'CbCr data follows
      == 01  CMY    data follows
 
-  Followed by three planes of image data.
+  Followed by three planes of image data:
 
-  P == 7008800  == 2336256 * 3 + 32 (1872*1248)
-  L == 5087264  == 1695744 * 3 + 32 (1472*1152)
-  C == 2180384  == 726784 * 3 + 32  (1088*668)
+  P == 7008800 (2336256 * 3)
+  L == 5087264 (1695744 * 3)
+  C == 2180384 (726784  * 3)
 
   It is worth mentioning that the Y'CbCr image data is surmised to use the
   JPEG coefficients, although we realistically have no way of confirming this.
@@ -571,12 +569,17 @@ const struct dyesub_backend canonselphyneo_backend = {
   Other questions:
 
     * Printer supports different lamination types, how to control?
+      - Glossy
+      - Pattern 1 (Matte)
+      - Pattern 2 (Fine Matte)
+      - Pattern 3 (Grid - not all models?)
+    * How to detect battery pack
 
  Data Readback:
 
- XX 00 YY 00  00 00 ZZ 00 00 00 00 00
+  XX 00 YY 00  00 00 ZZ 00  00 00 00 00
 
- XX == Status
+  XX == Status
 
    01  Idle
    02  Feeding Paper
@@ -585,7 +588,7 @@ const struct dyesub_backend canonselphyneo_backend = {
    10  Printing C
    20  Printing L
 
- YY == Error
+  YY == Error
 
    00  None
    02  No Paper (?)
@@ -596,7 +599,7 @@ const struct dyesub_backend canonselphyneo_backend = {
    0A  Media/Job mismatch
    0B  Paper Jam
 
- ZZ == Media?
+  ZZ == Media?
 
    01
    10
@@ -604,9 +607,9 @@ const struct dyesub_backend canonselphyneo_backend = {
     ^-- Ribbon
    ^-- Paper
 
-   1 == P
-   2 == L ??
-   3 == C
+    1 == P
+    2 == L (??)
+    3 == C
 
 Also, the first time a readback happens after plugging in the printer:
 

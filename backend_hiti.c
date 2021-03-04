@@ -1,7 +1,7 @@
 /*
  *   HiTi Photo Printer CUPS backend -- libusb-1.0 version
  *
- *   (c) 2019-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2019-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
