@@ -57,6 +57,7 @@
    Mitsubishi CP-D90DW
    Mitsubishi CP-K60DW-S
    Mitsubishi CP-M1A / CP-M1E
+   Mitsubishi CP-M15
    Mitsubishi P95DW
    Mitsubishi P93DW
    Shinko CHC-S1245 (aka Sinfonia E1 and DNP Q8)
@@ -75,6 +76,7 @@
 
    DNP M4 / Q4
    DNP M8
+   Fujifilm ASK-500
    HiTi P110 series
    HiTi P510 series
    HiTi M610 (not X610!)
@@ -91,7 +93,6 @@
    Mitsubishi CP3020D/DE and CP3020DA/DAE
    Mitsubishi CP9000DW, CP9500DW, and CP9600DW-S
    Mitsubishi CP9800DW, CP9800DW-S, CP9810DW, and CP9820DW-S
-   Mitsubishi CP-M15
    Olmec OP900
    Shinko CHC-S2245 (aka Sinfonia S3)
    Shinko CHC-S6145-5A (aka Sinfonia CS2-c)
@@ -987,20 +988,22 @@
 
    Model IDs recognized:
 
-     mitsubishi-d90dw
+     mitsubishi-d90dw mitsubishi-cpm1 mitsubishi-cpm1
+     fujifilm-ask-500
 
    Supported and tested printers:
 
     Mitsubishi CP-D90DW
     Mitsubishi CP-M1A / CP-M1E
-
-   Work-in-progress printers:
-
     Mitsubishi CP-M15E
+
+   Work-in-progress printers (unknown USB ID)
+
+    Fujifilm ASK-500
 
    *** VERY IMPORTANT ***
 
-    The CP-M1 family is similar to the CP-D70 family in that it requires
+    The CP-M1/ASK500 family is similar to the CP-D70 family in that it requires
     the input data to be gamma corrected (and transformed in other ways)
     before it is sent to the printer.
 

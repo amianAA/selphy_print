@@ -32,15 +32,24 @@
 #define USB_VID_MITSU       0x06D3
 #define USB_PID_MITSU_D90   0x3B60
 #define USB_PID_MITSU_CPM1  0x3B80
+#define USB_VID_FUJIFILM    0x04cb
+//#define USB_PID_FUJIFILM_ASK500 0x1234
 
 /* CPM1 stuff */
 #define CPM1_LAMINATE_STRIDE 1852
+
 #define CPM1_LAMINATE_FILE "M1_MAT02.raw"
 #define CPM1_CPC_FNAME "CPM1_N1.csv"
 #define CPM1_CPC_G1_FNAME "CPM1_G1.csv"
 #define CPM1_CPC_G5_FNAME "CPM1_G5.csv"
 #define CPM1_CPC_G5_VIVID_FNAME "CPM1_G5_vivid.csv"
 #define CPM1_LUT_FNAME "CPM1_NL.lut"
+
+/* ASK500 stuff -- Note the lack of LUT or G5_vivid! */
+#define ASK5_LAMINATE_FILE "ASK5_MAT.raw"
+#define ASK5_CPC_FNAME "ASK5_N1.csv"
+#define ASK5_CPC_G1_FNAME "ASK5_G1.csv"
+#define ASK5_CPC_G5_FNAME "ASK5_G5.csv"
 
 /* Printer data structures */
 #define COM_STATUS_TYPE_MODEL   0x01 // 10, null-terminated ASCII. 'CPD90D'
@@ -624,7 +633,8 @@ static int mitsud90_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 	ctx->marker.levelmax = be16_to_cpu(resp.media.capacity);
 	ctx->marker.levelnow = be16_to_cpu(resp.media.remain);
 
-	if (ctx->conn->type == P_MITSU_M1) {
+	if (ctx->conn->type == P_MITSU_M1 ||
+	    ctx->conn->type == P_FUJI_ASK500) {
 #if defined(WITH_DYNAMIC)
 		/* Attempt to open the library */
 		if (mitsu_loadlib(&ctx->lib, ctx->conn->type))
@@ -652,7 +662,8 @@ static void mitsud90_teardown(void *vctx) {
 	if (!ctx)
 		return;
 
-	if (ctx->conn->type == P_MITSU_M1) {
+	if (ctx->conn->type == P_MITSU_M1 ||
+	    ctx->conn->type == P_FUJI_ASK500) {
 		mitsu_destroylib(&ctx->lib);
 	}
 
@@ -795,7 +806,8 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	/* How many pixels do we need to read? */
 	remain = be16_to_cpu(job->hdr.cols) * be16_to_cpu(job->hdr.rows) * 3;
 
-	if (ctx->conn->type == P_MITSU_M1) {
+	if (ctx->conn->type == P_MITSU_M1 ||
+	    ctx->conn->type == P_FUJI_ASK500) {
 		/* See if it's a special gutenprint "not-raw" job */
 		job->is_raw = !job->hdr.zero_b[3];
 		job->hdr.zero_b[3] = 0;
@@ -848,6 +860,7 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	}
 
 	/* CP-M1 has... other considerations */
+	/* NOTE: ASK500 does *not* use an external LUT! */
 	if (ctx->conn->type == P_MITSU_M1 && !job->is_raw) {
 		if (!ctx->lib.dl_handle) {
 			ERROR("!!! Image Processing Library not found, aborting!\n");
@@ -945,7 +958,8 @@ static int mitsud90_main_loop(void *vctx, const void *vjob) {
 		ctx->pano_page = 0;
 	}
 
-	if (ctx->conn->type == P_MITSU_M1 && !job->is_raw) {
+	if ((ctx->conn->type == P_MITSU_M1 ||
+	     ctx->conn->type == P_FUJI_ASK500) && !job->is_raw) {
 		struct BandImage input;
 		struct BandImage output;
 		struct M1CPCData *cpc;
@@ -982,15 +996,26 @@ static int mitsud90_main_loop(void *vctx, const void *vjob) {
                                 2 NOLUT, NOMATCH */
 
 		const char *gammatab;
-		if (job->m1_colormode == 1) {
-			gammatab = CPM1_CPC_G5_FNAME;
-		} else if (job->m1_colormode == 3) {
-			gammatab = CPM1_CPC_G5_VIVID_FNAME;
-		} else { /* Mode 0 or 2 */
-			gammatab = CPM1_CPC_G1_FNAME;
+
+		if (ctx->conn->type == P_FUJI_ASK500) {
+			if (job->m1_colormode == 1) {
+				gammatab = ASK5_CPC_G5_FNAME;
+			} else { /* Mode 0 or 2 */
+				gammatab = ASK5_CPC_G1_FNAME;
+			}
+			cpc = ctx->lib.M1_GetCPCData(corrtable_path, ASK5_CPC_FNAME, gammatab);
+		} else {
+			if (job->m1_colormode == 1) {
+				gammatab = CPM1_CPC_G5_FNAME;
+			} else if (job->m1_colormode == 3) {
+				gammatab = CPM1_CPC_G5_VIVID_FNAME;
+			} else { /* Mode 0 or 2 */
+				gammatab = CPM1_CPC_G1_FNAME;
+			}
+			cpc = ctx->lib.M1_GetCPCData(corrtable_path, CPM1_CPC_FNAME, gammatab);
 		}
 
-		cpc = ctx->lib.M1_GetCPCData(corrtable_path, CPM1_CPC_FNAME, gammatab);
+
 		if (!cpc) {
 			ERROR("Cannot read data tables\n");
 			free(convbuf);
@@ -1686,13 +1711,18 @@ static int mitsud90_query_stats(void *vctx, struct printerstats *stats)
 	if (mitsud90_query_status(ctx, &resp))
 		return CUPS_BACKEND_FAILED;
 
-	stats->mfg = "Mitsubishi";
 	switch (ctx->conn->type) {
 	case P_MITSU_D90:
+		stats->mfg = "Mitsubishi";
 		stats->model = "CP-D90 family";
 		break;
 	case P_MITSU_M1:
+		stats->mfg = "Mitsubishi";
 		stats->model = "CP-M1 family";
+		break;
+	case P_FUJI_ASK500:
+		stats->mfg = "Fujifilm";
+		stats->model = "AK500";
 		break;
 	default:
 		stats->model = "Unknown!";
@@ -1749,6 +1779,7 @@ const struct dyesub_backend mitsud90_backend = {
 		{ USB_VID_MITSU, USB_PID_MITSU_D90, P_MITSU_D90, NULL, "mitsubishi-d90dw"},
 		{ USB_VID_MITSU, USB_PID_MITSU_CPM1, P_MITSU_M1, NULL, "mitsubishi-cpm1"},
 		{ USB_VID_MITSU, USB_PID_MITSU_CPM1, P_MITSU_M1, NULL, "mitsubishi-cpm15"}, // Duplicate for the M15
+//		{ USB_VID_FUJIFILM, USB_PID_FUJIFILM_ASK500, P_FUJI_ASK500, NULL, "fujifilm-ask500"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
