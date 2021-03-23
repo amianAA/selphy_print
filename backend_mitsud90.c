@@ -128,6 +128,11 @@ struct mitsud90_info_resp {
 	uint8_t  x84;
 } __attribute__((packed));
 
+struct mitsud90_fwver_resp {
+	uint8_t  hdr[4];  /* e4 47 44 30 */
+	struct mitsud90_fw_resp_single fw_ver;
+} __attribute((packed));
+
 struct mitsum1_info_resp {
 	uint8_t  hdr[4];  /* e4 47 44 30 */
 	uint8_t  model[10];
@@ -467,7 +472,8 @@ struct mitsud90_printjob {
 struct mitsud90_ctx {
 	struct dyesub_connection *conn;
 
-	char serno[7];
+	char serno[7]; /* 6+null */
+	char fwver[7]; /* 6+null */
 
 	/* Used in parsing.. */
 	struct mitsud90_job_footer holdover;
@@ -547,6 +553,36 @@ static int mitsud90_query_status(struct mitsud90_ctx *ctx, struct mitsud90_statu
 	return CUPS_BACKEND_OK;
 }
 
+static int mitsud90_query_fwver(struct mitsud90_ctx *ctx)
+{
+	uint8_t cmdbuf[8];
+	int ret, num;
+	struct mitsud90_fwver_resp resp;
+
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x47;
+	cmdbuf[2] = 0x44;
+	cmdbuf[3] = 0x30;
+	cmdbuf[4] = 0;
+	cmdbuf[5] = 0;
+	cmdbuf[6] = 1;  /* Number of commands */
+	cmdbuf[7] = COM_STATUS_TYPE_FW_MA;
+
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, sizeof(cmdbuf))))
+		return ret;
+	memset(&resp, 0, sizeof(resp));
+
+	ret = read_data(ctx->conn,
+			(uint8_t*) &resp, sizeof(resp), &num);
+
+	memcpy(ctx->fwver, resp.fw_ver.version, 6);
+	ctx->fwver[6] = 0;
+
+
+	return CUPS_BACKEND_OK;
+}
+
 static int mitsud90_get_serno(struct mitsud90_ctx *ctx)
 {
 	uint8_t cmdbuf[32];
@@ -609,29 +645,31 @@ static void *mitsud90_init(void)
 static int mitsud90_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid)
 {
 	struct mitsud90_ctx *ctx = vctx;
-	struct mitsud90_media_resp resp;
+	struct mitsud90_media_resp mresp;
 
 	UNUSED(jobid);
 
 	ctx->conn = conn;
 
 	if (test_mode < TEST_MODE_NOATTACH) {
-		if (mitsud90_query_media(ctx, &resp))
+		if (mitsud90_query_media(ctx, &mresp))
 			return CUPS_BACKEND_FAILED;
 		if (mitsud90_get_serno(ctx))
 			return CUPS_BACKEND_FAILED;
+		if (mitsud90_query_fwver(ctx))
+			return CUPS_BACKEND_FAILED;
 	} else {
-		resp.media.brand = 0xff;
-		resp.media.type = 0x0f;
-		resp.media.capacity = cpu_to_be16(230);
-		resp.media.remain = cpu_to_be16(200);
+		mresp.media.brand = 0xff;
+		mresp.media.type = 0x0f;
+		mresp.media.capacity = cpu_to_be16(230);
+		mresp.media.remain = cpu_to_be16(200);
 	}
 
 	ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
-	ctx->marker.numtype = resp.media.type;
-	ctx->marker.name = mitsu_media_types(ctx->conn->type, resp.media.brand, resp.media.type);
-	ctx->marker.levelmax = be16_to_cpu(resp.media.capacity);
-	ctx->marker.levelnow = be16_to_cpu(resp.media.remain);
+	ctx->marker.numtype = mresp.media.type;
+	ctx->marker.name = mitsu_media_types(ctx->conn->type, mresp.media.brand, mresp.media.type);
+	ctx->marker.levelmax = be16_to_cpu(mresp.media.capacity);
+	ctx->marker.levelnow = be16_to_cpu(mresp.media.remain);
 
 	if (ctx->conn->type == P_MITSU_M1 ||
 	    ctx->conn->type == P_FUJI_ASK500) {
@@ -1730,8 +1768,8 @@ static int mitsud90_query_stats(void *vctx, struct printerstats *stats)
 	}
 
 	stats->serial = ctx->serno;
+	stats->fwver = ctx->fwver;
 
-	// stats->fwver = ctx->fwver; // XXX use resp.fw_vers for 0xc/FW_MA
 	stats->decks = 1;
 
 	stats->name[0] = "Roll";
@@ -1762,7 +1800,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.31"  " (lib " LIBMITSU_VER ")",
+	.version = "0.32"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
