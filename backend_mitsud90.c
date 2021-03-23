@@ -898,8 +898,8 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	}
 
 	/* CP-M1 has... other considerations */
-	/* NOTE: ASK500 does *not* use an external LUT! */
-	if (ctx->conn->type == P_MITSU_M1 && !job->is_raw) {
+	if ((ctx->conn->type == P_MITSU_M1 ||
+	     ctx->conn->type == P_FUJI_ASK500) && !job->is_raw) {
 		if (!ctx->lib.dl_handle) {
 			ERROR("!!! Image Processing Library not found, aborting!\n");
 			mitsud90_cleanup_job(job);
@@ -907,20 +907,28 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		}
 
 		job->m1_colormode = job->hdr.colorcorr;
-		job->hdr.colorcorr = 1;
 
 		if (job->m1_colormode == 0) {
-			int ret = mitsu_apply3dlut_packed(&ctx->lib, CPM1_LUT_FNAME,
-							  job->databuf + sizeof(struct mitsud90_plane_hdr),
-							  be16_to_cpu(job->hdr.cols),
-							  be16_to_cpu(job->hdr.rows),
-							  be16_to_cpu(job->hdr.cols) * 3, COLORCONV_RGB);
-			if (ret) {
-				mitsud90_cleanup_job(job);
-				return ret;
+			const char *lutfname = NULL;
+
+			if (ctx->conn->type == P_MITSU_M1) {
+				lutfname = CPM1_LUT_FNAME;
 			}
-			job->hdr.colorcorr = 1;
+
+			/* NOTE: No LUT for ASK-500 yet */
+			if (lutfname) {
+				int ret = mitsu_apply3dlut_packed(&ctx->lib, lutfname,
+								  job->databuf + sizeof(struct mitsud90_plane_hdr),
+								  be16_to_cpu(job->hdr.cols),
+								  be16_to_cpu(job->hdr.rows),
+								  be16_to_cpu(job->hdr.cols) * 3, COLORCONV_RGB);
+				if (ret) {
+					mitsud90_cleanup_job(job);
+					return ret;
+				}
+			}
 		}
+		job->hdr.colorcorr = 1; // XXX not sure if right for ASK500?
 	}
 
 	/* All further work is in main loop */
@@ -1831,6 +1839,9 @@ const struct dyesub_backend mitsud90_backend = {
      * sleep and waking up
      * cut limit?
      * put FW version into stats structure
+     * Validate Fujifilm ASK500 support
+     * Confirm ASK500 spool format
+
  */
 
 /*
