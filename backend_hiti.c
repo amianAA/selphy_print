@@ -378,7 +378,7 @@ struct hiti_ctx {
 	uint8_t  led_calibration[10]; // XXX convert to struct
 	uint8_t  unk_8010[15]; // XXX
 	struct hiti_erdc_rs erdc_rs;
-	uint8_t  hilight_adj[6]; // XXX convert to struct
+	uint8_t  hilight_adj[6]; // XXX convert to struct, not P51x!
 	uint8_t  rtlv[2];      /* XXX figure out conversion/math? */
 	struct hiti_rpidm rpidm;
 	uint16_t ribbonvendor; // low byte = media subtype, high byte = type.
@@ -771,8 +771,11 @@ static int hiti_get_info(struct hiti_ctx *ctx)
 	INFO("Region: %s (%02x)\n",
 	     hiti_regions(ctx->rpidm.region),
 		ctx->rpidm.region);
-	INFO("Highlight Adjustment (Y M C): %d %d %d\n",
-	     ctx->hilight_adj[1], ctx->hilight_adj[2], ctx->hilight_adj[3]);
+
+	if (ctx->conn->type != P_HITI_51X) {
+		INFO("Highlight Adjustment (Y M C): %d %d %d\n",
+		     ctx->hilight_adj[1], ctx->hilight_adj[2], ctx->hilight_adj[3]);
+	}
 
 	ret = hiti_query_summary(ctx, &ctx->erdc_rs);
 	if (ret)
@@ -928,9 +931,13 @@ static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid
 		ret = hiti_query_rpidm(ctx);
 		if (ret)
 			return ret;
-		ret = hiti_query_hilightadj(ctx);
-		if (ret)
-			return ret;
+
+		if (ctx->conn->type != P_HITI_51X) {
+			ret = hiti_query_hilightadj(ctx);
+			if (ret)
+				return ret;
+		}
+
 		ret = hiti_query_serno(ctx->conn, ctx->serno, sizeof(ctx->serno));
 		if (ret)
 			return ret;
@@ -2344,7 +2351,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.23",
+	.version = "0.24",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
