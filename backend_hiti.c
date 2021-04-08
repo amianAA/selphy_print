@@ -40,7 +40,7 @@
 struct hiti_cmd {
 	uint8_t hdr;    /* 0xa5 */
 	uint16_t len;   /* (BE) everything after this field, minimum 3, max 6 */
-	uint8_t unk;    /* 0x50 */
+	uint8_t status; /* 0x50 (ok), 0xd8 (unk cmd) */
 	uint16_t cmd;   /* CMD_*  (BE) */
 	uint8_t payload[];  /* 0-3 items */
 } __attribute__((packed));
@@ -414,7 +414,7 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len + 3);
-	cmd->unk = 0x50;
+	cmd->status = 0x50;
 	cmd->cmd = cpu_to_be16(cmdid);
 	if (buf && buf_len)
 		memcpy(cmd->payload, buf, buf_len);
@@ -442,6 +442,12 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 	if (num > *rsplen) {
 		ERROR("Response too long for buffer (%d vs %d)!\n", num, *rsplen);
 		*rsplen = 0;
+		return CUPS_BACKEND_FAILED;
+	}
+
+	/* Check response */
+	if (cmd->status != 0x50) {
+		ERROR("Command %04x failed, code %02x\n", cmdid, cmd->status);
 		return CUPS_BACKEND_FAILED;
 	}
 
