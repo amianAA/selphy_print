@@ -125,7 +125,7 @@ struct hiti_cmd {
 
 /* Extended Flash/NVram */
 #define CMD_EFM_RNV    0x8405 /* Read NVRam (1 arg) XX */
-#define CMD_EFM_RD     0x8408 /* Read single location (2 arg) -- XXX RE */
+#define CMD_EFM_RD     0x8408 /* Read single location (2 arg) -- XXX RE not P51x */
 #define CMD_EFM_SHA    0x840E /* Set Highlight Adjustment (5 arg) -- XXX RE */
 
 /* Extended Security Control */
@@ -794,9 +794,11 @@ static int hiti_get_info(struct hiti_ctx *ctx)
 	     ctx->erdc_rs.dpi_cols,
 	     ctx->erdc_rs.dpi_rows);
 
-	ret = hiti_query_matrix(ctx);
-	if (ret)
-		return CUPS_BACKEND_FAILED;
+	if (ctx->conn->type != P_HITI_51X) {
+		ret = hiti_query_matrix(ctx);
+		if (ret)
+			return CUPS_BACKEND_FAILED;
+	}
 
 	uint32_t buf = 0;
 	ret = hiti_query_counter(ctx, 1, &buf);
@@ -2357,7 +2359,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.24",
+	.version = "0.25",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
