@@ -54,7 +54,7 @@ struct hiti_cmd {
 #define CMD_PCC_STP    0x030F /* Set Target Printer (1 arg) XX -- master or slave perhaps? */
 
 /* Request Device Status */
-#define CMD_RDS_RSS    0x0400 /* Request Status Summary */
+#define CMD_RDS_RSS    0x0400 /* Request Status Summary (resp is 6 (p51x) or 3 (rest) */
 #define CMD_RDS_RIS    0x0401 /* Request Input Status */
 #define CMD_RDS_RIA    0x0403 /* Request Input Alert */
 #define CMD_RDS_RJA    0x0405 /* Request Jam Alert */
@@ -1745,7 +1745,7 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 
 	int ret;
 	uint32_t err = 0;
-	uint8_t sts[3];
+	uint8_t sts[6];
 	struct hiti_job jobid;
 
 	const struct hiti_printjob *job = vjob;
@@ -2312,7 +2312,7 @@ static int hiti_query_markers(void *vctx, struct marker **markers, int *count)
 static int hiti_query_stats(void *vctx, struct printerstats *stats)
 {
 	struct hiti_ctx *ctx = vctx;
-	uint8_t sts[3];
+	uint8_t sts[6];
 	uint32_t err = 0;
 	uint32_t tmp[2] = {0, 0};
 
