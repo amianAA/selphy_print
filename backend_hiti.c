@@ -62,7 +62,7 @@ struct hiti_cmd {
 #define CMD_RDS_RW     0x0407 /* Request Warnings */
 #define CMD_RDS_DSRA   0x0408 /* Request Device Serviced Alerts */
 #define CMD_RDS_SA     0x040A /* Request Service Alerts */
-#define CMD_RDS_RPS    0x040B /* Request Printer Statistics */
+#define CMD_RDS_RPS    0x040B /* Request Printer Statistics (*/
 #define CMD_RDS_RSUS   0x040C /* Request Supplies Status */
 
 /* Job Control */
@@ -75,7 +75,7 @@ struct hiti_cmd {
 /* Extended Read Device Characteristics */
 #define CMD_ERDC_RS    0x8000 /* Request Summary */
 #define CMD_ERDC_RCC   0x8001 /* Read Calibration Charcteristics */
-#define CMD_ERDC_RPC   0x8005 /* Request Print Count (1 arg, 4 resp) */
+#define CMD_ERDC_RPC   0x8005 /* Request Print Count (1 arg, 8 (51x) or 4 (52x,7xx) resp) */
 #define CMD_ERDC_RLC   0x8006 /* Request LED calibration */
 #define CMD_ERDC_RSN   0x8007 /* Read Serial Number (1 arg) */
 #define CMD_ERDC_C_RPCS 0x8008 /* CS Request Printer Correction Status */
@@ -368,6 +368,8 @@ struct hiti_ctx {
 
 	char serno[32];
 
+	int  erdc_rpc_len;
+
 	struct marker marker;
 	char     version[256];
 	char     id[256];
@@ -401,7 +403,7 @@ static int hiti_query_summary(struct hiti_ctx *ctx, struct hiti_erdc_rs *rds);
 static int hiti_query_rpidm(struct hiti_ctx *ctx);
 static int hiti_query_hilightadj(struct hiti_ctx *ctx);
 static int hiti_query_unk8010(struct hiti_ctx *ctx);
-static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp);
+static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp, int num);
 static int hiti_query_markers(void *vctx, struct marker **markers, int *count);
 
 static int hiti_query_serno(struct dyesub_connection *conn, char *buf, int buf_len);
@@ -627,6 +629,7 @@ static const char* hiti_regions(uint8_t code)
 	case 0x15: return "EU";
 	case 0x16: return "IN";
 	case 0x17: return "DB";
+	case 0xf0: // Seen on P510S
 	default:
 		return "Unknown";
 	}
@@ -800,21 +803,21 @@ static int hiti_get_info(struct hiti_ctx *ctx)
 			return CUPS_BACKEND_FAILED;
 	}
 
-	uint32_t buf = 0;
-	ret = hiti_query_counter(ctx, 1, &buf);
+	uint32_t buf[2] = {0,0};
+	ret = hiti_query_counter(ctx, 1, buf, ctx->erdc_rpc_len);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	INFO("Total prints: %u\n", buf);
+	INFO("Total prints: %u\n", buf[0]);
 
-	ret = hiti_query_counter(ctx, 2, &buf);
+	ret = hiti_query_counter(ctx, 2, buf, ctx->erdc_rpc_len);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	INFO("6x4 prints: %u\n", buf);
+	INFO("6x4 prints: %u\n", buf[0]);
 
-	ret = hiti_query_counter(ctx, 4, &buf);
+	ret = hiti_query_counter(ctx, 4, buf, ctx->erdc_rpc_len);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
-	INFO("6x8 prints: %u\n", buf);
+	INFO("6x8 prints: %u\n", buf[0]);
 
 	int i;
 
@@ -913,6 +916,12 @@ static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid
 	ctx->jobid = (jobid & 0x7fff);
 	if (!ctx->jobid)
 		ctx->jobid++;
+
+	if (ctx->conn->type == P_HITI_51X) {
+		ctx->erdc_rpc_len = 2;
+	} else {
+		ctx->erdc_rpc_len = 1;
+	}
 
 	if (test_mode < TEST_MODE_NOATTACH) {
 		/* P52x firmware v1.19+ lose their minds when Linux
@@ -2011,8 +2020,10 @@ static int hiti_query_version(struct hiti_ctx *ctx)
 static int hiti_query_status(struct hiti_ctx *ctx, uint8_t *sts, uint32_t *err)
 {
 	int ret;
-	uint16_t len = 3;
+	uint16_t len = (ctx->conn->type == P_HITI_51X) ? 6 : 3;
 	uint16_t cmd;
+
+	// XXX handle P51x response.
 
 	*err = 0;
 
@@ -2189,15 +2200,23 @@ static int hiti_query_supplies(struct hiti_ctx *ctx)
 static int hiti_query_statistics(struct hiti_ctx *ctx)
 {
 	int ret;
-	uint16_t len = 6;
+	uint16_t len = 30;
 	uint8_t buf[256];
+	int i;
 
 	ret = hiti_docmd_resp(ctx, CMD_RDS_RPS, NULL, 0, buf, &len);
 	if (ret)
 		return ret;
 
-	memcpy(&ctx->media_remain, &buf[2], sizeof(ctx->media_remain));
-	ctx->media_remain = be32_to_cpu(ctx->media_remain);
+	for (i = 0 ; i < buf[2] && i < len ; i+= 5) {
+		/* uint8_t type
+		   uint32_t val
+		*/
+		if (buf[1 + i*5] == 0x03) { // Remaining prints
+			memcpy(&ctx->media_remain, &buf[1 + i*5 + 1], sizeof(ctx->media_remain));
+			ctx->media_remain = be32_to_cpu(ctx->media_remain);
+		}
+	}
 
 	return CUPS_BACKEND_OK;
 }
@@ -2208,11 +2227,10 @@ static int hiti_doreset(struct hiti_ctx *ctx, uint8_t type)
 	uint8_t buf[6];
 	uint16_t len = 6;
 
-	ret = hiti_docmd_resp(ctx, CMD_RDS_RPS, &type, sizeof(type), buf, &len);
+	ret = hiti_docmd_resp(ctx, CMD_PCC_RP, &type, sizeof(type), buf, &len);
 	if (ret)
 		return ret;
 
-	// response seems to be: 01 03 00 00 01 47
 	sleep(5);
 
 	return CUPS_BACKEND_OK;
@@ -2236,10 +2254,10 @@ static int hiti_query_matrix(struct hiti_ctx *ctx)
 	return CUPS_BACKEND_OK;
 }
 
-static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp)
+static int hiti_query_counter(struct hiti_ctx *ctx, uint8_t arg, uint32_t *resp, int num)
 {
 	int ret;
-	uint16_t len = sizeof(*resp);
+	uint16_t len = sizeof(*resp) * num;
 
 	ret = hiti_docmd_resp(ctx, CMD_ERDC_RPC, &arg, sizeof(arg),
 			      (uint8_t*) resp, &len);
@@ -2296,7 +2314,7 @@ static int hiti_query_stats(void *vctx, struct printerstats *stats)
 	struct hiti_ctx *ctx = vctx;
 	uint8_t sts[3];
 	uint32_t err = 0;
-	uint32_t tmp = 0;
+	uint32_t tmp[2] = {0, 0};
 
 	/* Update marker info */
 	if (hiti_query_markers(ctx, NULL, NULL))
@@ -2316,10 +2334,10 @@ static int hiti_query_stats(void *vctx, struct printerstats *stats)
 	stats->name[0] = "Roll";
 	stats->cnt_life[0] = 0;
 
-	if (hiti_query_counter(ctx, 1, &tmp))
+	if (hiti_query_counter(ctx, 1, tmp, ctx->erdc_rpc_len))
 		return CUPS_BACKEND_FAILED;
 
-	stats->cnt_life[0] += tmp;
+	stats->cnt_life[0] += tmp[0];
 
 	if (err)
 		stats->status[0] = strdup(hiti_errors(err));
@@ -2359,7 +2377,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.25",
+	.version = "0.26",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
@@ -2417,5 +2435,5 @@ const struct dyesub_backend hiti_backend = {
    - Incorporate changes for CS-series card printers
    - More "Matrix table" decoding work
    - Investigate Suspicion that HiTi keeps tweaking LUTs and/or Heat tables
-
+   - Fix P51x query_status, query_counter, query_statistics
 */
