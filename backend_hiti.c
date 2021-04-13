@@ -2242,7 +2242,7 @@ static int hiti_query_statistics(struct hiti_ctx *ctx)
 	if (ret)
 		return ret;
 
-	for (i = 0 ; i < buf[2] && i < len ; i+= 5) {
+	for (i = 0 ; i < buf[0] && i*5+1 < len ; i+= 5) {
 		/* uint8_t type
 		   uint32_t val
 		*/
@@ -2411,7 +2411,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.27",
+	.version = "0.28",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
