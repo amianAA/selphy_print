@@ -54,7 +54,7 @@ struct hiti_cmd {
 #define CMD_PCC_STP    0x030F /* Set Target Printer (1 arg) XX -- master or slave perhaps? */
 
 /* Request Device Status */
-#define CMD_RDS_RSS    0x0400 /* Request Status Summary (resp is 6 (p51x) or 3 (rest) */
+#define CMD_RDS_RSS    0x0400 /* Request Status Summary */
 #define CMD_RDS_RIS    0x0401 /* Request Input Status */
 #define CMD_RDS_RIA    0x0403 /* Request Input Alert */
 #define CMD_RDS_RJA    0x0405 /* Request Jam Alert */
@@ -286,7 +286,7 @@ struct hiti_efd_sf {
 struct hiti_extprintdata {
 	uint8_t  hdr; /* 0xa5 */
 	uint16_t len; /* 24bit data length (+8) in BE format, first two bytes */
-	uint8_t  unk; /* 0x50 */
+	uint8_t  status; /* 0x50 */
 	uint16_t cmd; /* 0x8309, BE */
 	uint8_t  lenb; /* LSB of length */
 	uint16_t startLine;  /* Starting line number, BE */
@@ -298,7 +298,7 @@ struct hiti_extprintdata {
 struct hiti_seht2 {
 	uint8_t  hdr;  /* 0xa5 */
 	uint16_t len;  /* 24-bit data length (+5) in BE format, first two bytes */
-	uint8_t  unk;  /* 0x50 */
+	uint8_t  status;  /* 0x50 */
 	uint16_t cmd;  /* 0x8303, BE */
 	uint8_t  lenb; /* LSB of length */
 	uint8_t  plane;
@@ -505,7 +505,7 @@ static int hiti_sepd(struct hiti_ctx *ctx, uint32_t buf_len,
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len >> 8);
-	cmd->unk = 0x50;
+	cmd->status = 0x50;
 	cmd->cmd = cpu_to_be16(CMD_ESD_SEPD);
 	cmd->lenb = buf_len & 0xff;
 	cmd->startLine = cpu_to_be16(startLine);
@@ -819,17 +819,18 @@ static int hiti_get_info(struct hiti_ctx *ctx)
 		return CUPS_BACKEND_FAILED;
 	INFO("6x8 prints: %u\n", buf[0]);
 
-	int i;
-
-	DEBUG("MAT ");
-	for (i = 0 ; i < 256 ; i++) {
-		if (i != 0 && (i % 16 == 0)) {
-			DEBUG2("\n");
-			DEBUG("    ");
+	if (ctx->conn->type != P_HITI_51X) {
+		int i;
+		DEBUG("MAT ");
+		for (i = 0 ; i < 256 ; i++) {
+			if (i != 0 && (i % 16 == 0)) {
+				DEBUG2("\n");
+				DEBUG("    ");
+			}
+			DEBUG2("%02x ", ctx->matrix[i]);
 		}
-		DEBUG2("%02x ", ctx->matrix[i]);
+		DEBUG2("\n");
 	}
-	DEBUG2("\n");
 
 	// XXX other shit..
 
@@ -1146,10 +1147,45 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len >> 8);
-	cmd->unk = 0x50;
+	cmd->status = 0x50;
 	cmd->cmd = cpu_to_be16(CMD_ESD_SEHT2);
 	cmd->lenb = buf_len & 0xff;
 	cmd->plane = plane;
+
+	/* Send over command */
+	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, sizeof(*cmd)))) {
+		return ret;
+	}
+
+	__usleep(10*1000);
+
+	/* Read back command */
+	ret = read_data(ctx->conn, cmdbuf, 6, &num);
+	if (ret)
+		return ret;
+
+	// XXX check resp length?
+
+	/* Send payload, if any */
+	if (buf_len && !ret) {
+		ret = send_data(ctx->conn, buf, buf_len);
+	}
+
+	return ret;
+}
+
+static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
+{
+	uint8_t cmdbuf[sizeof(struct hiti_cmd)];
+	struct hiti_cmd *cmd = (struct hiti_cmd *)cmdbuf;
+	int ret, num = 0;
+
+	buf_len += 5;
+
+	cmd->hdr = 0xa5;
+	cmd->len = cpu_to_be16(buf_len + 3);
+	cmd->status = 0x50;
+	cmd->cmd = cpu_to_be16(CMD_EDM_CVD);
 
 	/* Send over command */
 	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, sizeof(*cmd)))) {
@@ -1178,7 +1214,6 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 	const char *fname = NULL;
 	struct hiti_heattable table;
 	int ret, len;
-	uint16_t resplen;
 
 	int mediaver = ctx->ribbonvendor & 0x3f;
 	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
@@ -1254,26 +1289,22 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 		memset(&table, 0, sizeof(table));
 	}
 
-	resplen = 0;
-	len = fname ? sizeof(table.y) : 0;
-
 	/* Send over the heat tables */
 	ret = hiti_seht2(ctx, 0, table.y, sizeof(table.y));
 	if (!ret)
 		ret = hiti_seht2(ctx, 1, table.m, sizeof(table.m));
 	if (!ret)
 		ret = hiti_seht2(ctx, 2, table.c, sizeof(table.c));
-	if (matte) {
-		ret = hiti_seht2(ctx, 3, table.om, sizeof(table.om));
-	} else {
-		ret = hiti_seht2(ctx, 3, table.o, sizeof(table.o));
+	if (!ret) {
+		if (matte)
+			ret = hiti_seht2(ctx, 3, table.om, sizeof(table.om));
+		else
+			ret = hiti_seht2(ctx, 3, table.o, sizeof(table.o));
 	}
-
-	len = fname ? sizeof(table.cvd) : 0;
 
 	/* And finally, send over the CVD data */
 	if (!ret)
-		ret = hiti_docmd(ctx, CMD_EDM_CVD, table.cvd, len, &resplen);
+		ret = hiti_cvd(ctx, table.cvd, sizeof(table.cvd));
 
 	return ret;
 }
@@ -1745,7 +1776,7 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 
 	int ret;
 	uint32_t err = 0;
-	uint8_t sts[6];
+	uint8_t sts[3];
 	struct hiti_job jobid;
 
 	const struct hiti_printjob *job = vjob;
@@ -2020,10 +2051,8 @@ static int hiti_query_version(struct hiti_ctx *ctx)
 static int hiti_query_status(struct hiti_ctx *ctx, uint8_t *sts, uint32_t *err)
 {
 	int ret;
-	uint16_t len = (ctx->conn->type == P_HITI_51X) ? 6 : 3;
+	uint16_t len = 3;
 	uint16_t cmd;
-
-	// XXX handle P51x response.
 
 	*err = 0;
 
@@ -2312,9 +2341,9 @@ static int hiti_query_markers(void *vctx, struct marker **markers, int *count)
 static int hiti_query_stats(void *vctx, struct printerstats *stats)
 {
 	struct hiti_ctx *ctx = vctx;
-	uint8_t sts[6];
+	uint8_t sts[3];
 	uint32_t err = 0;
-	uint32_t tmp[2] = {0, 0};
+	uint32_t tmp[2] = {0, 0}; /* Second only used for P51x */
 
 	/* Update marker info */
 	if (hiti_query_markers(ctx, NULL, NULL))
@@ -2377,7 +2406,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.26",
+	.version = "0.27",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
@@ -2435,5 +2464,4 @@ const struct dyesub_backend hiti_backend = {
    - Incorporate changes for CS-series card printers
    - More "Matrix table" decoding work
    - Investigate Suspicion that HiTi keeps tweaking LUTs and/or Heat tables
-   - Fix P51x query_status, query_counter, query_statistics
 */
