@@ -40,10 +40,14 @@
 struct hiti_cmd {
 	uint8_t hdr;    /* 0xa5 */
 	uint16_t len;   /* (BE) everything after this field, minimum 3, max 6 */
-	uint8_t status; /* 0x50 (ok), 0xd8 (unk cmd) */
+	uint8_t status; /* see CMD_STATUS_* */
 	uint16_t cmd;   /* CMD_*  (BE) */
 	uint8_t payload[];  /* 0-3 items */
 } __attribute__((packed));
+
+#define CMD_STATUS_OK      0x50
+#define CMD_STATUS_OK2     0x51 /* Seen with ERDC_RLC response */
+#define CMD_STATUS_UNK_CMD 0xd8
 
 /* Request Device Characteristics */
 #define CMD_RDC_RS     0x0100 /* Request Summary */
@@ -416,7 +420,7 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len + 3);
-	cmd->status = 0x50;
+	cmd->status = CMD_STATUS_OK;
 	cmd->cmd = cpu_to_be16(cmdid);
 	if (buf && buf_len)
 		memcpy(cmd->payload, buf, buf_len);
@@ -448,7 +452,7 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 	}
 
 	/* Check response */
-	if (cmd->status != 0x50) {
+	if (cmd->status != CMD_STATUS_OK && cmd->status != CMD_STATUS_OK2) {
 		ERROR("Command %04x failed, code %02x\n", cmdid, cmd->status);
 		return CUPS_BACKEND_FAILED;
 	}
@@ -505,7 +509,7 @@ static int hiti_sepd(struct hiti_ctx *ctx, uint32_t buf_len,
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len >> 8);
-	cmd->status = 0x50;
+	cmd->status = CMD_STATUS_OK;
 	cmd->cmd = cpu_to_be16(CMD_ESD_SEPD);
 	cmd->lenb = buf_len & 0xff;
 	cmd->startLine = cpu_to_be16(startLine);
@@ -630,6 +634,7 @@ static const char* hiti_regions(uint8_t code)
 	case 0x16: return "IN";
 	case 0x17: return "DB";
 	case 0xf0: // Seen on P510S
+	case 0x01: // Seen on P520L
 	default:
 		return "Unknown";
 	}
@@ -1147,7 +1152,7 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len >> 8);
-	cmd->status = 0x50;
+	cmd->status = CMD_STATUS_OK;
 	cmd->cmd = cpu_to_be16(CMD_ESD_SEHT2);
 	cmd->lenb = buf_len & 0xff;
 	cmd->plane = plane;
@@ -1184,7 +1189,7 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len + 3);
-	cmd->status = 0x50;
+	cmd->status = CMD_STATUS_OK;
 	cmd->cmd = cpu_to_be16(CMD_EDM_CVD);
 
 	/* Send over command */
