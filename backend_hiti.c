@@ -1014,7 +1014,7 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 	switch (ctx->conn->type)
 	{
 	case P_HITI_51X:
-		if (!mediatype) {
+		if (!mediatype) { /* DNP media */
 			if (mode) {
 				fname = "P51x_CMQPra.bin";
 				break;
@@ -1022,7 +1022,7 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 				fname = "P51x_CMPPra.bin";
 				break;
 			}
-		} else {
+		} else { /* CHC media */
 			if (mode) {
 				switch(mediaver) {
 				case 0:
@@ -2199,7 +2199,7 @@ static int hiti_query_ribbonvendor(struct hiti_ctx *ctx)
 	if (ret)
 		return ret;
 
-	ctx->ribbonvendor = cpu_to_le16(ctx->ribbonvendor);
+	ctx->ribbonvendor = be16_to_cpu(ctx->ribbonvendor);
 
 	return CUPS_BACKEND_OK;
 }
@@ -2414,7 +2414,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.30",
+	.version = "0.31",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
