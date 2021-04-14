@@ -46,8 +46,10 @@ struct hiti_cmd {
 } __attribute__((packed));
 
 #define CMD_STATUS_OK      0x50
-#define CMD_STATUS_OK2     0x51 /* Seen with ERDC_RLC response */
-#define CMD_STATUS_UNK_CMD 0xd8
+#define CMD_STATUS_OK2     0x51 /* Seen with ERDC_RLC on p51x */
+#define CMD_STATUS_OK3     0x53 /* Seen with EPC_SP on p51x, sometimes? */
+#define CMD_STATUS_BAD_CMD 0xd8 /* Seen with EFM_RD on p51x */
+#define CMD_STATUS_UNK2    0xdb /* Seen with ESD_SEHT2 on p51x */
 
 /* Request Device Characteristics */
 #define CMD_RDC_RS     0x0100 /* Request Summary */
@@ -355,14 +357,15 @@ struct hiti_matrix {
 
 /* Private data structure */
 struct hiti_printjob {
+	size_t jobsize;
+	int copies;
+
 	uint8_t *databuf;
 	uint32_t datalen;
 
 	struct hiti_gpjobhdr hdr;
 
 	int blocks;
-
-	int copies;
 };
 
 struct hiti_ctx {
@@ -452,7 +455,8 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 	}
 
 	/* Check response */
-	if (cmd->status != CMD_STATUS_OK && cmd->status != CMD_STATUS_OK2) {
+	if (cmd->status != CMD_STATUS_OK && cmd->status != CMD_STATUS_OK2 &&
+	    cmd->status != CMD_STATUS_OK3) {
 		ERROR("Command %04x failed, code %02x\n", cmdid, cmd->status);
 		return CUPS_BACKEND_FAILED;
 	}
@@ -1172,6 +1176,7 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 	// XXX check resp length?
 
 	/* Send payload, if any */
+	buf_len -= 5;
 	if (buf_len && !ret) {
 		ret = send_data(ctx->conn, buf, buf_len);
 	}
@@ -1205,6 +1210,8 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 		return ret;
 
 	// XXX check resp length?
+
+	buf_len -= 5;
 
 	/* Send payload, if any */
 	if (buf_len && !ret) {
@@ -1854,11 +1861,10 @@ static int hiti_main_loop(void *vctx, const void *vjob)
 
 	INFO("Printer returned Job ID %04x\n", be16_to_cpu(jobid.jobid));
 
-	uint8_t chs[2] = { 0, 1 }; /* Fixed..? */
-
 	if (ctx->conn->type == P_HITI_51X) {
 		ret = hiti_send_heat_data(ctx, job->hdr.quality, job->hdr.overcoat);
 	} else {
+		uint8_t chs[2] = { 0, 1 }; /* Fixed..? */
 		resplen = 0;
 		ret = hiti_docmd(ctx, CMD_EFD_CHS, chs, sizeof(chs), &resplen);
 		if (ret)
@@ -2411,7 +2417,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.28",
+	.version = "0.29",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
