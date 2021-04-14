@@ -91,6 +91,10 @@ Q=
 E=true
 endif
 
+# Debugging
+#CFLAGS += -fsanitize=address -fPIC
+#LDFLAGS += -lasan
+
 # Flags
 CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
 LDFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --libs libusb-1.0)
@@ -98,9 +102,6 @@ CPPFLAGS += $(shell pkg-config $(PKG_CONFIG_EXTRA) --cflags libusb-1.0)
 # CPPFLAGS += -DLIBUSB_PRE_1_0_10
 CPPFLAGS += $(OLD_URI) -DCORRTABLE_PATH=\"$(BACKEND_DATA_DIR)\"
 LIBLDFLAGS = -g -shared
-
-# Debugging
-#CFLAGS += -fsanitize=address
 
 # List of backends
 BACKENDS = canonselphy canonselphyneo dnpds40 hiti kodak605 kodak1400 kodak6800 magicard mitsu70x mitsu9550 mitsud90 mitsup95d shinkos1245 shinkos2145 shinkos6145 shinkos6245 sonyupd sonyupdneo

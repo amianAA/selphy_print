@@ -588,7 +588,7 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 	/* Attempt to open the library */
 	if (mitsu_loadlib(&ctx->lib, ctx->conn->type))
 #endif
-		WARNING("Dynamic library support not loaded, will be unable to print.");
+		WARNING("Dynamic library support not loaded, will be unable to print!\n");
 
 	struct mitsu70x_printerstatus_resp resp;
 	int ret;
