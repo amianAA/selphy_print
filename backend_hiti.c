@@ -1161,6 +1161,8 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 	cmd->lenb = buf_len & 0xff;
 	cmd->plane = plane;
 
+	buf_len -= 5;
+
 	/* Send over command */
 	if ((ret = send_data(ctx->conn, (uint8_t*) cmd, sizeof(*cmd)))) {
 		return ret;
@@ -1176,7 +1178,6 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 	// XXX check resp length?
 
 	/* Send payload, if any */
-	buf_len -= 5;
 	if (buf_len && !ret) {
 		ret = send_data(ctx->conn, buf, buf_len);
 	}
@@ -1189,8 +1190,6 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 	uint8_t cmdbuf[sizeof(struct hiti_cmd)];
 	struct hiti_cmd *cmd = (struct hiti_cmd *)cmdbuf;
 	int ret, num = 0;
-
-	buf_len += 5;
 
 	cmd->hdr = 0xa5;
 	cmd->len = cpu_to_be16(buf_len + 3);
@@ -1210,8 +1209,6 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 		return ret;
 
 	// XXX check resp length?
-
-	buf_len -= 5;
 
 	/* Send payload, if any */
 	if (buf_len && !ret) {
@@ -2417,7 +2414,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.29",
+	.version = "0.30",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
