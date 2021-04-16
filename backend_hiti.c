@@ -1113,7 +1113,7 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 		}
 		break;
 	case P_HITI_750:
-		fname = "P75x_CCPPri.bin";
+		fname = "P75x_CCQPrh.bin";
 		break;
 	default:
 		fname = NULL;

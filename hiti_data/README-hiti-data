@@ -1,2 +1,30 @@
-These '.bin' files represent 3D LUTs for various HiTi printers.  All 
-files were extracted from various HiTi driver binaries or source code.
+These '.bin' are either 3D LUTs or Heat Tables for various HiTi 
+printers.  All files were extracted from public HiTi source code or 
+binary driver releases.
+
+LUT filename Codes:
+
+ C M Q P ? ra [ .bin ]
+           --  model code, see below
+         -     media version, 0..n (if not present, interpret as 0)
+       -       alwayx P (or 'CL')
+     -         print quality, Q == fine, P == normal
+   -           media type, M == DNP, C == CHC         (?)
+ -             Always C
+            
+  model codes:
+
+    ra = P51x
+    rd = P72x
+    rh = P75x
+    ri = P52x
+    si = P11x
+
+Heat table codes:
+
+ hea 0 q c ra [.bin]
+           -- model code, see above
+         -    media type, h == DNP, c == CHC      (?)
+       -      print quality, q == fine, t == normal, (or p == ?)
+     -        media version, 0..n (or 't')
+  ---         always 'hea'
