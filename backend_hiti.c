@@ -934,7 +934,7 @@ static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid
 	}
 
 	if (test_mode < TEST_MODE_NOATTACH) {
-		/* P52x firmware v1.19+ lose their minds when Linux
+		/* P52x firmware v1.19-v1.21 lose their minds when Linux
 		   issues a routine CLEAR_ENDPOINT_HALT.  Printer can recover
 		   if it is reset.  Unclear what the side effects are.. */
 		if (ctx->conn->type == P_HITI_52X)
@@ -969,6 +969,17 @@ static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid
 		if (ret)
 			return ret;
 
+		switch (ctx->conn->type) {
+		case P_HITI_52X:
+			if (strncmp(ctx->version, "1.23", 4) < 0)
+				WARNING("Printer firmware %s out of date (vs %s), please update.\n", ctx->version, "v1.23");
+			else if (strncmp(ctx->version, "1.22", 4) < 0 &&
+				 strncmp(ctx->version, "1.17", 4) > 0)  /* V1.18 -> v1.21 have a known USB CLEAR_ENDPOINT_HALT issue */
+				WARNING("Printer firmware %s has a known USB bug, please update to at least v1.22\n", ctx->version);
+			break;
+		default:
+			break;
+		}
 		// do real stuff
 	} else {
 		ctx->supplies2[0] = PAPER_TYPE_6INCH;
@@ -2414,7 +2425,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.31",
+	.version = "0.32",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
@@ -2472,4 +2483,6 @@ const struct dyesub_backend hiti_backend = {
    - Incorporate changes for CS-series card printers
    - More "Matrix table" decoding work
    - Investigate Suspicion that HiTi keeps tweaking LUTs and/or Heat tables
+   - Pull in heat tables & LUTs from windows drivers
+
 */
