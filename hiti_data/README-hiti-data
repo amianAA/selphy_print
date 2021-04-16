@@ -7,7 +7,7 @@ LUT filename Codes:
  C M Q P ? ra [ .bin ]
            --  model code, see below
          -     media version, 0..n (if not present, interpret as 0)
-       -       alwayx P (or 'CL')
+       -       always P (or 'CL')
      -         print quality, Q == fine, P == normal
    -           media type, M == DNP, C == CHC         (?)
  -             Always C
@@ -17,7 +17,8 @@ LUT filename Codes:
     ra = P51x
     rd = P72x
     rh = P75x
-    ri = P52x
+    rk = P530
+    ri = P52x (or 'ri1')
     si = P11x
 
 Heat table codes:
@@ -28,3 +29,12 @@ Heat table codes:
        -      print quality, q == fine, t == normal, (or p == ?)
      -        media version, 0..n (or 't')
   ---         always 'hea'
+
+Heat table types:
+
+  size    
+
+  11108    (SEHT2 * 5_ + CVD (Y + M + C + Gloss + Matte + CVD)
+  12568    ??
+  12603    ??
+  15732    ??
