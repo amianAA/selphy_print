@@ -1830,15 +1830,13 @@ const struct dyesub_backend mitsud90_backend = {
 	}
 };
 
-/* To-Do:
+/* ToDo:
 
      * consolidate M1 vs D90 info query/dump more efficiently
      * job control (job id, active job, buffer status, etc)
      * any sort of counters
-     * figure out "margin" parameter on the cut list
      * sleep and waking up
      * cut limit?
-     * put FW version into stats structure
      * Validate Fujifilm ASK500 support
      * Confirm ASK500 spool format
 
