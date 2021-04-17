@@ -705,7 +705,7 @@ const struct dyesub_backend sonyupdneo_backend = {
 //		{ 0x054c, 0x02d4, P_SONY_UPCX1, NULL, "sony-upcx1"},
 		{ 0x054c, 0x0877, P_SONY_UPD898, NULL, "sony-upd898"},
 //		{ 0x054c, 0x589a, P_SONY_UPD898, NULL, "sony-upd898"}, // ???
-//		{ 0x054c, 0xbcde, P_SONY_UPCR20L, NULL, "sony-upcr20l"}, // ???
+		{ 0x054c, 0xbcde, P_SONY_UPCR20L, NULL, "sony-upcr20l"}, // XXXX
 		{ 0x054c, 0x03c5, P_SONY_UPDR80, NULL, "sony-updr80"},
 		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
 		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
