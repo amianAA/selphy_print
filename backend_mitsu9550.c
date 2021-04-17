@@ -35,23 +35,6 @@
 #define MITSU_CP30D_LUT_FILE       "CP30LT_1.lut"
 #define LAMINATE_STRIDE 1868
 
-/* USB VIDs and PIDs */
-
-#define USB_VID_MITSU        0x06D3
-#define USB_PID_MITSU_9500D  0x0393
-#define USB_PID_MITSU_9000D  0x0394
-#define USB_PID_MITSU_9000AM 0x0395
-#define USB_PID_MITSU_9550D  0x03A1
-#define USB_PID_MITSU_9550DS 0x03A5  // or DZ/DZS/DZU
-#define USB_PID_MITSU_9600D  0x03A9
-//#define USB_PID_MITSU_9600DS  XXXXXX
-#define USB_PID_MITSU_CP30D  0x03AB
-#define USB_PID_MITSU_9800D  0x03AD
-#define USB_PID_MITSU_9800DS 0x03AE
-#define USB_PID_MITSU_98__D  0x3B21
-//#define USB_PID_MITSU_9810D   XXXXXX
-//#define USB_PID_MITSU_9820DS  XXXXXX
-
 /* Spool file structures */
 
 /* Print parameters1 */
@@ -1641,24 +1624,23 @@ const struct dyesub_backend mitsu9550_backend = {
 	.query_serno = mitsu9550_query_serno,
 	.query_markers = mitsu9550_query_markers,
 	.devices = {
-		{ USB_VID_MITSU, USB_PID_MITSU_9000AM, P_MITSU_9550, NULL, "mitsubishi-9000dw"}, // XXX -am instead?
-		{ USB_VID_MITSU, USB_PID_MITSU_9000D, P_MITSU_9550, NULL, "mitsubishi-9000dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9500D, P_MITSU_9550, NULL, "mitsubishi-9500dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9550D, P_MITSU_9550, NULL, "mitsubishi-9550dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9550D, P_MITSU_9550, NULL, "mitsubishi-9550d"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_9550DS, P_MITSU_9550S, NULL, "mitsubishi-9550dw-s"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9550DS, P_MITSU_9550S, NULL, "mitsubishi-9550dz"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_9600D, P_MITSU_9600, NULL, "mitsubishi-9600dw"},
-//	{ USB_VID_MITSU, USB_PID_MITSU_9600D, P_MITSU_9600S, NULL, "mitsubishi-9600dw-s"},
-		{ USB_VID_MITSU, USB_PID_MITSU_CP30D, P_MITSU_CP30D, NULL, "mitsubishi-cp30dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9800D, P_MITSU_9800, NULL, "mitsubishi-9800dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9800D, P_MITSU_9800, NULL, "mitsubishi-9800d"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_9800DS, P_MITSU_9800S, NULL, "mitsubishi-9800dw-s"},
-		{ USB_VID_MITSU, USB_PID_MITSU_9800DS, P_MITSU_9800S, NULL, "mitsubishi-9800dz"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_98__D, P_MITSU_9810, NULL, "mitsubishi-9810dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_98__D, P_MITSU_9810, NULL, "mitsubishi-9810d"}, /* Duplicate */
-//	{ USB_VID_MITSU, USB_PID_MITSU_9810D, P_MITSU_9810, NULL, "mitsubishi-9810dw"},
-//	{ USB_VID_MITSU, USB_PID_MITSU_9820DS, P_MITSU_9820S, NULL, "mitsubishi-9820dw-s"},
+		{ 0x06d3, 0x0395, P_MITSU_9550, NULL, "mitsubishi-9000dw"}, // XXX -am instead?
+		{ 0x06d3, 0x0394, P_MITSU_9550, NULL, "mitsubishi-9000dw"},
+		{ 0x06d3, 0x0393, P_MITSU_9550, NULL, "mitsubishi-9500dw"},
+		{ 0x06d3, 0x03a1, P_MITSU_9550, NULL, "mitsubishi-9550dw"},
+		{ 0x06d3, 0x03a1, P_MITSU_9550, NULL, "mitsubishi-9550d"}, /* Duplicate */
+		{ 0x06d3, 0x03a5, P_MITSU_9550S, NULL, "mitsubishi-9550dw-s"}, // or DZ/DZS/DZU
+		{ 0x06d3, 0x03a5, P_MITSU_9550S, NULL, "mitsubishi-9550dz"}, /* Duplicate */
+		{ 0x06d3, 0x03a9, P_MITSU_9600, NULL, "mitsubishi-9600dw"},
+//	{ 0x06d3, USB_PID_MITSU_9600D, P_MITSU_9600S, NULL, "mitsubishi-9600dw-s"},
+		{ 0x06d3, 0x03ab, P_MITSU_CP30D, NULL, "mitsubishi-cp30dw"},
+		{ 0x06d3, 0x03ad, P_MITSU_9800, NULL, "mitsubishi-9800dw"},
+		{ 0x06d3, 0x03ad, P_MITSU_9800, NULL, "mitsubishi-9800d"}, /* Duplicate */
+		{ 0x06d3, 0x03ae, P_MITSU_9800S, NULL, "mitsubishi-9800dw-s"},
+		{ 0x06d3, 0x03ae, P_MITSU_9800S, NULL, "mitsubishi-9800dz"}, /* Duplicate */
+		{ 0x06d3, 0x3b21, P_MITSU_9810, NULL, "mitsubishi-9810dw"},
+		{ 0x06d3, 0x3b21, P_MITSU_9810, NULL, "mitsubishi-9810d"}, /* Duplicate */
+//	{ 0x06d3, USB_PID_MITSU_9820DS, P_MITSU_9820S, NULL, "mitsubishi-9820dw-s"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

@@ -30,12 +30,6 @@
 
 #include <time.h>
 
-/* Exported */
-#define USB_VID_MAGICARD     0x0C1F
-#define USB_PID_MAGICARD_TANGO2E 0x1800
-#define USB_PID_MAGICARD_ENDURO  0x4800   // ??
-#define USB_PID_MAGICARD_ENDUROPLUS 0x880A // ??
-
 /* Gamma tables computed with this perl program:
 
   my $input_bpp = 8;
@@ -937,14 +931,16 @@ const struct dyesub_backend magicard_backend = {
 	.main_loop = magicard_main_loop,
 	.query_markers = magicard_query_markers,
 	.devices = {
-		{ USB_VID_MAGICARD, USB_PID_MAGICARD_TANGO2E, P_MAGICARD, NULL, "magicard-tango2e"},
-//		{ USB_VID_MAGICARD, USB_PID_MAGICARD_TANGO2E, P_MAGICARD, NULL, "magicard-rio2e"},
-		{ USB_VID_MAGICARD, USB_PID_MAGICARD_ENDURO, P_MAGICARD, NULL, "magicard-enduro"},
-		{ USB_VID_MAGICARD, USB_PID_MAGICARD_ENDUROPLUS, P_MAGICARD, NULL, "magicard-enduroplus"},
-		{ USB_VID_MAGICARD, 0xFFFF, P_MAGICARD, NULL, "magicard"},
-		{ 0, 0, 0, NULL, "magicard"}
+		{ 0x0c1f, 0x1800, P_MAGICARD, NULL, "magicard-tango2e"},
+//		{ 0x0c1f, 0x1800, P_MAGICARD, NULL, "magicard-rio2e"},
+		{ 0x0c1f, 0x4800, P_MAGICARD, NULL, "magicard-enduro"}, // ??
+		{ 0x0c1f, 0x880a, P_MAGICARD, NULL, "magicard-enduroplus"}, // ??
+		{ 0x0c1f, 0xFFFF, P_MAGICARD, NULL, "magicard"},
+		{ 0, 0, 0, NULL, NULL}
 	}
 };
+
+
 
 /* Magicard family Spool file format (Tango2e/Rio2e/AvalonE family)
 

@@ -2402,27 +2402,6 @@ static const char *hiti_prefixes[] = {
 	NULL
 };
 
-/* Exported */
-#define USB_VID_HITI         0x0d16
-
-#define USB_PID_HITI_P510K   0x0007
-#define USB_PID_HITI_P720    0x0009
-#define USB_PID_HITI_P728    0x000A
-#define USB_PID_HITI_P510L   0x000B
-#define USB_PID_HITI_P518A   0x000D
-#define USB_PID_HITI_P530    0x000F
-#define USB_PID_HITI_P510S   0x010E
-#define USB_PID_HITI_P110S   0x0110
-#define USB_PID_HITI_P510SI  0x0111
-#define USB_PID_HITI_P518S   0x0112
-#define USB_PID_HITI_CS200   0x0309
-#define USB_PID_HITI_CS220   0x030A
-#define USB_PID_HITI_P750    0x0501
-#define USB_PID_HITI_P52X    0x0502
-#define USB_PID_HITI_P310L   0x0503
-#define USB_PID_HITI_P310W   0x050A
-#define USB_PID_HITI_X610    0x0800
-
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
 	.version = "0.32",
@@ -2438,20 +2417,28 @@ const struct dyesub_backend hiti_backend = {
 	.query_markers = hiti_query_markers,
 	.query_stats = hiti_query_stats,
 	.devices = {
-		{ USB_VID_HITI, USB_PID_HITI_P510K, P_HITI_51X, NULL, "hiti-p510k"},
-		{ USB_VID_HITI, USB_PID_HITI_P510L, P_HITI_51X, NULL, "hiti-p510l"},
-		{ USB_VID_HITI, USB_PID_HITI_P518A, P_HITI_51X, NULL, "hiti-p518a"},
-		{ USB_VID_HITI, USB_PID_HITI_P510S, P_HITI_51X, NULL, "hiti-p510s"},
-		{ USB_VID_HITI, USB_PID_HITI_P510SI, P_HITI_51X, NULL, "hiti-p510si"},
-		{ USB_VID_HITI, USB_PID_HITI_P518S, P_HITI_51X, NULL, "hiti-p518s"},
-		{ USB_VID_HITI, USB_PID_HITI_P52X, P_HITI_52X, NULL, "hiti-p520l"},
-		{ USB_VID_HITI, USB_PID_HITI_P52X, P_HITI_52X, NULL, "hiti-p525l"}, /* Duplicate */
-		{ USB_VID_HITI, USB_PID_HITI_P720, P_HITI_720, NULL, "hiti-p720l"},
-		{ USB_VID_HITI, USB_PID_HITI_P728, P_HITI_720, NULL, "hiti-p728l"},
-		{ USB_VID_HITI, USB_PID_HITI_P750, P_HITI_750, NULL, "hiti-p750l"},
+		{ 0x0d16, 0x0007, P_HITI_51X, NULL, "hiti-p510k"},
+		{ 0x0d16, 0x000b, P_HITI_51X, NULL, "hiti-p510l"},
+		{ 0x0d16, 0x000d, P_HITI_51X, NULL, "hiti-p518a"},
+		{ 0x0d16, 0x010e, P_HITI_51X, NULL, "hiti-p510s"},
+		{ 0x0d16, 0x0111, P_HITI_51X, NULL, "hiti-p510si"},
+		{ 0x0d16, 0x0112, P_HITI_51X, NULL, "hiti-p518s"},
+		{ 0x0d16, 0x0502, P_HITI_52X, NULL, "hiti-p520l"},
+		{ 0x0d16, 0x0502, P_HITI_52X, NULL, "hiti-p525l"}, /* Duplicate */
+		{ 0x0d16, 0x0009, P_HITI_720, NULL, "hiti-p720l"},
+		{ 0x0d16, 0x000a, P_HITI_720, NULL, "hiti-p728l"},
+		{ 0x0d16, 0x0501, P_HITI_750, NULL, "hiti-p750l"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
+
+#define USB_PID_HITI_P530    0x000F
+#define USB_PID_HITI_P110S   0x0110
+#define USB_PID_HITI_CS200   0x0309
+#define USB_PID_HITI_CS220   0x030A
+#define USB_PID_HITI_P310L   0x0503
+#define USB_PID_HITI_P310W   0x050A
+#define USB_PID_HITI_X610    0x0800
 
 /* TODO:
 

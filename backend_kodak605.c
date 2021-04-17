@@ -29,12 +29,6 @@
 #include "backend_common.h"
 #include "backend_sinfonia.h"
 
-#define USB_VID_KODAK       0x040A
-#define USB_PID_KODAK_605   0x402E
-#define USB_PID_KODAK_7000  0x4035
-#define USB_PID_KODAK_7010  0x4037
-#define USB_PID_KODAK_7015  0x4038
-
 /* Media structure */
 struct kodak605_media_list {
 	struct sinfonia_status_hdr hdr;
@@ -915,10 +909,10 @@ const struct dyesub_backend kodak605_backend = {
 	.query_serno = sinfonia_query_serno,
 	.query_stats = kodak605_query_stats,
 	.devices = {
-		{ USB_VID_KODAK, USB_PID_KODAK_605, P_KODAK_605, "Kodak", "kodak-605"},
-		{ USB_VID_KODAK, USB_PID_KODAK_7000, P_KODAK_7000, "Kodak", "kodak-7000"},
-		{ USB_VID_KODAK, USB_PID_KODAK_7010, P_KODAK_701X, "Kodak", "kodak-7010"},
-		{ USB_VID_KODAK, USB_PID_KODAK_7015, P_KODAK_701X, "Kodak", "kodak-7015"}, /* Duplicate */
+		{ 0x040a, 0x402e, P_KODAK_605, "Kodak", "kodak-605"},
+		{ 0x040a, 0x4035, P_KODAK_7000, "Kodak", "kodak-7000"},
+		{ 0x040a, 0x4037, P_KODAK_701X, "Kodak", "kodak-7010"},
+		{ 0x040a, 0x4038, P_KODAK_701X, "Kodak", "kodak-7015"}, /* Duplicate */
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

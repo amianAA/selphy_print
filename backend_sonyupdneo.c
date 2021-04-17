@@ -687,15 +687,6 @@ static const char *sonyupdneo_prefixes[] = {
 	NULL
 };
 
-/* Exported */
-#define USB_VID_SONY          0x054C
-#define USB_PID_SONY_UPD898MD 0x0877 // 0x589a?
-#define USB_PID_SONY_UPCR20L  0xbcde
-#define USB_PID_SONY_UPDR80MD 0x03c3
-#define USB_PID_STRYKER_SDP1000 0x03c4
-#define USB_PID_SONY_UPDR80   0x03c5
-#define USB_PID_SONY_UPCX1    0x02d4
-
 const struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
 	.version = "0.14",
@@ -711,11 +702,13 @@ const struct dyesub_backend sonyupdneo_backend = {
 	.query_markers = updneo_query_markers,
 	.query_serno = updneo_query_serno,
 	.devices = {
-		{ USB_VID_SONY, USB_PID_SONY_UPD898MD, P_SONY_UPD898, NULL, "sony-upd898"},
-		{ USB_VID_SONY, USB_PID_SONY_UPCR20L, P_SONY_UPCR20L, NULL, "sony-upcr20l"},
-		{ USB_VID_SONY, USB_PID_SONY_UPDR80, P_SONY_UPDR80, NULL, "sony-updr80"},
-		{ USB_VID_SONY, USB_PID_SONY_UPDR80MD, P_SONY_UPDR80, NULL, "sony-updr80md"},
-		{ USB_VID_SONY, USB_PID_STRYKER_SDP1000, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
+//		{ 0x054c, 0x02d4, P_SONY_UPCX1, NULL, "sony-upcx1"},
+		{ 0x054c, 0x0877, P_SONY_UPD898, NULL, "sony-upd898"},
+//		{ 0x054c, 0x589a, P_SONY_UPD898, NULL, "sony-upd898"}, // ???
+//		{ 0x054c, 0xbcde, P_SONY_UPCR20L, NULL, "sony-upcr20l"}, // ???
+		{ 0x054c, 0x03c5, P_SONY_UPDR80, NULL, "sony-updr80"},
+		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
+		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
 
 		{ 0, 0, 0, NULL, NULL}
 	}

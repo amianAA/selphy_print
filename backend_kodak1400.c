@@ -608,14 +608,6 @@ static int kodak1400_query_markers(void *vctx, struct marker **markers, int *cou
 	return CUPS_BACKEND_OK;
 }
 
-/* Exported */
-#define USB_VID_KODAK       0x040A
-#define USB_PID_KODAK_1400  0x4022
-#define USB_PID_KODAK_805   0x4034
-#define USB_VID_MITSU        0x06D3
-#define USB_PID_MITSU_3020D  0x038B
-#define USB_PID_MITSU_3020DA 0x03AA
-
 static const char *kodak1400_prefixes[] = {
 	"kodak1400", // Family driver, do NOT nuke!
 	// backwards compatibility
@@ -636,13 +628,13 @@ const struct dyesub_backend kodak1400_backend = {
 	.main_loop = kodak1400_main_loop,
 	.query_markers = kodak1400_query_markers,
 	.devices = {
-		{ USB_VID_KODAK, USB_PID_KODAK_1400, P_KODAK_1400_805, "Kodak", "kodak-1400"},
-		{ USB_VID_KODAK, USB_PID_KODAK_805, P_KODAK_1400_805, "Kodak", "kodak-805"},
-		{ USB_VID_MITSU, USB_PID_MITSU_3020D, P_KODAK_1400_805, NULL, "mitsubishi-3020d"},
-		{ USB_VID_MITSU, USB_PID_MITSU_3020D, P_KODAK_1400_805, NULL, "mitsubishi-3020du"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_3020D, P_KODAK_1400_805, NULL, "mitsubishi-3020de"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_3020DA, P_KODAK_1400_805, NULL, "mitsubishi-3020da" },
-		{ USB_VID_MITSU, USB_PID_MITSU_3020DA, P_KODAK_1400_805, NULL, "mitsubishi-3020dae" }, /* Duplicate */
+		{ 0x040a, 0x4022, P_KODAK_1400_805, "Kodak", "kodak-1400"},
+		{ 0x040a, 0x4034, P_KODAK_1400_805, "Kodak", "kodak-805"},
+		{ 0x06d3, 0x038b, P_KODAK_1400_805, NULL, "mitsubishi-3020d"},
+		{ 0x06d3, 0x038b, P_KODAK_1400_805, NULL, "mitsubishi-3020du"}, /* Duplicate */
+		{ 0x06d3, 0x038b, P_KODAK_1400_805, NULL, "mitsubishi-3020de"}, /* Duplicate */
+		{ 0x06d3, 0x03aa, P_KODAK_1400_805, NULL, "mitsubishi-3020da" },
+		{ 0x06d3, 0x03aa, P_KODAK_1400_805, NULL, "mitsubishi-3020dae" }, /* Duplicate */
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

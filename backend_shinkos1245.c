@@ -1275,10 +1275,6 @@ static int shinkos1245_query_stats(void *vctx,  struct printerstats *stats)
 	return CUPS_BACKEND_OK;
 }
 
-/* Exported */
-#define USB_VID_SHINKO       0x10CE
-#define USB_PID_SHINKO_S1245 0x0007
-
 static const char *shinkos1245_prefixes[] = {
 	"shinkos1245", /* Family Name */
 	NULL
@@ -1299,8 +1295,8 @@ const struct dyesub_backend shinkos1245_backend = {
 	.query_markers = shinkos1245_query_markers,
 	.query_stats = shinkos1245_query_stats,
 	.devices = {
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S1245, P_SHINKO_S1245, NULL, "shinko-chcs1245"},
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S1245, P_SHINKO_S1245, NULL, "sinfonia-chcs1245"}, /* Duplicate */
+		{ 0x10ce, 0x0007, P_SHINKO_S1245, NULL, "shinko-chcs1245"},
+		{ 0x10ce, 0x0007, P_SHINKO_S1245, NULL, "sinfonia-chcs1245"}, /* Duplicate */
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

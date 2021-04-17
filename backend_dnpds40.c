@@ -3434,24 +3434,6 @@ static const char *dnpds40_prefixes[] = {
 	NULL
 };
 
-#define USB_VID_CITIZEN   0x1343
-#define USB_PID_DNP_DS40  0x0003 // Also Citizen CX
-#define USB_PID_DNP_DS80  0x0004 // Also Citizen CX-W and Mitsubishi CP-3800DW
-#define USB_PID_DNP_DSRX1 0x0005 // Also Citizen CY
-#define USB_PID_DNP_DS80D 0x0008
-
-#define USB_PID_CITIZEN_CW01 0x0002 // Also OP900
-#define USB_PID_CITIZEN_CW02 0x0006 // Also OP900II
-#define USB_PID_CITIZEN_CX02 0x000A
-#define USB_PID_CITIZEN_CX02W 0x000B
-#define USB_PID_CITIZEN_CZ01 0x000C
-
-#define USB_VID_DNP       0x1452
-#define USB_PID_DNP_DS620 0x8b01
-#define USB_PID_DNP_DS820 0x9001
-#define USB_PID_DNP_QW410 0x9201
-
-/* Exported */
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
 	.version = "0.137",
@@ -3470,25 +3452,25 @@ const struct dyesub_backend dnpds40_backend = {
 	.combine_jobs = dnp_combine_jobs,
 	.job_polarity = dnp_job_polarity,
 	.devices = {
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS40, P_DNP_DS40, NULL, "dnp-ds40"},
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS40, P_DNP_DS40, NULL, "citizen-cx"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS80, P_DNP_DS80, NULL, "dnp-ds80"},
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS80, P_DNP_DS80, NULL, "citizen-cx-w"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS80, P_DNP_DS80, NULL, "mitsubishi-cp3800dw"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_DNP_DS80D, P_DNP_DS80D, NULL, "dnp-ds80dx"},
-		{ USB_VID_CITIZEN, USB_PID_DNP_DSRX1, P_DNP_DSRX1, NULL, "dnp-dsrx1"},
-		{ USB_VID_CITIZEN, USB_PID_DNP_DSRX1, P_DNP_DSRX1, NULL, "citizen-cy"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_DNP_DSRX1, P_DNP_DSRX1, NULL, "citizen-cy-02"}, /* Duplicate */
-		{ USB_VID_DNP, USB_PID_DNP_DS620, P_DNP_DS620, NULL, "dnp-ds620"},
-		{ USB_VID_DNP, USB_PID_DNP_DS820, P_DNP_DS820, NULL, "dnp-ds820"},
-		{ USB_VID_DNP, USB_PID_DNP_QW410, P_DNP_QW410, NULL, "dnp-qw410"},
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CW01, P_CITIZEN_CW01, NULL, "citizen-cw-01"},
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CW01, P_CITIZEN_CW01, NULL, "citizen-op900"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CW02, P_CITIZEN_OP900II, NULL, "citizen-cw-02"},
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CW02, P_CITIZEN_OP900II, NULL, "citizen-op900ii"}, /* Duplicate */
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CX02, P_DNP_DS620, NULL, "citizen-cx-02"},
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CX02W, P_DNP_DS820, NULL, "citizen-cx-02w"},
-		{ USB_VID_CITIZEN, USB_PID_CITIZEN_CZ01, P_DNP_QW410, NULL, "citizen-cz-01"},
+		{ 0x1343, 0x0003, P_DNP_DS40, NULL, "dnp-ds40"},
+		{ 0x1343, 0x0003, P_DNP_DS40, NULL, "citizen-cx"}, /* Duplicate */
+		{ 0x1343, 0x0004, P_DNP_DS80, NULL, "dnp-ds80"},
+		{ 0x1343, 0x0004, P_DNP_DS80, NULL, "citizen-cx-w"}, /* Duplicate */
+		{ 0x1343, 0x0004, P_DNP_DS80, NULL, "mitsubishi-cp3800dw"}, /* Duplicate */
+		{ 0x1343, 0x0008, P_DNP_DS80D, NULL, "dnp-ds80dx"},
+		{ 0x1343, 0x0005, P_DNP_DSRX1, NULL, "dnp-dsrx1"},
+		{ 0x1343, 0x0005, P_DNP_DSRX1, NULL, "citizen-cy"}, /* Duplicate */
+		{ 0x1343, 0x0005, P_DNP_DSRX1, NULL, "citizen-cy-02"}, /* Duplicate */
+		{ 0x1452, 0x8b01, P_DNP_DS620, NULL, "dnp-ds620"},
+		{ 0x1452, 0x9b01, P_DNP_DS820, NULL, "dnp-ds820"},
+		{ 0x1452, 0x9201, P_DNP_QW410, NULL, "dnp-qw410"},
+		{ 0x1343, 0x0002, P_CITIZEN_CW01, NULL, "citizen-cw-01"},
+		{ 0x1343, 0x0002, P_CITIZEN_CW01, NULL, "citizen-op900"}, /* Duplicate */
+		{ 0x1343, 0x0006, P_CITIZEN_OP900II, NULL, "citizen-cw-02"},
+		{ 0x1343, 0x0006, P_CITIZEN_OP900II, NULL, "citizen-op900ii"}, /* Duplicate */
+		{ 0x1343, 0x000a, P_DNP_DS620, NULL, "citizen-cx-02"},
+		{ 0x1343, 0x000b, P_DNP_DS820, NULL, "citizen-cx-02w"},
+		{ 0x1343, 0x000c, P_DNP_QW410, NULL, "citizen-cz-01"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

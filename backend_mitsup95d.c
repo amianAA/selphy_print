@@ -32,10 +32,6 @@
 
 #include "backend_common.h"
 
-#define USB_VID_MITSU       0x06D3
-#define USB_PID_MITSU_P93D  0x0398
-#define USB_PID_MITSU_P95D  0x3b10
-
 /* Private data structure */
 struct mitsup95d_printjob {
 	uint8_t *databuf;
@@ -617,8 +613,8 @@ const struct dyesub_backend mitsup95d_backend = {
 	.main_loop = mitsup95d_main_loop,
 	.query_markers = mitsup95d_query_markers,
 	.devices = {
-		{ USB_VID_MITSU, USB_PID_MITSU_P93D, P_MITSU_P93D, NULL, "mitsubishi-p93d"},
-		{ USB_VID_MITSU, USB_PID_MITSU_P95D, P_MITSU_P95D, NULL, "mitsubishi-p95d"},
+		{ 0x06d3, 0x0398, P_MITSU_P93D, NULL, "mitsubishi-p93d"},
+		{ 0x06d3, 0x3b10, P_MITSU_P95D, NULL, "mitsubishi-p95d"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

@@ -28,14 +28,6 @@
 
 #include "backend_common.h"
 
-/* Exported */
-#define USB_VID_CANON        0x04a9
-#define USB_PID_CANON_CP820  0x327b
-#define USB_PID_CANON_CP910  0x327a
-#define USB_PID_CANON_CP1000 0x32ae
-#define USB_PID_CANON_CP1200 0x32b1
-#define USB_PID_CANON_CP1300 0x32db
-
 /* Header data structure */
 struct selphyneo_hdr {
 	uint8_t data[24];
@@ -521,11 +513,11 @@ const struct dyesub_backend canonselphyneo_backend = {
 	.main_loop = selphyneo_main_loop,
 	.query_markers = selphyneo_query_markers,
 	.devices = {
-		{ USB_VID_CANON, USB_PID_CANON_CP820, P_CP910, NULL, "canon-cp820"},
-		{ USB_VID_CANON, USB_PID_CANON_CP910, P_CP910, NULL, "canon-cp910"},
-		{ USB_VID_CANON, USB_PID_CANON_CP1000, P_CP910, NULL, "canon-cp1000"},
-		{ USB_VID_CANON, USB_PID_CANON_CP1200, P_CP910, NULL, "canon-cp1200"},
-		{ USB_VID_CANON, USB_PID_CANON_CP1300, P_CP910, NULL, "canon-cp1300"},
+		{ 0x04a9, 0x327b, P_CP910, NULL, "canon-cp820"},
+		{ 0x04a9, 0x327a, P_CP910, NULL, "canon-cp910"},
+		{ 0x04a9, 0x32ae, P_CP910, NULL, "canon-cp1000"},
+		{ 0x04a9, 0x32b1, P_CP910, NULL, "canon-cp1200"},
+		{ 0x04a9, 0x32db, P_CP910, NULL, "canon-cp1300"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

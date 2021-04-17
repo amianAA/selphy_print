@@ -729,14 +729,6 @@ static const char *sonyupd_prefixes[] = {
 	NULL
 };
 
-/* Exported */
-#define USB_VID_SONY         0x054C
-#define USB_PID_SONY_UPDR150 0x01E8
-#define USB_PID_SONY_UPDR200 0x035F
-#define USB_PID_SONY_UPCR10  0x0226
-#define USB_PID_SONY_UPD895  0x0049
-#define USB_PID_SONY_UPD897  0x01E7
-
 const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
 	.version = "0.44",
@@ -750,11 +742,11 @@ const struct dyesub_backend sonyupd_backend = {
 	.main_loop = upd_main_loop,
 	.query_markers = upd_query_markers,
 	.devices = {
-		{ USB_VID_SONY, USB_PID_SONY_UPDR150, P_SONY_UPDR150, NULL, "sony-updr150"},
-		{ USB_VID_SONY, USB_PID_SONY_UPDR200, P_SONY_UPDR150, NULL, "sony-updr200"},
-		{ USB_VID_SONY, USB_PID_SONY_UPCR10, P_SONY_UPCR10, NULL, "sony-upcr10l"},
-		{ USB_VID_SONY, USB_PID_SONY_UPD895, P_SONY_UPD895, NULL, "sony-upd895"},
-		{ USB_VID_SONY, USB_PID_SONY_UPD897, P_SONY_UPD897, NULL, "sony-upd897"},
+		{ 0x054c, 0x01e8, P_SONY_UPDR150, NULL, "sony-updr150"},
+		{ 0x054c, 0x035f, P_SONY_UPDR150, NULL, "sony-updr200"},
+		{ 0x054c, 0x0226, P_SONY_UPCR10, NULL, "sony-upcr10l"},
+		{ 0x054c, 0x0049, P_SONY_UPD895, NULL, "sony-upd895"},
+		{ 0x054c, 0x01e7, P_SONY_UPD897, NULL, "sony-upd897"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

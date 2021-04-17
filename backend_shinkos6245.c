@@ -1464,14 +1464,6 @@ static int shinkos6245_query_stats(void *vctx,  struct printerstats *stats)
 	return CUPS_BACKEND_OK;
 }
 
-/* Exported */
-#define USB_VID_SHINKO       0x10CE
-#define USB_PID_SHINKO_S6245 0x001D
-#define USB_VID_HITI         0x0D16
-#define USB_PID_HITI_P910L   0x000E
-#define USB_VID_KODAK        0x040A
-#define USB_PID_KODAK_8810   0x404D
-
 static const char *shinkos6245_prefixes[] = {
 	"shinkos6245", /* Family Name */
 	// backwards compatibility
@@ -1494,10 +1486,10 @@ const struct dyesub_backend shinkos6245_backend = {
 	.query_markers = shinkos6245_query_markers,
 	.query_stats = shinkos6245_query_stats,
 	.devices = {
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S6245, P_SHINKO_S6245, NULL, "sinfonia-chcs6245"},
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S6245, P_SHINKO_S6245, NULL, "shinko-chcs6245"}, /* Duplicate */
-		{ USB_VID_HITI, USB_PID_HITI_P910L, P_HITI_910, NULL, "hiti-p910l"},
-		{ USB_VID_KODAK, USB_PID_KODAK_8810, P_KODAK_8810, NULL, "kodak-8810"},
+		{ 0x10ce, 0x001d, P_SHINKO_S6245, NULL, "sinfonia-chcs6245"},
+		{ 0x10ce, 0x001d, P_SHINKO_S6245, NULL, "shinko-chcs6245"}, /* Duplicate */
+		{ 0x0d16, 0x000e, P_HITI_910, NULL, "hiti-p910l"},
+		{ 0x040a, 0x404d, P_KODAK_8810, NULL, "kodak-8810"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

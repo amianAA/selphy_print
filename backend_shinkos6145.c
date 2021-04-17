@@ -1915,17 +1915,6 @@ static int shinkos6145_query_markers(void *vctx, struct marker **markers, int *c
 	return CUPS_BACKEND_OK;
 }
 
-
-/* Exported */
-#define USB_VID_SHINKO        0x10CE
-#define USB_PID_SHINKO_S6145  0x0019
-#define USB_PID_SHINKO_S6145D 0x001E /* Aka CIAAT Brava 21 */
-#define USB_PID_SHINKO_S2245  0x0039
-#define USB_VID_KODAKALARIS   0x29CC
-#define USB_PID_KA_6900       0x0003 /* Aka S2245-6A */
-#define USB_VID_HITI          0x0D16
-#define USB_PID_HITI_M610     0x0010
-
 static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 {
 	struct shinkos6145_ctx *ctx = vctx;
@@ -1969,13 +1958,13 @@ static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 		stats->model = "Brava 21";
 		break;
 	case P_SHINKO_S2245:
-		if (usbID == USB_PID_KA_6900) {
+		if (usbID == 0x0003) {
 			stats->mfg = "Kodak";
 			stats->model = "6900";
-		} else if (usbID == USB_PID_HITI_M610) {
+		} else if (usbID == 0x0010) {
 			stats->mfg = "HiTi";
 			stats->model = "M610";
-		} else if (usbID == USB_PID_SHINKO_S2245) {
+		} else if (usbID == 0x0039) {
 			stats->mfg = "Sinfonia";
 			stats->model = "S3 / S2245";
 		} else {
@@ -2055,12 +2044,12 @@ const struct dyesub_backend shinkos6145_backend = {
 	.query_stats = shinkos6145_query_stats,
 	.combine_jobs = shinkos6145_combine_jobs,
 	.devices = {
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S6145, P_SHINKO_S6145, NULL, "sinfonia-chcs6145"},
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S6145, P_SHINKO_S6145, NULL, "shinko-chcs6145"}, /* Duplicate */
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S6145D, P_SHINKO_S6145D, NULL, "ciaat-brava-21"},
-		{ USB_VID_SHINKO, USB_PID_SHINKO_S2245, P_SHINKO_S2245, NULL, "sinfonia-chcs2245"},
-		{ USB_VID_KODAKALARIS, USB_PID_KA_6900, P_SHINKO_S2245, NULL, "kodak-6900"},
-		{ USB_VID_HITI, USB_PID_HITI_M610, P_SHINKO_S2245, NULL, "hiti-m610"},
+		{ 0x10ce, 0x0019, P_SHINKO_S6145, NULL, "sinfonia-chcs6145"},
+		{ 0x10ce, 0x0019, P_SHINKO_S6145, NULL, "shinko-chcs6145"}, /* Duplicate */
+		{ 0x10ce, 0x001e, P_SHINKO_S6145D, NULL, "ciaat-brava-21"},
+		{ 0x10ce, 0x0039, P_SHINKO_S2245, NULL, "sinfonia-chcs2245"},
+		{ 0x29cc, 0x0003, P_SHINKO_S2245, NULL, "kodak-6900"},      /* aka CHC-S2245-6A */
+		{ 0x0d16, 0x0010, P_SHINKO_S2245, NULL, "hiti-m610"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

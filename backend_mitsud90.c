@@ -29,12 +29,6 @@
 #include "backend_common.h"
 #include "backend_mitsu.h"
 
-#define USB_VID_MITSU       0x06D3
-#define USB_PID_MITSU_D90   0x3B60
-#define USB_PID_MITSU_CPM1  0x3B80
-#define USB_VID_FUJIFILM    0x04cb
-//#define USB_PID_FUJIFILM_ASK500 0x1234
-
 /* CPM1 stuff */
 #define CPM1_LAMINATE_STRIDE 1852
 
@@ -1822,10 +1816,10 @@ const struct dyesub_backend mitsud90_backend = {
 	.query_markers = mitsud90_query_markers,
 	.query_stats = mitsud90_query_stats,
 	.devices = {
-		{ USB_VID_MITSU, USB_PID_MITSU_D90, P_MITSU_D90, NULL, "mitsubishi-d90dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_CPM1, P_MITSU_M1, NULL, "mitsubishi-cpm1"},
-		{ USB_VID_MITSU, USB_PID_MITSU_CPM1, P_MITSU_M1, NULL, "mitsubishi-cpm15"}, // Duplicate for the M15
-//		{ USB_VID_FUJIFILM, USB_PID_FUJIFILM_ASK500, P_FUJI_ASK500, NULL, "fujifilm-ask500"},
+		{ 0x06d3, 0x3b60, P_MITSU_D90, NULL, "mitsubishi-d90dw"},
+		{ 0x06d3, 0x3b80, P_MITSU_M1, NULL, "mitsubishi-cpm1"},
+		{ 0x06d3, 0x3b80, P_MITSU_M1, NULL, "mitsubishi-cpm15"}, // Duplicate for the M15
+//		{ 0x04cb, 0x1234, P_FUJI_ASK500, NULL, "fujifilm-ask500"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

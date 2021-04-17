@@ -29,15 +29,6 @@
 #include "backend_common.h"
 #include "backend_mitsu.h"
 
-#define USB_VID_MITSU       0x06D3
-#define USB_PID_MITSU_D70X  0x3B30
-#define USB_PID_MITSU_K60   0x3B31
-#define USB_PID_MITSU_D80   0x3B36
-#define USB_VID_KODAK       0x040a
-#define USB_PID_KODAK305    0x404f
-#define USB_VID_FUJIFILM    0x04cb
-#define USB_PID_FUJI_ASK300 0x5006
-
 /* Width of the laminate data file */
 #define LAMINATE_STRIDE 1864
 
@@ -2363,12 +2354,12 @@ const struct dyesub_backend mitsu70x_backend = {
 	.combine_jobs = mitsu70x_combine_jobs,
 	.job_polarity = mitsu70x_job_polarity,
 	.devices = {
-		{ USB_VID_MITSU, USB_PID_MITSU_D70X, P_MITSU_D70X, NULL, "mitsubishi-d70dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_D70X, P_MITSU_D70X, NULL, "mitsubishi-d707dw"}, /* Duplicate */
-		{ USB_VID_MITSU, USB_PID_MITSU_K60, P_MITSU_K60, NULL, "mitsubishi-k60dw"},
-		{ USB_VID_MITSU, USB_PID_MITSU_D80, P_MITSU_D80, NULL, "mitsubishi-d80dw"},
-		{ USB_VID_KODAK, USB_PID_KODAK305, P_KODAK_305, NULL, "kodak-305"},
-		{ USB_VID_FUJIFILM, USB_PID_FUJI_ASK300, P_FUJI_ASK300, NULL, "fujifilm-ask-300"},
+		{ 0x06d3, 0x3b30, P_MITSU_D70X, NULL, "mitsubishi-d70dw"},
+		{ 0x06d3, 0x3b30, P_MITSU_D70X, NULL, "mitsubishi-d707dw"}, /* Duplicate */
+		{ 0x06d3, 0x3b31, P_MITSU_K60, NULL, "mitsubishi-k60dw"},
+		{ 0x06d3, 0x3b36, P_MITSU_D80, NULL, "mitsubishi-d80dw"},
+		{ 0x040a, 0x404f, P_KODAK_305, NULL, "kodak-305"},
+		{ 0x04cb, 0x5006, P_FUJI_ASK300, NULL, "fujifilm-ask-300"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

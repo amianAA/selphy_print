@@ -33,10 +33,6 @@
 #include "backend_common.h"
 #include "backend_sinfonia.h"
 
-#define USB_VID_KODAK       0x040A
-#define USB_PID_KODAK_6800  0x4021
-#define USB_PID_KODAK_6850  0x402B
-
 /* File header */
 struct kodak6800_hdr {
 	uint8_t  hdr[7];   /* Always 03 1b 43 48 43 0a 00 */
@@ -1079,8 +1075,8 @@ const struct dyesub_backend kodak6800_backend = {
 	.query_markers = kodak6800_query_markers,
 	.query_stats = kodak6800_query_stats,
 	.devices = {
-		{ USB_VID_KODAK, USB_PID_KODAK_6800, P_KODAK_6800, "Kodak", "kodak-6800"},
-		{ USB_VID_KODAK, USB_PID_KODAK_6850, P_KODAK_6850, "Kodak", "kodak-6850"},
+		{ 0x040a, 0x4021, P_KODAK_6800, "Kodak", "kodak-6800"},
+		{ 0x040a, 0x402b, P_KODAK_6850, "Kodak", "kodak-6850"},
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
