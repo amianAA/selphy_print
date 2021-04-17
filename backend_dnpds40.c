@@ -3462,7 +3462,7 @@ const struct dyesub_backend dnpds40_backend = {
 		{ 0x1343, 0x0005, P_DNP_DSRX1, NULL, "citizen-cy"}, /* Duplicate */
 		{ 0x1343, 0x0005, P_DNP_DSRX1, NULL, "citizen-cy-02"}, /* Duplicate */
 		{ 0x1452, 0x8b01, P_DNP_DS620, NULL, "dnp-ds620"},
-		{ 0x1452, 0x9b01, P_DNP_DS820, NULL, "dnp-ds820"},
+		{ 0x1452, 0x9001, P_DNP_DS820, NULL, "dnp-ds820"},
 		{ 0x1452, 0x9201, P_DNP_QW410, NULL, "dnp-qw410"},
 		{ 0x1343, 0x0002, P_CITIZEN_CW01, NULL, "citizen-cw-01"},
 		{ 0x1343, 0x0002, P_CITIZEN_CW01, NULL, "citizen-op900"}, /* Duplicate */

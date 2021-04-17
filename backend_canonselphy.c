@@ -1129,7 +1129,7 @@ const struct dyesub_backend canonselphy_backend = {
 		{ 0x04a9, 0x31aa, P_CPGENERIC, NULL, "canon-cp770"},
 		{ 0x04a9, 0x31dd, P_CPGENERIC, NULL, "canon-cp780"},
 		{ 0x04a9, 0x31e7, P_CP790, NULL, "canon-cp790"},
-		{ 0x04a9, 0x3124, P_CPGENERIC, NULL, "canon-cp800"},
+		{ 0x04a9, 0x3214, P_CPGENERIC, NULL, "canon-cp800"},
 		{ 0x04a9, 0x3256, P_CPGENERIC, NULL, "canon-cp810"},
 		{ 0x04a9, 0x3255, P_CPGENERIC, NULL, "canon-cp900"},
 		{ 0x04a9, 0x3141, P_ES1, NULL, "canon-es1"},
