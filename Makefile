@@ -181,11 +181,11 @@ cppcheck:
 	$(CPPCHECK) -q -v --std=c99 --enable=all --suppress=variableScope --suppress=selfAssignment --suppress=unusedStructMember -I. -I/usr/include $(CPPFLAGS) $(SOURCES) $(LIB70X_SOURCES) $(LIBS6145_SOURCES)
 
 # Test-related stuff
-$(DATAFILES_TMP)/%: hiti_data/% $(DATAFILES_TMP)
+$(DATAFILES_TMP)/%: hiti_data/% | $(DATAFILES_TMP)
 	@$(E) "      LN  " $@
 	$(Q)$(LN) -sf ../$< $@
 
-$(DATAFILES_TMP)/%: lib70x/data/% $(DATAFILES_TMP)
+$(DATAFILES_TMP)/%: lib70x/data/% | $(DATAFILES_TMP)
 	@$(E) "      LN  " $@
 	$(Q)$(LN) -sf ../$< $@
 
