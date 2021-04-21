@@ -1024,6 +1024,9 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 
 	switch (ctx->conn->type)
 	{
+	case P_HITI_CS2XX:
+		fname = "CS2xx_CMPBcd.bin";
+		break;
 	case P_HITI_51X:
 		if (!mediatype) { /* DNP media */
 			if (mode) {
@@ -2417,6 +2420,11 @@ const struct dyesub_backend hiti_backend = {
 	.query_markers = hiti_query_markers,
 	.query_stats = hiti_query_stats,
 	.devices = {
+		{ 0x0d16, 0x0309, P_HITI_CS2XX, NULL, "hiti-cs200e"},
+		{ 0x0d16, 0x030a, P_HITI_CS2XX, NULL, "hiti-cs220e"},
+		{ 0x0d16, 0x030b, P_HITI_CS2XX, NULL, "hiti-cs230e"},
+		{ 0x0d16, 0x030c, P_HITI_CS2XX, NULL, "hiti-cs250e"},
+		{ 0x0d16, 0x030d, P_HITI_CS2XX, NULL, "hiti-cs290e"},
 		{ 0x0d16, 0x0007, P_HITI_51X, NULL, "hiti-p510k"},
 		{ 0x0d16, 0x000b, P_HITI_51X, NULL, "hiti-p510l"},
 		{ 0x0d16, 0x000d, P_HITI_51X, NULL, "hiti-p518a"},

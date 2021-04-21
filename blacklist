@@ -274,6 +274,21 @@
 # Fujifilm ASK-300
 0x04cb 0x5006 blacklist
 
+# HiTi CS-200e
+0x0d16 0x0309 blacklist
+
+# HiTi CS-220e
+0x0d16 0x030a blacklist
+
+# HiTi CS-230e
+0x0d16 0x030b blacklist
+
+# HiTi CS-250e
+0x0d16 0x030c blacklist
+
+# HiTi CS-290e
+0x0d16 0x030d blacklist
+
 # HiTi P510K
 0x0d16 0x0007 blacklist
 

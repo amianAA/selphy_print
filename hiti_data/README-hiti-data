@@ -7,13 +7,14 @@ LUT filename Codes:
  C M Q P ? ra [ .bin ]
            --  model code, see below
          -     media version, 0..n (if not present, interpret as 0)
-       -       always P (or 'CL')
+       -       always P (or 'CL', or 'B')
      -         print quality, Q == fine, P == normal
    -           media type, M == DNP, C == CHC         (?)
  -             Always C
             
   model codes:
 
+    cb = CS2xx
     ra = P51x
     rd = P72x
     rh = P75x
