@@ -2440,13 +2440,13 @@ const struct dyesub_backend hiti_backend = {
 	}
 };
 
+/*
 #define USB_PID_HITI_P530    0x000F
 #define USB_PID_HITI_P110S   0x0110
-#define USB_PID_HITI_CS200   0x0309
-#define USB_PID_HITI_CS220   0x030A
 #define USB_PID_HITI_P310L   0x0503
 #define USB_PID_HITI_P310W   0x050A
 #define USB_PID_HITI_X610    0x0800
+*/
 
 /* TODO:
 

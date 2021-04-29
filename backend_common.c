@@ -529,7 +529,7 @@ candidate:
 		dlen = parse1284_data(ieee_id, dict);
 	}
 
-	if (!old_uri) goto skip_manuf_model;
+	if (!old_uri && !scan_only && !dyesub_debug) goto skip_manuf_model;
 
 	/* Look up mfg string in IEEE1284 data */
 	if (manuf_override && strlen(manuf_override)) {

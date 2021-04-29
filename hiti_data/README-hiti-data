@@ -1,5 +1,5 @@
-These '.bin' are either 3D LUTs or Heat Tables for various HiTi 
-printers.  All files were extracted from public HiTi source code or 
+These '.bin' are either 3D LUTs or Heat Tables for various HiTi
+printers.  All files were extracted from public HiTi source code or
 binary driver releases.
 
 LUT filename Codes:
@@ -11,15 +11,15 @@ LUT filename Codes:
      -         print quality, Q == fine, P == normal
    -           media type, M == DNP, C == CHC         (?)
  -             Always C
-            
+
   model codes:
 
     cb = CS2xx
     ra = P51x
     rd = P72x
     rh = P75x
-    rk = P530
     ri = P52x (or 'ri1')
+    rk = P530
     si = P11x
 
 Heat table codes:
@@ -33,9 +33,9 @@ Heat table codes:
 
 Heat table types:
 
-  size    
+  size
 
-  11108    (SEHT2 * 5_ + CVD (Y + M + C + Gloss + Matte + CVD)
+  11108    (SEHT2 * 5 + CVD (Y + M + C + Gloss + Matte + CVD)
   12568    ??
   12603    ??
   15732    ??

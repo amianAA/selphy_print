@@ -48,9 +48,10 @@
    Kodak 7000 Photo Printer
    Kodak 8810 Photo Printer
    Magicard Tango 2E
-   Mitsubishi CP-3800DW
-   Mitsubishi CP-9550D/DW/DW-S/DZ/DZ-S
-   Mitsubishi CP-9600D/DW
+   Mitsubishi CP30DW
+   Mitsubishi CP3800DW
+   Mitsubishi CP9550D/DW/DW-S/DZ/DZ-S
+   Mitsubishi CP9600D/DW
    Mitsubishi CP-D70DW and CP-D707DW
    Mitsubishi CP-D70DW-S and CP-D707DW-S
    Mitsubishi CP-D80DW
@@ -77,19 +78,16 @@
    DNP M4 / Q4
    DNP M8
    Fujifilm ASK-500
-   HiTi P110 series
    HiTi P510 series
    HiTi M610 (not X610!)
    HiTi P720L / P728L
    HiTi P750L
    HiTi P910L
-   HiTi CS-200e
-   HiTi CS-220e
+   HiTi CS-200e / CS-220e
    ICI Imagedata OP900
    Kodak 6900
    Kodak 7010 / 7015
    Magicard Rio 2E (and other Magicard models)
-   Mitsubishi CP30DW
    Mitsubishi CP3020D/DE and CP3020DA/DAE
    Mitsubishi CP9000DW, CP9500DW, and CP9600DW-S
    Mitsubishi CP9800DW, CP9800DW-S, CP9810DW, and CP9820DW-S
@@ -423,7 +421,7 @@
      CP400, CP500, CP510, CP710, CP720, CP730, CP740, CP750, CP760, CP770,
      CP780, CP790, CP800, CP900
 
-   Unverified/untested, but should work:  (let us know, please!)
+   Untested, but expected to work:
 
      ES20, CP-220, CP520, CP530, CP600, CP810
 
@@ -659,7 +657,7 @@
 
      Shinko CHC-S1245 (aka "Sinfonia E1")
 
-   Unsupported printers (unknown VID/PID)
+   Unsupported printers (unknown VID/PID):
 
      DNP Q8
 
@@ -870,15 +868,15 @@
     Sony UP-DR150
     Sony UP-DR200
 
-  Unverified/untested, but should work:
+   Untested, but expected to work:
 
     DNP DS-SL10
 
-  Valid commands:
+   Valid commands:
 
      -s                 Query printer status
 
-  Notes:
+   Notes:
 
     * These models cannot report media type or remaining levels,
       but are able to report out of media conditions.
@@ -926,7 +924,7 @@
 
      kodak-305 mitsud80 mitsuk60 kodak305 fujiask300
 
-   Supported and tested printers:
+   Verified supported printers:
 
     Fujifilm ASK-300
     Kodak 305
@@ -991,13 +989,13 @@
      mitsubishi-d90dw mitsubishi-cpm1 mitsubishi-cpm1
      fujifilm-ask-500
 
-   Supported and tested printers:
+   Verified supported printers:
 
     Mitsubishi CP-D90DW
     Mitsubishi CP-M1A / CP-M1E
     Mitsubishi CP-M15E
 
-   Work-in-progress printers (unknown USB ID)
+   Unsupported printers (Unknown VID/PID):
 
     Fujifilm ASK-500
 
@@ -1045,13 +1043,14 @@
 
      mitsu9000 mitsu9500 mitsu9550 mitsu9600 mitsu9800 mitsu9810
 
-   Supported and tested printers:
+   Verified supported printers:
 
     Mitsubishi CP9550D/DW and CP9550DZ/DZS/DW-S
     Mitsubishi CP9600D/DW
     Mitsubishi CP9800DZ/DZS/DW-S                     [1]
+    Mitsubishi CP30DW                                [2]
 
-   Unverified/untested, but should work:  (let us know, please!)
+   Untested, but expected to work:
 
     Mitsubishi CP9800D/DW                            [1]
     Mitsubishi CP9810D/DW                            [1]
@@ -1063,7 +1062,6 @@
     Mitsubishi CP9500D/DW
     Mitsubishi CP9550DW-A
     Mitsubishi CP9550DW-U
-    Mitsubishi CP30DW                                [2]
     Mitsubishi CP9600DW-S/DZ/DZ-S
 
    Valid commands:
@@ -1152,15 +1150,15 @@
     DNP DS-RX1 / DNP DS-RX1HS (aka Citizen CY and CY-02)
     DNP DS-QW410
 
-   Theoretically supported printers:  (Untested)
+   Untested, but expected to work:
 
     Citizen CW-01 / OP900
     Citizen CW-02 / OP900II
     Citizen CX-02
     Citizen CZ-01
-    Mitsubishi CP-3800DW
+    Mitsubishi CP3800DW
 
-   Work-in-progress printers: (USB PIDs unknown)
+   Unsupported printers (Unknown VID/PID):
 
     DNP M4 / Q4
     Olmec OP900
@@ -1208,7 +1206,7 @@ Notes:
 
     Tango 2E
 
-   Work-in-progress printers:
+   Unsupported printers (Unknown VID/PID):
 
     Rio 2E
     Tango +L
@@ -1243,22 +1241,24 @@ Notes:
       hiti-p518a hiti-p518s
       hiti-p520l hiti-p525l hiti-p52x
       hiti-p720l hiti-p728l hiti-p750l
+      hiti-cs200e hiti-cs220e hiti-cs230e
+      hiti-cs250e hiti-cs290e
 
    Verified supported printers:
 
      HiTi P520L
      HiTi P525L
 
-   Theoretically supported printers (Untested)
+   Untested, but expected to work:
 
      HiTi P510 series
      HiTi P518 series
      HiTi P720L / P728L
      HiTi P750L
 
-   Work-in-progress printers
+   Work-in-progress printers:
 
-     HiTi P110 series
+     HiTi CS2x0 series
 
    This backend supports additional commands:
 
