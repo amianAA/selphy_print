@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.111"
+#define BACKEND_VERSION "0.112"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -466,7 +466,9 @@ static int probe_device(struct libusb_device *device,
 				continue;
 			}
 
-#if 1
+			/* Note we actually only match on explicit VID+PIDs so there's no need to filter based
+			   on specific class/type */
+
 			/* Explicitly exclude IPP-over-USB interfaces */
 			if (desc->bDeviceClass == LIBUSB_CLASS_PER_INTERFACE &&
 			    config->interface[iface].altsetting[altset].bInterfaceClass == LIBUSB_CLASS_PRINTER &&
@@ -474,16 +476,6 @@ static int probe_device(struct libusb_device *device,
 			    config->interface[iface].altsetting[altset].bInterfaceProtocol == USB_INTERFACE_PROTOCOL_IPP) {
 				continue;
 			}
-#else
-			// Make sure it's a printer class device that supports bidir comms  (XXX Is this necessarily true?)
-			if (desc->bDeviceClass == LIBUSB_CLASS_PRINTER ||
-			    (desc->bDeviceClass == LIBUSB_CLASS_PER_INTERFACE &&
-			     config->interface[iface].altsetting[altset].bInterfaceClass == LIBUSB_CLASS_PRINTER &&
-			     config->interface[iface].altsetting[altset].bInterfaceSubClass == USB_SUBCLASS_PRINTER &&
-			     config->interface[iface].altsetting[altset].bInterfaceProtocol != USB_INTERFACE_PROTOCOL_BIDIR)) {
-				continue;
-			}
-#endif
 
 			/* Find the first set of endpoints! */
 			endp_up = endp_down = 0;
@@ -537,34 +529,44 @@ candidate:
 		dlen = parse1284_data(ieee_id, dict);
 	}
 
-//	if (!old_uri) goto bypass;
+	if (!old_uri) goto skip_manuf_model;
 
-	/* Look up mfg string. */
+	/* Look up mfg string in IEEE1284 data */
 	if (manuf_override && strlen(manuf_override)) {
-		manuf = url_encode(manuf_override);  /* Backend supplied */
+		manuf = url_encode(manuf_override);
 	} else if ((manuf = dict_find("MANUFACTURER", dlen, dict))) {
 		manuf = url_encode(manuf);
 	} else if ((manuf = dict_find("MFG", dlen, dict))) {
 		manuf = url_encode(manuf);
 	} else if ((manuf = dict_find("MFR", dlen, dict))) {
 		manuf = url_encode(manuf);
-	} else if (desc->iManufacturer) { /* Get from USB descriptor */
+	}
+
+	/* If no manufacturer string, fall back to USB iManufacturer */
+	if ((!manuf || !strlen(manuf)) &&
+	    desc->iManufacturer) {
 		buf[0] = 0;
 		libusb_get_string_descriptor_ascii(dev, desc->iManufacturer, (unsigned char*)buf, STR_LEN_MAX);
 		sanitize_string(buf);
 		manuf = url_encode(buf);
 	}
+
 	if (!manuf || !strlen(manuf)) {  /* Last-ditch */
 		if (manuf) free(manuf);
+		WARNING("**** THIS PRINTER DOES NOT REPORT A VALID MANUFACTURER STRING!\n");
 		manuf = url_encode("Unknown"); // XXX use USB VID?
 	}
 
-	/* Look up model number */
+	/* Look up model string in IEEE1284 data */
 	if ((product = dict_find("MODEL", dlen, dict))) {
 		product = url_encode(product);
 	} else if ((product = dict_find("MDL", dlen, dict))) {
 		product = url_encode(product);
-	} else if (desc->iProduct) {  /* Get from USB descriptor */
+	}
+
+	/* If no manufacturer string, fall back to USB iProduct */
+	if ((!product || !strlen(product)) &&
+	    desc->iProduct) {
 		buf[0] = 0;
 		libusb_get_string_descriptor_ascii(dev, desc->iProduct, (unsigned char*)buf, STR_LEN_MAX);
 		sanitize_string(buf);
@@ -573,15 +575,17 @@ candidate:
 
 	if (!product || !strlen(product)) { /* Last-ditch */
 		if (!product) free(product);
+		WARNING("**** THIS PRINTER DOES NOT REPORT A VALID MODEL STRING!\n");
 		product = url_encode("Unknown"); // XXX Use USB PID?
 	}
 
-	/* Look up description */
+	/* Look up decription string in IEEE1284 data */
 	if ((descr = dict_find("DESCRIPTION", dlen, dict))) {
 		descr = strdup(descr);
 	} else if ((descr = dict_find("DES", dlen, dict))) {
 		descr = strdup(descr);
 	}
+
 	if (!descr || !strlen(descr)) { /* Last-ditch, generate */
 		char *product2 = url_decode(product);
 		char *manuf3 = url_decode(manuf);
@@ -600,9 +604,9 @@ candidate:
 		free(manuf3);
 	}
 
-//bypass:
+skip_manuf_model:
 
-	/* Look up serial number */
+	/* Prefer IEEE1284-reported serial number */
 	if ((serial = dict_find("SERIALNUMBER", dlen, dict))) {
 		serial = url_encode(serial);
 	} else if ((serial = dict_find("SN", dlen, dict))) {
@@ -611,12 +615,23 @@ candidate:
 		serial = url_encode(serial);
 	} else if ((serial = dict_find("SERN", dlen, dict))) {
 		serial = url_encode(serial);
-	} else if (!(backend->flags & BACKEND_FLAG_BADISERIAL) &&
-		   desc->iSerialNumber) {  /* Get from USB descriptor, if we can trust it.. */
+	}
+
+	/* If it's not valid, fall back to USB iSerial */
+	if ((!serial || !strlen(serial)) &&
+	    !(backend->flags & BACKEND_FLAG_BADISERIAL) &&
+	    desc->iSerialNumber) {
 		libusb_get_string_descriptor_ascii(dev, desc->iSerialNumber, (unsigned char*)buf, STR_LEN_MAX);
 		sanitize_string(buf);
 		serial = url_encode(buf);
-	} else if (backend->query_serno) { /* Get from backend hook */
+	}
+
+	/* TODO: What about situations where iSerial does not match IEEE1284?
+	         Or if the '1284 data is bogus? */
+
+	/* If still no serial, fall back to backend hook */
+	if ((!serial || !strlen(serial)) &&
+	    backend->query_serno) { /* Get from backend hook */
 		struct dyesub_connection c2;
 		c2.dev = dev;
 		c2.iface = iface;
@@ -627,7 +642,8 @@ candidate:
 		serial = url_encode(buf);
 	}
 
-	if (!serial || !strlen(serial)) {  /* Last-ditch */
+	/* Last-ditch serial number fallback */
+	if (!serial || !strlen(serial)) {
 		if (serial) free(serial);
 		WARNING("**** THIS PRINTER DOES NOT REPORT A SERIAL NUMBER!\n");
 		WARNING("**** If you intend to use multiple printers of this type, you\n");
