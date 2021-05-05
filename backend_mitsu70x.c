@@ -1976,11 +1976,11 @@ static void mitsu70x_dump_printerstatus(struct mitsu70x_ctx *ctx,
 			continue;
 		memcpy(buf, resp->vers[i].ver, 6);
 		buf[6] = 0;
-		if (i == 0) type = 'M';
-		else if (i == 1) type = 'L';
-		else if (i == 2) type = 'R';
-		else if (i == 3) type = 'T';
-		else if (i == 4) type = 'F';
+		if (i == 0) type = 'M';  /* Main */
+		else if (i == 1) type = 'L'; /* Loader */
+		else if (i == 2) type = 'R'; /* Tag */
+		else if (i == 3) type = 'T'; /* Copy */
+		else if (i == 4) type = 'F'; /* FPGA */
 		else type = i + 0x30;
 
 		INFO("FW Component: %c %s (%04x)\n",
