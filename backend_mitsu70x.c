@@ -2314,7 +2314,7 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 	stats->mediatype[0] = ctx->marker[0].name;
 	stats->levelmax[0] = ctx->marker[0].levelmax;
 	stats->levelnow[0] = ctx->marker[0].levelnow;
-	stats->cnt_life[0] = packed_bcd_to_uint32((char*)resp.lower.lifetime_prints, 4);
+	stats->cnt_life[0] = packed_bcd_to_uint32((char*)resp.lower.lifetime_prints, 4) - 10;
 
 	if (stats->decks == 2) {
 		stats->name[1] = "Upper";
@@ -2322,7 +2322,7 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 		stats->mediatype[1] = ctx->marker[1].name;
 		stats->levelmax[1] = ctx->marker[1].levelmax;
 		stats->levelnow[1] = ctx->marker[1].levelnow;
-		stats->cnt_life[1] = packed_bcd_to_uint32((char*)resp.upper.lifetime_prints, 4);
+		stats->cnt_life[1] = packed_bcd_to_uint32((char*)resp.upper.lifetime_prints, 4) - 10;
 	}
 	return CUPS_BACKEND_OK;
 }
@@ -2337,7 +2337,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.101" " (lib " LIBMITSU_VER ")",
+	.version = "0.102" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
