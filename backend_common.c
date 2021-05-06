@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.112"
+#define BACKEND_VERSION "0.113"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -57,6 +57,7 @@ int ncopies = 1;
 int collate = 0;
 int test_mode = 0;
 int quiet = 0;
+int stats_only = 0;
 FILE *logger;
 
 const char *corrtable_path = CORRTABLE_PATH;
@@ -1279,7 +1280,6 @@ int main (int argc, char **argv)
 	int found = -1;
 	int jobid = 0;
 
-	int stats_only = 0;
 	char *uri;
 	char *type;
 	const char *fname = NULL;

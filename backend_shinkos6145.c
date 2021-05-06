@@ -1263,7 +1263,7 @@ static int shinkos6145_attach(void *vctx, struct dyesub_connection *conn, uint8_
 		ctx->dev.error_codes = &s2245_error_codes;
 
 #if defined(WITH_DYNAMIC)
-		INFO("Attempting to load S2245 image processing library\n");
+		DEBUG("Attempting to load S2245 image processing library\n");
 		ctx->dl_handle = DL_OPEN(LIB2245_NAME); /* Try the Sinfonia one first */
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB2245_NAME_RE); /* Then the RE one */
@@ -1277,8 +1277,8 @@ static int shinkos6145_attach(void *vctx, struct dyesub_connection *conn, uint8_
 				DL_CLOSE(ctx->dl_handle);
 				ctx->dl_handle = NULL;
 			} else {
-				INFO("Image processing library successfully loaded\n");
-				if (ctx->DumpAnnounce)
+				DEBUG("Image processing library successfully loaded\n");
+				if (!stats_only && ctx->DumpAnnounce)
 					ctx->DumpAnnounce(logger);
 			}
 		}
@@ -1290,7 +1290,7 @@ static int shinkos6145_attach(void *vctx, struct dyesub_connection *conn, uint8_
 		ctx->dev.error_codes = &s6145_error_codes;
 
 #if defined(WITH_DYNAMIC)
-		INFO("Attempting to load S6145 image processing library\n");
+		DEBUG("Attempting to load S6145 image processing library\n");
 		ctx->dl_handle = DL_OPEN(LIB6145_NAME); /* Try the Sinfonia one first */
 		if (!ctx->dl_handle)
 			ctx->dl_handle = DL_OPEN(LIB6145_NAME_RE); /* Then the RE one */
@@ -1303,8 +1303,8 @@ static int shinkos6145_attach(void *vctx, struct dyesub_connection *conn, uint8_
 				DL_CLOSE(ctx->dl_handle);
 				ctx->dl_handle = NULL;
 			} else {
-				INFO("Image processing library successfully loaded\n");
-				if (ctx->DumpAnnounce)
+				DEBUG("Image processing library successfully loaded\n");
+				if (!stats_only && ctx->DumpAnnounce)
 					ctx->DumpAnnounce(logger);
 			}
 		}

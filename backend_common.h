@@ -294,6 +294,7 @@ extern int test_mode;
 extern int quiet;
 extern const char *corrtable_path;
 extern FILE *logger;
+extern int stats_only;
 
 enum {
 	TEST_MODE_NONE = 0,

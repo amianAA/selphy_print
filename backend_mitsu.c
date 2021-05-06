@@ -99,7 +99,7 @@ int mitsu_loadlib(struct mitsu_lib *lib, int type)
 			return CUPS_BACKEND_FAILED;
 		} else {
 			DEBUG("Image processing library successfully loaded\n");
-			if (lib->DumpAnnounce)
+			if (!stats_only && lib->DumpAnnounce)
 				lib->DumpAnnounce(logger);
 		}
 	}
