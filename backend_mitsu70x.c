@@ -1352,6 +1352,116 @@ static int mitsu70x_cancel_job(struct mitsu70x_ctx *ctx, uint16_t jobid)
 	return CUPS_BACKEND_OK;
 }
 
+static int mitsu70x_test_print(struct mitsu70x_ctx *ctx, int type)
+{
+	uint8_t cmdbuf[14];
+	int ret, num = 0;
+	uint8_t resp[26];
+
+	/* Send Test ON */
+	memset(cmdbuf, 0, 8);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x76;
+	cmdbuf[2] = 0x54;
+	cmdbuf[3] = 0x45;
+	cmdbuf[4] = 0x53;
+	cmdbuf[5] = 0x54;
+	cmdbuf[6] = 0x4f;
+	cmdbuf[7] = 0x4e;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 8)))
+		return ret;
+
+	memset(resp, 0, sizeof(resp));
+
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num);  // always e4 44 4f 4e 45
+
+	if (ret) return ret;
+
+	/* Send Test print. */
+	memset(cmdbuf, 0x30, 12);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x6a;
+	cmdbuf[2] = 0x31;
+
+	switch(type) {
+	default:
+	case 0: /* Test Print */
+		cmdbuf[4] = 0x31;
+		cmdbuf[11] = 0x31;
+		break;
+	case 1: /* Solid Black */
+		cmdbuf[3] = 0x32;
+		cmdbuf[4] = 0x31;
+		cmdbuf[6] = 0x46;
+		cmdbuf[7] = 0x46;
+		cmdbuf[11] = 0x31;
+		break;
+	case 2: /* Solid Gray */
+		cmdbuf[3] = 0x32;
+		cmdbuf[4] = 0x31;
+		cmdbuf[6] = 0x38;
+		cmdbuf[11] = 0x31;
+		break;
+	case 3: /* Head Pattern */
+		cmdbuf[3] = 0x31;
+		cmdbuf[4] = 0x31;
+		cmdbuf[11] = 0x31;
+		break;
+	case 4: /* Color Bar */
+		cmdbuf[3] = 0x34;
+		cmdbuf[4] = 0x31;
+		cmdbuf[11] = 0x31;
+		break;
+	case 5: /* Vertical Alignment */
+		cmdbuf[3] = 0x32;
+		cmdbuf[4] = 0x31;
+		cmdbuf[6] = 0x38;
+		cmdbuf[11] = 0x32;
+		break;
+	case 6: /* Horizontal Alignment; Grey Cross */
+		cmdbuf[3] = 0x32;
+		cmdbuf[4] = 0x31;
+		cmdbuf[6] = 0x38;
+		cmdbuf[11] = 0x31;
+		break;
+	}
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 12)))
+		return ret;
+
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num); /* Get 5 back */
+
+	return ret;
+
+#if 0
+	/* Get vertical & horizontal alignment */
+	// XXX this HANGS the printer.
+	memset(cmdbuf, 0, 6);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x6a;
+	cmdbuf[2] = 0x36;
+	cmdbuf[3] = 0x34;
+	cmdbuf[4] = 0x31;
+	cmdbuf[5] = 0x00;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 6)))
+		return ret;
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num); // 6 back?
+
+	/* To set: 1b 6a 30 70 XX 41 ?? ?? */
+
+	/* Horiz = 0x31, range 0x00->0xff */
+	/* VertA = 0x32, range -1 -> 9 (def 4) */
+	/* VertB = 0x33, range -4 -> 6 (def 1) */
+	/* VertC = 0x34, range -1 -> 9 (def 4) */
+
+#endif
+}
+
 static int mitsu70x_set_sleeptime(struct mitsu70x_ctx *ctx, uint8_t time)
 {
 	uint8_t cmdbuf[4];
@@ -2165,7 +2275,7 @@ static int mitsu70x_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "jk:swWX:x:")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "jk:T:swWX:x:")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'j':
@@ -2176,6 +2286,9 @@ static int mitsu70x_cmdline_arg(void *vctx, int argc, char **argv)
 			break;
 		case 's':
 			j = mitsu70x_query_status(ctx);
+			break;
+		case 'T':
+			j = mitsu70x_test_print(ctx, atoi(optarg));
 			break;
 		case 'w':
 			j = mitsu70x_wakeup(ctx, 0);
