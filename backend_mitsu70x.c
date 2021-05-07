@@ -216,16 +216,18 @@ struct mitsu70x_status_deck {
 	uint8_t  mecha_status[2];
 	uint8_t  temperature;   /* D70/D80 family only, K60 no? */
 	uint8_t  error_status[3];
-	uint8_t  rsvd_a[10];    /* K60 [1] == temperature? All: [3:6] == some counter in BCD. K60 [9] == ?? */
+	uint8_t  rsvd_a[3]; /* K60 [1] == temperature? */
+	uint8_t  lifetime_prints[4];
+	uint8_t  rsvd_b[3]; /* K60 [3] == ?? */
 	uint8_t  media_brand;
 	uint8_t  media_type;
-	uint8_t  rsvd_b[2];
+	uint8_t  rsvd_c[2];
 	int16_t  capacity; /* media capacity */
 	int16_t  remain;   /* media remaining */
-	uint8_t  rsvd_c[2];
-	uint8_t  lifetime_prints[4]; /* lifetime prints on deck + 10, in BCD! */
-	uint8_t  rsvd_d[2]; // Unknown
-	uint16_t rsvd_e[16]; /* all 80 00 */
+	uint8_t  rsvd_d[2];
+	uint8_t  unknown_ctr[4]; /* lifetime + 10 (EK305), lifetime+41 (D80), in BCD! */
+	uint8_t  rsvd_e[2]; // Unknown
+	uint16_t rsvd_f[16]; /* all 80 00 */
 } __attribute__((packed));
 
 struct mitsu70x_status_ver {
@@ -259,21 +261,41 @@ struct mitsu70x_memorystatus_resp {
 	uint8_t  rsvd;
 } __attribute__((packed));
 
-// XXX also seen commands 0x67, 0x72, 0x54, 0x6e
+struct mitsu70x_calinfo_resp {  /* Interpretations valid for ASK300 */
+	uint8_t hdr[6]; /* e4 6a 36 34 31 00 */
+	/* Note!  All values below are ASCII hex! ie 0x23 -> 0x32 0x33 */
+
+	uint8_t adj_horiz[2];  /* 00 -> ff */
+	uint8_t unk_a[6];
+	//                   46 45 45 43 31 44
+
+	uint8_t adj_fine[4]; /* 00DC */
+	uint8_t adj_m3[2]; /* -100 -> 100 (converted to hex) */
+	uint8_t unk_c[28];
+	//             30 30 30 30  46 46 36 34 35 35 30 30
+	// 46 46 36 34 35 35 30 30  44 43 30 30 30 30 30 30
+
+	uint8_t adj_density[4]; /* 6800 -> 9000, def 8000 */
+	uint8_t adj_24v[4];     /* 0000 -> 00FF */
+} __attribute__((packed));
 
 /*
+  NOTES:  Other stuff seen:
 
-  1b 72 45 [31 32]
-  1b 5a 43 00
-  1b 54 53 90 00 0a 00 00  00 00 00 00 00 00 00 00
-  1b 54 00 [00 31 32]  <-- No resp [00 any, 31 lower, 32 upper???]
-  1b 45 4a [30 31 32] <-- No resp [30 any deck, 31 is lower, 32 is upper?]
-  1b 56 34 [31 32]
   1b 45 48 [30 31 32] <-- No resp [30 any deck, 31 is lower, 32 is upper?]
-  1b 72 67 00 00 00
-  1b 67 18 ...   (??)
-  1b 52 XX 00    <-- XX = something + 0x51
+  1b 45 4a [30 31 32] <-- No resp [30 any deck, 31 is lower, 32 is upper?]
   1b 45 53 00 10 [ ...? ] XX XX . "set printer number"..
+  1b 52 XX 00    <-- XX = something + 0x51
+  1b 54 00 [00 31 32]  <-- No resp [00 any, 31 lower, 32 upper???]
+  1b 54 31 00   "feed and cut"
+  1b 54 53 90 00 0a 00 00  00 00 00 00 00 00 00 00
+  1b 56 34 [31 32]
+  1b 5a 43 00
+  1b 67 18 ...   (??)
+  1b 6a ...      Various test commands
+  1b 6e ...      (??)
+  1b 72 45 [31 32]
+  1b 72 67 00 00 00
 
 */
 
@@ -306,6 +328,7 @@ struct mitsu70x_hdr {
 } __attribute__((packed));
 
 STATIC_ASSERT(sizeof(struct mitsu70x_hdr) == 512);
+STATIC_ASSERT(sizeof(struct mitsu70x_calinfo_resp) == 56);
 
 static int mitsu70x_get_printerstatus(struct mitsu70x_ctx *ctx, struct mitsu70x_printerstatus_resp *resp);
 static int mitsu70x_main_loop(void *vctx, const void *vjob);
@@ -1315,7 +1338,7 @@ static int mitsu70x_get_printerstatus(struct mitsu70x_ctx *ctx, struct mitsu70x_
 	cmdbuf[0] = 0x1b;
 	cmdbuf[1] = 0x56;
 	cmdbuf[2] = 0x32;
-	cmdbuf[3] = 0x30; /* or x31 or x32, for SINGLE DECK query!
+	cmdbuf[3] = 0x30; /* or x31 or x32, for SINGLE DECK lower/upper query!
 			     Results will only have one deck. */
 	if ((ret = send_data(ctx->conn,
 			     cmdbuf, 4)))
@@ -1356,7 +1379,7 @@ static int mitsu70x_test_print(struct mitsu70x_ctx *ctx, int type)
 {
 	uint8_t cmdbuf[14];
 	int ret, num = 0;
-	uint8_t resp[26];
+	uint8_t resp[256];
 
 	/* Send Test ON */
 	memset(cmdbuf, 0, 8);
@@ -1435,10 +1458,36 @@ static int mitsu70x_test_print(struct mitsu70x_ctx *ctx, int type)
 			resp, sizeof(resp), &num); /* Get 5 back */
 
 	return ret;
+}
 
-#if 0
-	/* Get vertical & horizontal alignment */
-	// XXX this HANGS the printer.
+static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
+{
+	uint8_t cmdbuf[14];
+	int ret, num = 0;
+	uint8_t resp[256];
+
+	/* Send Test ON */
+	memset(cmdbuf, 0, 8);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x76;
+	cmdbuf[2] = 0x54;
+	cmdbuf[3] = 0x45;
+	cmdbuf[4] = 0x53;
+	cmdbuf[5] = 0x54;
+	cmdbuf[6] = 0x4f;
+	cmdbuf[7] = 0x4e;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 8)))
+		return ret;
+
+	memset(resp, 0, sizeof(resp));
+
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num);  // always e4 44 4f 4e 45
+
+	if (ret) return ret;
+
+	/* Get calibration parameters */
 	memset(cmdbuf, 0, 6);
 	cmdbuf[0] = 0x1b;
 	cmdbuf[1] = 0x6a;
@@ -1450,16 +1499,25 @@ static int mitsu70x_test_print(struct mitsu70x_ctx *ctx, int type)
 			     cmdbuf, 6)))
 		return ret;
 	ret = read_data(ctx->conn,
-			resp, sizeof(resp), &num); // 6 back?
+			resp, sizeof(resp), &num); // 56 back!
 
-	/* To set: 1b 6a 30 70 XX 41 ?? ?? */
+	/* response is struct mitsu70x_calinfo_resp */
+	return ret;
 
-	/* Horiz = 0x31, range 0x00->0xff */
-	/* VertA = 0x32, range -1 -> 9 (def 4) */
-	/* VertB = 0x33, range -4 -> 6 (def 1) */
-	/* VertC = 0x34, range -1 -> 9 (def 4) */
+	/* To set calibration: 1b 6a 30 70 XX 41 ?? ??
 
-#endif
+	   where ?? ?? is ASCII representation of hex value
+
+	   Horiz = 0x31, range 0x00->0xff
+	   VertA = 0x32, range -1 -> 9 (def 4)
+	   VertB = 0x33, range -4 -> 6 (def 1)
+	   VertC = 0x34, range -1 -> 9 (def 4)
+
+	  Read EEPROM:
+	   -> 1b 6a 36 36 31 00 31 30  30 30 30 30 30 30
+           <- e4 6a 36 36 31 00 30 30  30 30 30 30 30 30
+              [ 4096 bytes of eeprom ]
+	*/
 }
 
 static int mitsu70x_set_sleeptime(struct mitsu70x_ctx *ctx, uint8_t time)
@@ -2275,7 +2333,7 @@ static int mitsu70x_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "jk:T:swWX:x:")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "jk:tT:swWX:x:")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'j':
@@ -2286,6 +2344,9 @@ static int mitsu70x_cmdline_arg(void *vctx, int argc, char **argv)
 			break;
 		case 's':
 			j = mitsu70x_query_status(ctx);
+			break;
+		case 't':
+			j = mitsu70x_test_dump(ctx);
 			break;
 		case 'T':
 			j = mitsu70x_test_print(ctx, atoi(optarg));
@@ -2427,7 +2488,7 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 	stats->mediatype[0] = ctx->marker[0].name;
 	stats->levelmax[0] = ctx->marker[0].levelmax;
 	stats->levelnow[0] = ctx->marker[0].levelnow;
-	stats->cnt_life[0] = packed_bcd_to_uint32((char*)resp.lower.lifetime_prints, 4) - 10;
+	stats->cnt_life[0] = packed_bcd_to_uint32((char*)resp.lower.lifetime_prints, 4);
 
 	if (stats->decks == 2) {
 		stats->name[1] = "Upper";
@@ -2435,7 +2496,7 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 		stats->mediatype[1] = ctx->marker[1].name;
 		stats->levelmax[1] = ctx->marker[1].levelmax;
 		stats->levelnow[1] = ctx->marker[1].levelnow;
-		stats->cnt_life[1] = packed_bcd_to_uint32((char*)resp.upper.lifetime_prints, 4) - 10;
+		stats->cnt_life[1] = packed_bcd_to_uint32((char*)resp.upper.lifetime_prints, 4);
 	}
 	return CUPS_BACKEND_OK;
 }
@@ -2450,7 +2511,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.102" " (lib " LIBMITSU_VER ")",
+	.version = "0.103" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
