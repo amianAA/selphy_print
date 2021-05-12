@@ -1464,7 +1464,7 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 {
 	uint8_t cmdbuf[14];
 	int ret, num = 0;
-	uint8_t resp[256];
+	uint8_t resp[8192];
 
 	/* Send Test ON */
 	memset(cmdbuf, 0, 8);
@@ -1501,8 +1501,55 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 	ret = read_data(ctx->conn,
 			resp, sizeof(resp), &num); // 56 back!
 
+	if (ret) return ret;
+
 	/* response is struct mitsu70x_calinfo_resp */
-	return ret;
+
+	/* Get error log and other dump.. */
+	memset(cmdbuf, 0, 14);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x6a;
+	cmdbuf[2] = 0x36;
+	cmdbuf[3] = 0x36;
+	cmdbuf[4] = 0x31;
+	cmdbuf[5] = 0x00;
+	cmdbuf[6] = 0x30;
+	cmdbuf[7] = 0x35;
+	cmdbuf[8] = 0x35;
+	cmdbuf[9] = 0x30;
+	cmdbuf[10] = 0x30;
+	cmdbuf[11] = 0x30;
+	cmdbuf[12] = 0x30;
+	cmdbuf[13] = 0x30;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 14)))
+		return ret;
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num); // 1374 back!
+
+	if (ret) return ret;
+
+	/* Get eeprom dump.. */
+	memset(cmdbuf, 0, 14);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x6a;
+	cmdbuf[2] = 0x36;
+	cmdbuf[3] = 0x36;
+	cmdbuf[4] = 0x31;
+	cmdbuf[5] = 0x00;
+	cmdbuf[6] = 0x31;
+	cmdbuf[7] = 0x30;
+	cmdbuf[8] = 0x30;
+	cmdbuf[9] = 0x30;
+	cmdbuf[10] = 0x30;
+	cmdbuf[11] = 0x30;
+	cmdbuf[12] = 0x30;
+	cmdbuf[13] = 0x30;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 14)))
+		return ret;
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num); // 4110 back!
 
 	/* To set calibration: 1b 6a 30 70 XX 41 ?? ??
 
@@ -1518,6 +1565,8 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
            <- e4 6a 36 36 31 00 30 30  30 30 30 30 30 30
               [ 4096 bytes of eeprom ]
 	*/
+
+	return ret;
 }
 
 static int mitsu70x_set_sleeptime(struct mitsu70x_ctx *ctx, uint8_t time)
