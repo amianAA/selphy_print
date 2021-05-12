@@ -1505,30 +1505,6 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 
 	/* response is struct mitsu70x_calinfo_resp */
 
-	/* Get error log and other dump.. */
-	memset(cmdbuf, 0, 14);
-	cmdbuf[0] = 0x1b;
-	cmdbuf[1] = 0x6a;
-	cmdbuf[2] = 0x36;
-	cmdbuf[3] = 0x36;
-	cmdbuf[4] = 0x31;
-	cmdbuf[5] = 0x00;
-	cmdbuf[6] = 0x30;
-	cmdbuf[7] = 0x35;
-	cmdbuf[8] = 0x35;
-	cmdbuf[9] = 0x30;
-	cmdbuf[10] = 0x30;
-	cmdbuf[11] = 0x30;
-	cmdbuf[12] = 0x30;
-	cmdbuf[13] = 0x30;
-	if ((ret = send_data(ctx->conn,
-			     cmdbuf, 14)))
-		return ret;
-	ret = read_data(ctx->conn,
-			resp, sizeof(resp), &num); // 1374 back!
-
-	if (ret) return ret;
-
 	/* Get eeprom dump.. */
 	memset(cmdbuf, 0, 14);
 	cmdbuf[0] = 0x1b;
@@ -1537,14 +1513,14 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 	cmdbuf[3] = 0x36;
 	cmdbuf[4] = 0x31;
 	cmdbuf[5] = 0x00;
-	cmdbuf[6] = 0x31;
-	cmdbuf[7] = 0x30;
-	cmdbuf[8] = 0x30;
-	cmdbuf[9] = 0x30;
-	cmdbuf[10] = 0x30;
-	cmdbuf[11] = 0x30;
-	cmdbuf[12] = 0x30;
-	cmdbuf[13] = 0x30;
+	cmdbuf[6] = 0x31;  //
+	cmdbuf[7] = 0x30;  //
+	cmdbuf[8] = 0x30;  //
+	cmdbuf[9] = 0x30;  // x1000 = LENGTH (4096, 1-4096)
+	cmdbuf[10] = 0x30; //
+	cmdbuf[11] = 0x30; //
+	cmdbuf[12] = 0x30; //
+	cmdbuf[13] = 0x30; // x0000 = ADDRESS (0, x0-x7fff)
 	if ((ret = send_data(ctx->conn,
 			     cmdbuf, 14)))
 		return ret;
