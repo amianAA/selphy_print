@@ -243,12 +243,14 @@ struct mitsu70x_printerstatus_resp {
 	uint8_t  power;
 	uint8_t  unk[20];
 	uint8_t  sleeptime; /* In minutes, 0-60 */
-	uint8_t  iserial; /* 0x00 for Enabled, 0x80 for Disabled */
-	uint8_t  unk_b[5]; // [4] == 0x44 on D70x, 0x02 on D80
-	uint8_t  dual_deck; /* 0x80 for dual-deck D707 */
-	uint8_t  unk_c[6]; // [2] == 0x5f on D70x, 0x5e on D70xS, 0x01 on D80.  [5] == 0xbd on D70x, 0x87 on D80
-	int16_t  model[6]; /* LE, UTF-16 */
-	int16_t  serno[6]; /* LE, UTF-16 */
+	uint8_t  iserial;   /* 0x00 for Enabled, 0x80 for Disabled */
+	uint8_t  unk_b[5];  // [4] == 0x44 on D70x, 0x13 on D80, 0x02 on EK305.
+	uint8_t  dual_deck; /* 0x80 for dual-deck D707, 0x00 otherwise */
+	uint8_t  unk_c[2];  // always 00 00 ??
+	uint8_t  subtype;   /* 0x5f on D70x/K60/D80, 0x5e on D70xS/K60-S, 0x01 on EK305 */
+	uint8_t  unk_d[3];  // [1:2] == 0x??bd on D70x, 0x0487 on EK305, 0x04d7 on D80
+	int16_t  model[6];  /* LE, UTF-16 */
+	int16_t  serno[6];  /* LE, UTF-16 */
 	struct mitsu70x_status_ver vers[7]; // components are 'MLRTF'
 	uint8_t  null[2];
 	uint8_t  user_serno[6];  /* XXX Supposedly. Don't know how to set it! */
@@ -672,9 +674,7 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 	ctx->serno[6] = 0;
 
 	/* Check for the -S variants */
-	if (ctx->conn->type == P_MITSU_K60)
-		ctx->is_s = 1;
-	if (ctx->conn->type == P_MITSU_D70X && resp.unk_c[2] == 0x5e)
+	if (resp.subtype == 0x5e)
 		ctx->is_s = 1;
 
 	/* FW sanity checking */
@@ -977,6 +977,7 @@ repeat:
 			job->cpcfname = "CPD80N01.cpc";
 			job->ecpcfname = NULL;
 		}
+		// XXX Does is_s matter?
 		if (mhdr.hdr[3] != 0x01) {
 			WARNING("Print job has wrong submodel specifier (%x)\n", mhdr.hdr[3]);
 			mhdr.hdr[3] = 0x01;
@@ -997,6 +998,7 @@ repeat:
 			else
 				job->cpcfname = "CPS60T01.cpc";
 		}
+		// XXX Does is_s matter?
 		if (mhdr.hdr[3] != 0x00) {
 			WARNING("Print job has wrong submodel specifier (%x)\n", mhdr.hdr[3]);
 			mhdr.hdr[3] = 0x00;
@@ -2526,6 +2528,7 @@ static int mitsu70x_query_stats(void *vctx, struct printerstats *stats)
 	case P_MITSU_K60:
 		stats->mfg = "Mitsubishi";
 		stats->model = "CP-K60DW-S";
+		// XXX does is_s matter?  Mitsu SDK cares, but all models sold are labeled as -S..
 		break;
 	case P_MITSU_D80:
 		stats->mfg = "Mitsubishi";
