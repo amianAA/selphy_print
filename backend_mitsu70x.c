@@ -1516,7 +1516,7 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 	cmdbuf[6] = 0x31;  //
 	cmdbuf[7] = 0x30;  //
 	cmdbuf[8] = 0x30;  //
-	cmdbuf[9] = 0x30;  // x1000 = LENGTH (4096, 1-4096)
+	cmdbuf[9] = 0x30;  // x1000 = LENGTH (4096, 1 -> 4096)
 	cmdbuf[10] = 0x30; //
 	cmdbuf[11] = 0x30; //
 	cmdbuf[12] = 0x30; //
@@ -1527,19 +1527,20 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 	ret = read_data(ctx->conn,
 			resp, sizeof(resp), &num); // 4110 back!
 
-	/* To set calibration: 1b 6a 30 70 XX 41 ?? ??
+	/* To set calibration: 1b 6a 30 XX XX XX ?? ??
 
 	   where ?? ?? is ASCII representation of hex value
 
-	   Horiz = 0x31, range 0x00->0xff
-	   VertA = 0x32, range -1 -> 9 (def 4)
-	   VertB = 0x33, range -4 -> 6 (def 1)
-	   VertC = 0x34, range -1 -> 9 (def 4)
+	   Horiz = x70 31 31, range 0x00->0xff
+	   VertA = x70 31 32, range -1 -> 9 (def 4)
+	   VertB = x70 31 33, range -4 -> 6 (def 1)
+	   VertC = x70 31 34, range -1 -> 9 (def 4)
+           M1    = x71 31 31, range -100 -> +100
+           M3    = x71 31 32, range -100 -> +100
+           UFine = x71 31 35, (legal values are enum)
+	   Density = x73 31 31, 6800d -> 9000d (steps of 80d)
+	   24v   = x61 30 00  (range 0x00 -> 0xff)
 
-	  Read EEPROM:
-	   -> 1b 6a 36 36 31 00 31 30  30 30 30 30 30 30
-           <- e4 6a 36 36 31 00 30 30  30 30 30 30 30 30
-              [ 4096 bytes of eeprom ]
 	*/
 
 	return ret;
