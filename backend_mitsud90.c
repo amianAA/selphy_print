@@ -1562,6 +1562,104 @@ static int mitsud90_dumpall(struct mitsud90_ctx *ctx)
 	return CUPS_BACKEND_OK;
 }
 
+static int mitsud90_test_print(struct mitsud90_ctx *ctx, int type)
+{
+	uint8_t cmdbuf[16];
+	int ret, num = 0;
+	uint8_t resp[256];
+
+	/* Send Test ON */
+	memset(cmdbuf, 0, 8);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x76;
+	cmdbuf[2] = 0x54;
+	cmdbuf[3] = 0x45;
+	cmdbuf[4] = 0x53;
+	cmdbuf[5] = 0x54;
+	cmdbuf[6] = 0x4f;
+	cmdbuf[7] = 0x4e;
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 8)))
+		return ret;
+
+	memset(resp, 0, sizeof(resp));
+
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num);  // always e4 44 4f 4e 45
+
+	if (ret) return ret;
+
+	/* Send Test print. */
+	memset(cmdbuf, 0x00, 16);
+	cmdbuf[0] = 0x1b;
+	cmdbuf[1] = 0x61;
+	cmdbuf[2] = 0x36;
+	cmdbuf[3] = 0x31;
+	cmdbuf[7] = 0x02;
+
+	switch(type) {
+	default:
+	case 0: /* Test Print */
+		cmdbuf[15] = 0x01;
+		break;
+	case 1: /* Solid Black */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0xFF;
+		cmdbuf[15] = 0x01;
+		break;
+	case 2: /* Solid Gray */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[15] = 0x01;
+		break;
+	case 3: /* Head Pattern */
+		cmdbuf[4] = 0x01;
+		cmdbuf[10] = 0x01;
+		cmdbuf[15] = 0x01;
+		break;
+	case 4: /* Color Bar */
+		cmdbuf[4] = 0x04;
+		cmdbuf[15] = 0x01;
+		break;
+	case 5: /* Vertical Alignment */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[15] = 0x02;
+		break;
+	case 6: /* Horizontal Alignment; Grey Cross */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[15] = 0x01;
+		break;
+	case 7: /* Solid Gray 1 */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[10] = 0x01;
+		cmdbuf[15] = 0x01;
+		break;
+	case 8: /* Solid Gray 2 */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[10] = 0x02;
+		cmdbuf[15] = 0x01;
+		break;
+	case 9: /* Solid Gray 3 */
+		cmdbuf[4] = 0x02;
+		cmdbuf[9] = 0x80;
+		cmdbuf[10] = 0x04;
+		cmdbuf[15] = 0x01;
+		break;
+	}
+	if ((ret = send_data(ctx->conn,
+			     cmdbuf, 16)))
+		return ret;
+
+	ret = read_data(ctx->conn,
+			resp, sizeof(resp), &num); /* Get 5 back */
+
+	return ret;
+}
+
 static int mitsud90_query_serno(struct dyesub_connection *conn, char *buf, int buf_len)
 {
 	struct mitsud90_ctx ctx = {
@@ -1677,6 +1775,7 @@ static void mitsud90_cmdline(void)
 	DEBUG("\t\t[ -m ]           # Query printer media\n");
 	DEBUG("\t\t[ -s ]           # Query printer status\n");
 	DEBUG("\t\t[ -x 0|1 ]       # Enable/disable iSerial reporting\n");
+//	DEBUG("\t\t[ -T 0-9 ]       # Test print\n");
 //	DEBUG("\t\t[ -Z ]           # Dump all parameters\n");
 }
 
@@ -1688,7 +1787,7 @@ static int mitsud90_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "ij:k:msx:Z")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "ij:k:msT:x:Z")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'i':
@@ -1708,6 +1807,9 @@ static int mitsud90_cmdline_arg(void *vctx, int argc, char **argv)
 			break;
 		case 's':
 			j = mitsud90_get_status(ctx);
+			break;
+		case 'T':
+			j = mitsud90_test_print(ctx, atoi(optarg));
 			break;
 		case 'x':
 			if (ctx->conn->type == P_MITSU_D90)
@@ -1803,7 +1905,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.32"  " (lib " LIBMITSU_VER ")",
+	.version = "0.33"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
@@ -2014,77 +2116,49 @@ Comms Protocol for D90 & CP-M1
    00 01 00 00 05 06 ff ff
    ff fe ff ff fa f9 XX      <- XX is 0x80 or 0x00    (0x80)  (OFF)
 
- [[ GET SLEEP TIME! ]]
+ [[ GENERIC GET/SET ]]
 
--> 1b 61 36 36 45 ba 00 00
-   00 02 00 00 05 02 ff ff
-   ff fd ff ff fa fd
-<- e4 61 36 36 45 00 00 00
-   00 02 00 00 05 02 ff ff
-   ff fd ff ff fa fd XX 00     <- XX, sleep time in minutes.
+-> 1b 61 36 QQ T1 T2 LL LL   QQ == 0x30 (set) 0x36 (get)
+   LL LL 00 00 VV VV ff ff   LL == length (32-bit BE)
+   ff fd ff ff fa fd         T1 = type1 (41, 45, others?)
+<- e4 61 36 QQ TT TT 00 00   T2 = type2 (be, ba, 00, others?)
+   LL LL 00 00 VV VV ff ff   VV VV = index/variable
+   ff fd ff ff fa fd ?? ??   ?? == data (length LL)
 
- [[ SET SLEEP TIME! ]]
+    The 'ff ff ff fd  ff ff fa fd' varies; Maybe a mask?
 
--> 1b 61 36 30 45 ba 00 00
-   00 02 00 00 05 02 ff ff
-   ff fd ff ff fa fd XX 00     <- XX, sleep time in minutes.
+  -----------------------------------------------
+   T1 T2  LL LL  VV VV  M1 M1  M2 M2   Meaning
 
- [[ SET iSERIAL ]]
+   41 be  00 01  00 10  ff fe  ff ef   34v Adjustment (0x00->0xff)
+   41 be  00 01  00 11  ff fe  ff ee   iSerial setting
+   41 be  00 06  00 30  ff f9  ff cf   Ascii serial number
+   45 00  00 01  05 05  ff fe  fa f8   Wait time (seconds)
+   45 ba  00 01  05 06  ff fe  fa fb   Resume on/off
+   45 ba  00 01  05 07  ff fe  fa f8   Cutter on/off
+   45 ba  00 02  02 40  ff fd  fd bf   Density (6800d -> 9000d)
+   45 ba  00 06  03 00  ff f9  fc ff   M1 Adj (F/SF/UF, two bytes each?)
+   45 ba  00 10  04 10  ff ef  fb ef   M3 Adj (unknown value)
+   45 ba  00 06  03 10  ff f9  fc ef   Vertical Position (A/B/C combined)
+   45 ba  00 02  03 16  ff fd  fc e9   Feed (default 43402d)
+   45 ba  00 01  02 47  ff fe  fd 87   Horizontal Position (0x00->0xff)
+   45 ba  19 c0  02 48  e6 3f  f9 bf   "Read Info" (BIG payload!)
+   45 ba  00 04  06 40  ff fe  f9 bf   Head Count
+   45 ba  00 04  06 44  ff fb  f9 bb   Cutter Count
+   45 ba  14 00  0c 00  eb ff  f3 ff   Error History (BIG payload)
 
--> 1b 61 36 30 41 be 00 00
-   00 01 00 00 00 11 ff ff
-   ff fe ff ff ff ee XX        <- XX 0x80 OFF, 0x00 ON.
+ ALSO SEEN:
 
- [[ SANITY CHECK PRINT ARGUMENTS / MEM CHECK ]]
-
--> 1b 47 44 33 00 33 07 3c  04 ca 64 00 00 01 00 00
-   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-   00 00 00 04 04 00 00 00  00 00 00 00 00 00 00 00
-   [[ pad to 512 ]]
-
-   ... 07 3c onwards is the same as main payload header.
-
-<- e4 47 44 43 XX YY
-
-   ... possibly the same as the D70's "memorystatus"
-       XX == 00 size ok, 01 bad size, ff out of range
-       YY == 00 memory ok, 01 memory full, 02 driver setting, ff out of range
-
- [[ SEND OVER HDRs and DATA ]]
-
-   ... Print arguments:
-
--> 1b 53 50 30 00 33 07 3c  04 ca 64 00 00 01 00 00
-   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-   00 00 00 04 04 00 00 00  00 00 00 00 00 00 00 00
-   [[ pad to 512 ]]
-
-   ... Data transfer.  Plane header:
-
--> 1b 5a 54 01 00 09 00 00  00 00 07 3c 04 ca 00 00
-   [[ pad to 512 ]]
-
--> [[print data]] [[ padded? ]]
--> [[print data]]
-
--> 1b 42 51 31 00 ZZ
-
-   ... Footer.
-   ZZ == Seconds to wait for follow-up print (0x05)
-
-   ALSO SEEN (in SDK)
-
-   1b 42 61 32 00 00
-
- [[ UNKNOWN (seen in SDK) ]]
-
-   1b 44 43 41  4e 43 45 4c  00 00 00 00      : \ESC D CANCEL
-
- [[ UNKNOWON (seen in SDK) ]]
-
-   1b 42 51 32 00 00       [ Footer of some sort ? ]
+   1b 61 36 39 43 00   "AdjustColSCmd"
+   1b 61 36 37 39 43   "GetColSCmd"  (12 len payload)
+   1b 6a 30 71 31 31 42 38 "SetM1AdjCmd"
+   1b 6a 36 34 31 00   "GetM1AdjCmd"
+   1b 6a 31 32 51 30 38 30 30 30 30 31 "M1AdjSolidGreyCmd"  ???
+   1b 61 36 34 50 00   "PaperSensorAdjCmd"
+   1b 61 36 37 34 50   "PaperSensorGetCmd" (24 len payload)
+   1b 61 36 36 45 ba   Read EEProm  (16 byte cmd payload, 0x8000 max len)
+   1b 61 36 30 45 ba   Write EEProm
+   1b 47 44 30 00 00 01 65  Read Sensors (streams?)
 
  request x65 examples:
 
