@@ -265,12 +265,13 @@ struct mitsu70x_memorystatus_resp {
 
 struct mitsu70x_calinfo_resp {  /* Interpretations valid for ASK300 */
 	uint8_t hdr[6]; /* e4 6a 36 34 31 00 */
+
 	/* Note!  All values below are ASCII hex! ie 0x23 -> 0x32 0x33 */
 
-	uint8_t adj_horiz[2];  /* 00 -> ff */
-	uint8_t unk_a[6];
-	//                   46 45 45 43 31 44
-
+	uint8_t adj_horiz[2];  /* 00 -> ff  (signed, presumably) */
+	uint8_t adj_vertA[2];  /* +- 128 */
+	uint8_t adj_vertB[2];  /*   values are in units of 0.08 */
+	uint8_t adj_vertC[2];  /*  A is -1->9, B is -4->6, C is -1->9 */
 	uint8_t adj_fine[4]; /* 00DC */
 	uint8_t adj_m3[2]; /* -100 -> 100 (converted to hex) */
 	uint8_t unk_c[28];
@@ -1515,6 +1516,32 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 	if (ret) return ret;
 
 	/* response is struct mitsu70x_calinfo_resp */
+	{
+		struct mitsu70x_calinfo_resp *calinfo = (struct mitsu70x_calinfo_resp*) resp;
+		char buf[5];
+		float f;
+
+		memset(buf, 0x0, sizeof(buf));
+		memcpy(buf, calinfo->adj_horiz, 2);
+		f = strtol(buf, NULL, 16);
+		if (f > 127) f -= 256;
+		INFO("Horizontal Calibration: %f\n", f);
+		memcpy(buf, calinfo->adj_vertA, 2);
+		f = strtol(buf, NULL, 16);
+		if (f > 127) f -= 256;
+		f /= 0.08;
+		INFO("Vertical Calibration A: %2.2f\n", f);
+		memcpy(buf, calinfo->adj_vertB, 2);
+		f = strtol(buf, NULL, 16);
+		if (f > 127) f -= 256;
+		f /= 0.08;
+		INFO("Vertical Calibration B: %2.2f\n", f);
+		memcpy(buf, calinfo->adj_vertC, 2);
+		f = strtol(buf, NULL, 16);
+		if (f > 127) f -= 256;
+		f /= 0.08;
+		INFO("Vertical Calibration C: %2.2f\n", f);
+	}
 
 	/* Get eeprom dump.. */
 	memset(cmdbuf, 0, 14);
@@ -2362,7 +2389,10 @@ static void mitsu70x_cmdline(void)
 	DEBUG("\t\t[ -W ]           # Wake up printer and wait\n");
 	DEBUG("\t\t[ -k num ]       # Set standby time (1-60 minutes, 0 disables)\n");
 	DEBUG("\t\t[ -x num ]       # Set USB iSerialNumber Reporting (1 on, 0 off)\n");
-	DEBUG("\t\t[ -X jobid ]     # Abort a printjob\n");}
+	DEBUG("\t\t[ -X jobid ]     # Abort a printjob\n");
+//	DEBUG("\t\t[ -t ]           # Dump calibration info (use with -DDD)\n");
+//	DEBUG("\t\t[ -T 0-6 ]       # Test print\n");
+}
 
 static int mitsu70x_cmdline_arg(void *vctx, int argc, char **argv)
 {
