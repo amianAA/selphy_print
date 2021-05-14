@@ -1529,17 +1529,17 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 		memcpy(buf, calinfo->adj_vertA, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f /= 0.08;
+		f *= 0.08;
 		INFO("Vertical Calibration A: %2.2f\n", f);
 		memcpy(buf, calinfo->adj_vertB, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f /= 0.08;
+		f *= 0.08;
 		INFO("Vertical Calibration B: %2.2f\n", f);
 		memcpy(buf, calinfo->adj_vertC, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f /= 0.08;
+		f *= 0.08;
 		INFO("Vertical Calibration C: %2.2f\n", f);
 	}
 
