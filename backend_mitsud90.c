@@ -2116,6 +2116,78 @@ Comms Protocol for D90 & CP-M1
    00 01 00 00 05 06 ff ff
    ff fe ff ff fa f9 XX      <- XX is 0x80 or 0x00    (0x80)  (OFF)
 
+ [[ GET SLEEP TIME! ]]
+
+-> 1b 61 36 36 45 ba 00 00
+   00 02 00 00 05 02 ff ff
+   ff fd ff ff fa fd
+<- e4 61 36 36 45 00 00 00
+   00 02 00 00 05 02 ff ff
+   ff fd ff ff fa fd XX 00     <- XX, sleep time in minutes.
+
+ [[ SET SLEEP TIME! ]]
+
+-> 1b 61 36 30 45 ba 00 00
+   00 02 00 00 05 02 ff ff
+   ff fd ff ff fa fd XX 00     <- XX, sleep time in minutes.
+
+ [[ SET iSERIAL ]]
+
+-> 1b 61 36 30 41 be 00 00
+   00 01 00 00 00 11 ff ff
+   ff fe ff ff ff ee XX        <- XX 0x80 OFF, 0x00 ON.
+
+ [[ SANITY CHECK PRINT ARGUMENTS / MEM CHECK ]]
+
+-> 1b 47 44 33 00 33 07 3c  04 ca 64 00 00 01 00 00
+   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+   00 00 00 04 04 00 00 00  00 00 00 00 00 00 00 00
+   [[ pad to 512 ]]
+
+   ... 07 3c onwards is the same as main payload header.
+
+<- e4 47 44 43 XX YY
+
+   ... possibly the same as the D70's "memorystatus"
+       XX == 00 size ok, 01 bad size, ff out of range
+       YY == 00 memory ok, 01 memory full, 02 driver setting, ff out of range
+
+ [[ SEND OVER HDRs and DATA ]]
+
+   ... Print arguments:
+
+-> 1b 53 50 30 00 33 07 3c  04 ca 64 00 00 01 00 00
+   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+   00 00 00 04 04 00 00 00  00 00 00 00 00 00 00 00
+   [[ pad to 512 ]]
+
+   ... Data transfer.  Plane header:
+
+-> 1b 5a 54 01 00 09 00 00  00 00 07 3c 04 ca 00 00
+   [[ pad to 512 ]]
+
+-> [[print data]] [[ padded? ]]
+-> [[print data]]
+
+-> 1b 42 51 31 00 ZZ
+
+   ... Footer.
+   ZZ == Seconds to wait for follow-up print (0x05)
+
+   ALSO SEEN (in SDK)
+
+   1b 42 61 32 00 00
+
+ [[ UNKNOWN (seen in SDK) ]]
+
+   1b 44 43 41  4e 43 45 4c  00 00 00 00      : \ESC D CANCEL
+
+ [[ UNKNOWON (seen in SDK) ]]
+
+   1b 42 51 32 00 00       [ Footer of some sort ? ]
+
  [[ GENERIC GET/SET ]]
 
 -> 1b 61 36 QQ T1 T2 LL LL   QQ == 0x30 (set) 0x36 (get)
@@ -2133,6 +2205,7 @@ Comms Protocol for D90 & CP-M1
    41 be  00 01  00 10  ff fe  ff ef   34v Adjustment (0x00->0xff)
    41 be  00 01  00 11  ff fe  ff ee   iSerial setting
    41 be  00 06  00 30  ff f9  ff cf   Ascii serial number
+   45 ba  00 02  05 02  ff fd  fa fd   Sleep Time
    45 00  00 01  05 05  ff fe  fa f8   Wait time (seconds)
    45 ba  00 01  05 06  ff fe  fa fb   Resume on/off
    45 ba  00 01  05 07  ff fe  fa f8   Cutter on/off
