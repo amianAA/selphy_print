@@ -252,7 +252,7 @@ int read_data(struct dyesub_connection *conn, uint8_t *buf, int buflen, int *rea
 		DEBUG("Received %d bytes from printer\n", *readlen);
 	}
 
-	if ((dyesub_debug > 1 && buflen < 4096) ||
+	if ((dyesub_debug > 1 && *readlen < 4096) ||
 	    dyesub_debug > 2) {
 		int i = *readlen;
 
