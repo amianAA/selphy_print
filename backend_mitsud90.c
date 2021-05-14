@@ -413,6 +413,7 @@ static const char *mitsud90_error_codes(const uint8_t *code)
 	case 0x70:
 	case 0x71:
 	case 0x73:
+	case 0x74:
 	case 0x75:
 		return "Mechanical Error (check ribbon and power cycle)";
 	case 0x82:

@@ -75,6 +75,7 @@ struct mitsu70x_ctx {
 
 	struct marker marker[2];
 	uint8_t medias[2];
+	uint8_t media_subtypes[2];
 
 	uint16_t last_l;
 	uint16_t last_u;
@@ -221,7 +222,8 @@ struct mitsu70x_status_deck {
 	uint8_t  rsvd_b[3]; /* K60 [3] == ?? */
 	uint8_t  media_brand;
 	uint8_t  media_type;
-	uint8_t  rsvd_c[2];
+	uint8_t  media_subtype;	 /* K60 only? */
+	uint8_t  rsvd_c[1];
 	int16_t  capacity; /* media capacity */
 	int16_t  remain;   /* media remaining */
 	uint8_t  rsvd_d[2];
@@ -285,12 +287,13 @@ struct mitsu70x_calinfo_resp {  /* Interpretations valid for ASK300 */
   1b 45 48 [30 31 32] <-- No resp [30 any deck, 31 is lower, 32 is upper?]
   1b 45 4a [30 31 32] <-- No resp [30 any deck, 31 is lower, 32 is upper?]
   1b 45 53 00 10 [ ...? ] XX XX . "set printer number"..
+  1b 45 53 90 00 0a [ ... 9 bytes of something ] 10
   1b 52 XX 00    <-- XX = something + 0x51
   1b 54 00 [00 31 32]  <-- No resp [00 any, 31 lower, 32 upper???]
   1b 54 31 00   "feed and cut"
   1b 54 53 90 00 0a 00 00  00 00 00 00 00 00 00 00
-  1b 56 34 [31 32]
-  1b 5a 43 00
+  1b 56 34 [31 32] <-- 6 byte response, last two bytes are value.
+  1b 5a 43 00 <-- No resp
   1b 67 18 ...   (??)
   1b 6a ...      Various test commands
   1b 6e ...      (??)
@@ -646,6 +649,7 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 	ctx->marker[0].levelmax = be16_to_cpu(resp.lower.capacity);
 	ctx->marker[0].levelnow = be16_to_cpu(resp.lower.remain);
 	ctx->medias[0] = resp.lower.media_type & 0xf;
+	ctx->media_subtypes[0] = resp.lower.media_subtype;
 
 	if (ctx->num_decks == 2) {
 		ctx->marker[1].color = "#00FFFF#FF00FF#FFFF00";
@@ -654,6 +658,7 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 		ctx->marker[1].levelmax = be16_to_cpu(resp.upper.capacity);
 		ctx->marker[1].levelnow = be16_to_cpu(resp.upper.remain);
 		ctx->medias[1] = resp.upper.media_type & 0xf;
+		ctx->media_subtypes[1] = resp.upper.media_subtype;
 	}
 
 	/* Store the FW version */
@@ -963,7 +968,7 @@ repeat:
 
 		if (mhdr.speed == 3) {
 			job->cpcfname = "CPD80S01.cpc";
-			job->ecpcfname = "CPD80E01.cpc";
+			job->ecpcfname = "CPD80E01.cpc"; /* For SuperFine in rewind mode, depending on image.. */
 		} else if (mhdr.speed == 4) {
 			job->cpcfname = "CPD80U01.cpc";
 			job->ecpcfname = NULL;
@@ -981,9 +986,15 @@ repeat:
 
 		if (mhdr.speed == 3 || mhdr.speed == 4) {
 			mhdr.speed = 4; /* Ultra Fine */
-			job->cpcfname = "CPS60T03.cpc";
+			if (ctx->media_subtypes[0] == 0x10) /* HG media */
+				job->cpcfname = "CPS60H03.cpc";
+			else
+				job->cpcfname = "CPS60T03.cpc";
 		} else {
-			job->cpcfname = "CPS60T01.cpc";
+			if (ctx->media_subtypes[0] == 0x10) /* HG media */
+				job->cpcfname = "CPS60H01.cpc";
+			else
+				job->cpcfname = "CPS60T01.cpc";
 		}
 		if (mhdr.hdr[3] != 0x00) {
 			WARNING("Print job has wrong submodel specifier (%x)\n", mhdr.hdr[3]);
@@ -2202,10 +2213,11 @@ static void mitsu70x_dump_printerstatus(struct mitsu70x_ctx *ctx,
 	INFO("Lower Temperature: %s\n", mitsu_temperatures(resp->lower.temperature));
 	INFO("Lower Mechanical Status: %s\n",
 	     mitsu70x_mechastatus(resp->lower.mecha_status));
-	INFO("Lower Media Type:  %s (%02x/%02x)\n",
+	INFO("Lower Media Type:  %s (%02x/%02x/%02x)\n",
 	     mitsu_media_types(ctx->conn->type, resp->lower.media_brand, resp->lower.media_type),
 	     resp->lower.media_brand,
-	     resp->lower.media_type);
+	     resp->lower.media_type,
+	     resp->lower.media_subtype);
 	INFO("Lower Prints Remaining:  %03d/%03d\n",
 	     be16_to_cpu(resp->lower.remain),
 	     be16_to_cpu(resp->lower.capacity));
@@ -2224,10 +2236,11 @@ static void mitsu70x_dump_printerstatus(struct mitsu70x_ctx *ctx,
 		INFO("Upper Temperature: %s\n", mitsu_temperatures(resp->upper.temperature));
 		INFO("Upper Mechanical Status: %s\n",
 		     mitsu70x_mechastatus(resp->upper.mecha_status));
-		INFO("Upper Media Type:  %s (%02x/%02x)\n",
+		INFO("Upper Media Type:  %s (%02x/%02x/%02x)\n",
 		     mitsu_media_types(ctx->conn->type, resp->upper.media_brand, resp->upper.media_type),
 		     resp->upper.media_brand,
-		     resp->upper.media_type);
+		     resp->upper.media_type,
+		     resp->upper.media_subtype);
 		INFO("Upper Prints Remaining:  %03d/%03d\n",
 		     be16_to_cpu(resp->upper.remain),
 		     be16_to_cpu(resp->upper.capacity));
@@ -2537,7 +2550,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.103" " (lib " LIBMITSU_VER ")",
+	.version = "0.104" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
@@ -2556,7 +2569,7 @@ const struct dyesub_backend mitsu70x_backend = {
 	.devices = {
 		{ 0x06d3, 0x3b30, P_MITSU_D70X, NULL, "mitsubishi-d70dw"},
 		{ 0x06d3, 0x3b30, P_MITSU_D70X, NULL, "mitsubishi-d707dw"}, /* Duplicate */
-		{ 0x06d3, 0x3b31, P_MITSU_K60, NULL, "mitsubishi-k60dw"},
+		{ 0x06d3, 0x3b31, P_MITSU_K60, NULL, "mitsubishi-k60dw"}, // variation type?
 		{ 0x06d3, 0x3b36, P_MITSU_D80, NULL, "mitsubishi-d80dw"},
 		{ 0x040a, 0x404f, P_KODAK_305, NULL, "kodak-305"},
 		{ 0x04cb, 0x5006, P_FUJI_ASK300, NULL, "fujifilm-ask-300"},
