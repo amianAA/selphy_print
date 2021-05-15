@@ -87,18 +87,18 @@ enum {
 
 	PARAM_UNK_10      = 0x10, // 2245 = 0x7b
 	PARAM_UNK_11      = 0x11, // 2245 = 0x72, 8810 = 0x01, 7000 = 0x01
-	PARAM_UNK_12      = 0x12, // 6145 = 0xffffffc4, 8810 = 0x69, 7000 = 0x69
-	PARAM_UNK_13      = 0x13, // 6145 = 0xffffffe2, 8810 = 0xc3, 7000 = 0xc3
-	PARAM_UNK_14      = 0x14, // 6145 = 0xffffffc7, 8810 = 0xcd, 7000 = 0xcd
+	PARAM_UNK_12      = 0x12, // 6145 = 0xffffffc4, 8810 = 0x69, 7000 = 0x69  (Matte Gloss?)
+	PARAM_UNK_13      = 0x13, // 6145 = 0xffffffe2, 8810 = 0xc3, 7000 = 0xc3  (Matte Degloss Black?)
+	PARAM_UNK_14      = 0x14, // 6145 = 0xffffffc7, 8810 = 0xcd, 7000 = 0xcd  (Matte Degloss White?)
 	PARAM_UNK_15      = 0x15, // 6145 = 0xffffffec
 	PARAM_UNK_16      = 0x16, // 6145 = 0x00
 
 	PARAM_OC_PRINT    = 0x20, // 6145 ONLY
-	PARAM_UNK_21      = 0x21, // 6145 = 0x69, 8810 = 0x3e8, 7000 = 0xe39
-	PARAM_UNK_22      = 0x22, // 6145 = 0xc3, 8810 = 0x41a, 7000 = 0x41a
-	PARAM_UNK_23      = 0x23, // 6145 = 0xc3, 8810 = 0x152, 7000 = 0x152
-	PARAM_UNK_24      = 0x24, // 8810 = 0x44c, 7000 = 0x44c
-	PARAM_UNK_25      = 0x25, // 8810 = 0x44c, 7000 = 0x44c
+	PARAM_UNK_21      = 0x21, // 6145 = 0x69, 8810 = 0x3e8, 7000 = 0xe39 (Exit Speed with Sorter 4x6?)
+	PARAM_UNK_22      = 0x22, // 6145 = 0xc3, 8810 = 0x41a, 7000 = 0x41a (Exit Speed with Sorter 8x6?)
+	PARAM_UNK_23      = 0x23, // 6145 = 0xc3, 8810 = 0x152, 7000 = 0x152 (Exit Speed with Backprinting?)
+	PARAM_UNK_24      = 0x24, // 8810 = 0x44c, 7000 = 0x44c (Exit Speed without PPAC 4x6?)
+	PARAM_UNK_25      = 0x25, // 8810 = 0x44c, 7000 = 0x44c (Exit Speed without PPAC 8x6?)
 	PARAM_UNK_2F      = 0x2f, // 8810 = 0x320, 7000 = 0x320
 
 	PARAM_UNK_31      = 0x31, // 2245 = 0x64. 6145 = 0x68
@@ -160,14 +160,14 @@ enum {
 	PARAM_UNK_A2      = 0xa2, // 2245 = 0xffffffff, 8810 = 0x08, 7000 = 0x10
 	PARAM_UNK_A3      = 0xa3, // 2245 = 0xffffffff, 8810 = 0x30, 7000 = 0x3b
 	PARAM_UNK_A4      = 0xa4, // 2245 = 0xffffffff, 8810 = 0x30, 7000 = 0x3b
-	PARAM_UNK_A5      = 0xa5, // 2245 = 0x42, 6145 = 0x4d, 8810 = 0x46, 7000 = 0x3e
+	PARAM_UNK_A5      = 0xa5, // 2245 = 0x42, 6145 = 0x4d, 8810 = 0x46, 7000 = 0x3e (Thermal Protect Lamaination?)
 	PARAM_UNK_A6      = 0xa6, // 2245 = 0x00, 6145 = 0x01, 8810 = 0x01, 7000 = 0x01
 	PARAM_UNK_A7      = 0xa7, // 2245 = 0x01, 8810 = 0x14, 7000 = 0x14
 	PARAM_UNK_A8      = 0xa8, // 2245 = 0x01, 6145 = 0x01, 8810 = 0x01, 7000 = 0x01
 	PARAM_UNK_A9      = 0xa9, // 6145 = 0xffffffff, 8810 = 0xffffffff, 7000 = 0xffffffff
 
-	PARAM_UNK_B0      = 0xb0, // 2245 = 0x1a
-	PARAM_UNK_B1      = 0xb1, // 2245 = 0x70
+	PARAM_UNK_B0      = 0xb0, // 2245 = 0x1a/00   (VARIES?)
+	PARAM_UNK_B1      = 0xb1, // 2245 = 0x70/79   (VARIES?)
 
 	PARAM_UNK_C1      = 0xc1, // 8810 = 0x02, 7000 = 0x02
 	PARAM_UNK_C2      = 0xc2, // 8810 = 0xc8, 7000 = 0xc8
@@ -175,27 +175,27 @@ enum {
 	PARAM_UNK_C4      = 0xc4, // 8810 = 0x4d0, 7000 = 0x200
 
 	PARAM_UNK_D3      = 0xd3, // 6145 = 0x00
-	PARAM_UNK_D4      = 0xd3, // 6145 = 0x00
-	PARAM_UNK_D5      = 0xd3, // 6145 = 0xff
-	PARAM_UNK_D6      = 0xd3, // 6145 = 0xff
-	PARAM_UNK_D7      = 0xd3, // 6145 = 0x00
-	PARAM_UNK_D8      = 0xd3, // 6145 = 0xff
+	PARAM_UNK_D4      = 0xd4, // 6145 = 0x00
+	PARAM_UNK_D5      = 0xd5, // 6145 = 0xff
+	PARAM_UNK_D6      = 0xd6, // 6145 = 0xff
+	PARAM_UNK_D7      = 0xd7, // 6145 = 0x00
+	PARAM_UNK_D8      = 0xd8, // 6145 = 0xff
 	PARAM_UNK_DC      = 0xdc, // 2245 = 0x00
 	PARAM_UNK_DD      = 0xdd, // 2245 = 0x0c
 	PARAM_UNK_DE      = 0xde, // 2245 = 0x32
 	PARAM_UNK_DF      = 0xdf, // 2245 = 0x00
 
-	PARAM_UNK_E1      = 0xe1, // 2245 = 0x33, 6145 = 0x213e
-	PARAM_UNK_E2      = 0xe2, // 2245 = 0x33, 6145 = 0x213e
+	PARAM_UNK_E1      = 0xe1, // 2245 = 0x33/49, 6145 = 0x213e  (VARIES?)
+	PARAM_UNK_E2      = 0xe2, // 2245 = 0x33/49, 6145 = 0x213e  (VARIES?)
 	PARAM_UNK_E3      = 0xe3, // 6145 = 0x00
-	PARAM_UNK_E4      = 0xe4, // 2245 = 0x78, 6145 = 0x43ab
-	PARAM_UNK_E5      = 0xe5, // 2245 = 0x33, 6145 = 0x213e
-	PARAM_UNK_E6      = 0xe6, // 2245 = 0x0194, 6145 = 0x00
-	PARAM_UNK_E7      = 0xe7, // 2245 = 0x0194, 6145 = 0x84f8
+	PARAM_UNK_E4      = 0xe4, // 2245 = 0x78/ad, 6145 = 0x43ab    (VARIES?)
+	PARAM_UNK_E5      = 0xe5, // 2245 = 0x33/49, 6145 = 0x213e    (VARIES?)
+	PARAM_UNK_E6      = 0xe6, // 2245 = 0x0194/219, 6145 = 0x00   (VARIES?)
+	PARAM_UNK_E7      = 0xe7, // 2245 = 0x0194/219, 6145 = 0x84f8 (VARIES?)
 	PARAM_UNK_E8      = 0xe8, // 2245 = 0x00, 6145 = 0x84f8
 	PARAM_UNK_E9      = 0xe9, // 2245 = 0x00, 6145 = 0x84f8
-	PARAM_UNK_EA      = 0xea, // 2245 = 0x33, 6145 = 0x00
-	PARAM_UNK_EB      = 0xeb, // 2245 = 0x0194
+	PARAM_UNK_EA      = 0xea, // 2245 = 0x33/49, 6145 = 0x00  (VARIES?)
+	PARAM_UNK_EB      = 0xeb, // 2245 = 0x0194/219    (VARIES?)
 
 	PARAM_UNK_F1      = 0xf1, // 8810 = 0x22, 7000 = 0x68
 	PARAM_UNK_F2      = 0xf2, // 8810 = 0x22, 7000 = 0x68
