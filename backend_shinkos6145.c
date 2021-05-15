@@ -131,55 +131,6 @@ struct s6245_errorlog_resp {
 
 STATIC_ASSERT(sizeof(struct s6245_errorlog_resp) == 74);
 
-enum {
-	PARAM_UNK_10      = 0x10, // 2245 = 0x7b
-	PARAM_UNK_11      = 0x11, // 2245 = 0x72
-	PARAM_OC_PRINT    = 0x20, // 6145
-	PARAM_UNK_31      = 0x31, // 2245 = 0x64
-	PARAM_UNK_32      = 0x32, // 2245 = 0x64
-	PARAM_UNK_33      = 0x33, // 2245 = 0x64
-	PARAM_UNK_34      = 0x34, // 2245 = 0x00
-	PARAM_UNK_35      = 0x35, // 2245 = 0x00
-	PARAM_UNK_36      = 0x36, // 2245 = 0x00
-	PARAM_PAPER_PRESV = 0x3d, // 6145
-	PARAM_DRIVER_MODE = 0x3e,
-	PARAM_PAPER_MODE  = 0x3f,
-	PARAM_UNK_40      = 0x40, // 2245 = 0xff
-	PARAM_UNK_41      = 0x41, // 2245 = 0x00
-	PARAM_REGION_CODE = 0x53, // 6145
-	PARAM_SLEEP_TIME  = 0x54, // 6145
-	PARAM_UNK_70      = 0x70, // 2245 = 0x22f8
-	PARAM_UNK_71      = 0x71, // 2245 = 0x01
-	PARAM_UNK_91      = 0x91, // 2245 = 0xfffffffc
-	PARAM_UNK_92      = 0x92, // 2245 = 0x00
-	PARAM_UNK_93      = 0x93, // 2245 = 0x06
-	PARAM_UNK_A0      = 0xa0, // 2245 = 0x01
-	PARAM_UNK_A1      = 0xa1, // 2245 = 0xffffffff
-	PARAM_UNK_A2      = 0xa2, // 2245 = 0xffffffff
-	PARAM_UNK_A3      = 0xa3, // 2245 = 0xffffffff
-	PARAM_UNK_A4      = 0xa4, // 2245 = 0xffffffff
-	PARAM_UNK_A5      = 0xa5, // 2245 = 0x42
-	PARAM_UNK_A6      = 0xa6, // 2245 = 0x00
-	PARAM_UNK_A7      = 0xa7, // 2245 = 0x01
-	PARAM_UNK_A8      = 0xa8, // 2245 = 0x01
-	PARAM_UNK_B0      = 0xb0, // 2245 = 0x1a
-	PARAM_UNK_B1      = 0xb1, // 2245 = 0x70
-	PARAM_UNK_DC      = 0xdc, // 2245 = 0x00
-	PARAM_UNK_DD      = 0xdd, // 2245 = 0x0c
-	PARAM_UNK_DE      = 0xde, // 2245 = 0x32
-	PARAM_UNK_DF      = 0xdf, // 2245 = 0x00
-	PARAM_UNK_E1      = 0xe1, // 2245 = 0x33
-	PARAM_UNK_E2      = 0xe2, // 2245 = 0x33
-	PARAM_UNK_E4      = 0xe4, // 2245 = 0x78
-	PARAM_UNK_E5      = 0xe5, // 2245 = 0x33
-	PARAM_UNK_E6      = 0xe6, // 2245 = 0x0194
-	PARAM_UNK_E7      = 0xe7, // 2245 = 0x0194
-	PARAM_UNK_E8      = 0xe8, // 2245 = 0x00
-	PARAM_UNK_E9      = 0xe9, // 2245 = 0x00
-	PARAM_UNK_EA      = 0xea, // 2245 = 0x33
-	PARAM_UNK_EB      = 0xeb, // 2245 = 0x0194
-};
-
 static const struct sinfonia_param s6145_params[] =
 {
 	{ PARAM_OC_PRINT, "Overcoat Mode" },
@@ -211,24 +162,9 @@ static const struct sinfonia_param s2245_params[] =
 #define PARAM_PRINTM_FINE      0x00000004
 #define PARAM_PRINTM_FAST      0x00000008
 
-// S6145 (ALL)
+// S6145
 #define PARAM_PAPER_PRESV_OFF 0x00000000
 #define PARAM_PAPER_PRESV_ON  0x00000001
-
-// S6145 (ALL), S2245
-#define PARAM_DRIVER_WIZOFF 0x00000000
-#define PARAM_DRIVER_WIZON  0x00000001
-
-#define PARAM_PAPER_NOCUT   0x00000000
-#define PARAM_PAPER_CUTLOAD 0x00000001
-
-// S6145
-#define PARAM_SLEEP_5MIN    0x00000000
-#define PARAM_SLEEP_15MIN   0x00000001
-#define PARAM_SLEEP_30MIN   0x00000002
-#define PARAM_SLEEP_60MIN   0x00000003
-#define PARAM_SLEEP_120MIN  0x00000004
-#define PARAM_SLEEP_240MIN  0x00000005
 
 static const char *s6145_error_codes(uint8_t major, uint8_t minor)
 {
@@ -1144,7 +1080,7 @@ static void shinkos6145_cmdline(void)
 	DEBUG("\t\t[ -R ]           # Reset printer to factory defaults\n");
 	DEBUG("\t\t[ -s ]           # Query status\n");
 	DEBUG("\t\t[ -X jobid ]     # Abort a printjob\n");
-//	DEBUG("\t\t[ -Z ]           # Dump all parameters\n");
+//	DEBUG("\t\t[ -Z 0 | 1 ]     # Dump all parameters\n");
 }
 
 static int shinkos6145_cmdline_arg(void *vctx, int argc, char **argv)

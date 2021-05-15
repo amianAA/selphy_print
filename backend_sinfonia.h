@@ -77,6 +77,148 @@ struct sinfonia_param {
 	const char *descr;
 };
 
+/* Known param IDs */
+enum {
+	PARAM_UNK_01      = 0x01, // 6145 = 0x32, 8810 = 0x01, 7000 = 0x01
+	PARAM_UNK_02      = 0x02, // 6145 = 0xffffffff
+	PARAM_UNK_03      = 0x02, // 6145 = 0xffffffff
+	PARAM_UNK_04      = 0x04, // 6145 = 0xffffffff
+	PARAM_UNK_05      = 0x05, // 6145 = 0xffffffff
+
+	PARAM_UNK_10      = 0x10, // 2245 = 0x7b
+	PARAM_UNK_11      = 0x11, // 2245 = 0x72, 8810 = 0x01, 7000 = 0x01
+	PARAM_UNK_12      = 0x12, // 6145 = 0xffffffc4, 8810 = 0x69, 7000 = 0x69
+	PARAM_UNK_13      = 0x13, // 6145 = 0xffffffe2, 8810 = 0xc3, 7000 = 0xc3
+	PARAM_UNK_14      = 0x14, // 6145 = 0xffffffc7, 8810 = 0xcd, 7000 = 0xcd
+	PARAM_UNK_15      = 0x15, // 6145 = 0xffffffec
+	PARAM_UNK_16      = 0x16, // 6145 = 0x00
+
+	PARAM_OC_PRINT    = 0x20, // 6145 ONLY
+	PARAM_UNK_21      = 0x21, // 6145 = 0x69, 8810 = 0x3e8, 7000 = 0xe39
+	PARAM_UNK_22      = 0x22, // 6145 = 0xc3, 8810 = 0x41a, 7000 = 0x41a
+	PARAM_UNK_23      = 0x23, // 6145 = 0xc3, 8810 = 0x152, 7000 = 0x152
+	PARAM_UNK_24      = 0x24, // 8810 = 0x44c, 7000 = 0x44c
+	PARAM_UNK_25      = 0x25, // 8810 = 0x44c, 7000 = 0x44c
+	PARAM_UNK_2F      = 0x2f, // 8810 = 0x320, 7000 = 0x320
+
+	PARAM_UNK_31      = 0x31, // 2245 = 0x64. 6145 = 0x68
+	PARAM_UNK_32      = 0x32, // 2245 = 0x64
+	PARAM_UNK_33      = 0x33, // 2245 = 0x64
+	PARAM_UNK_34      = 0x34, // 2245 = 0x00
+	PARAM_UNK_35      = 0x35, // 2245 = 0x00
+	PARAM_UNK_36      = 0x36, // 2245 = 0x00
+	PARAM_PAPER_PRESV = 0x3d, // 6145 ONLY
+	PARAM_DRIVER_MODE = 0x3e, // 6145, 2245, 6245 ONLY
+	PARAM_PAPER_MODE  = 0x3f, // 2245, 6245 ONLY
+
+	PARAM_UNK_40      = 0x40, // 2245 = 0xff
+	PARAM_UNK_41      = 0x41, // 2245 = 0x00, 8810 = 0x5d, 7000 = 0x6d
+	PARAM_UNK_42      = 0x42, // 8810 = 0x48, 7000 = 0x02, 7000 = 0x51
+	PARAM_UNK_43      = 0x43, // 8810 = 0x7c, 7000 = 0x3b
+	PARAM_UNK_44      = 0x44, // 8810 = 0x88, 7000 = 0x82
+	PARAM_UNK_45      = 0x45, // 8810 = 0x00, 7000 = 0x00
+	PARAM_UNK_46      = 0x46, // 8810 = 0x02, 7000 = 0x00
+	PARAM_UNK_47      = 0x47, // 8810 = 0x03, 7000 = 0x28
+	PARAM_UNK_48      = 0x48, // 8810 = 0x08, 7000 = 0x02
+
+	PARAM_REGION_CODE = 0x53, // 6145 ONLY
+	PARAM_SLEEP_TIME  = 0x54, // 6145, 2245, 6245 ONLY
+	PARAM_UNK_55      = 0x55, // 6145 = 0xff
+	PARAM_UNK_56      = 0x56, // 6145 = 0xff
+	PARAM_UNK_57      = 0x57, // 6145 = 0x00
+	PARAM_UNK_58      = 0x58, // 6145 = 0xff
+
+	PARAM_UNK_60      = 0x60, // 6145 = 0xa2
+	PARAM_UNK_61      = 0x61, // 6145 = 0xa7, 8810 = 0x50
+	PARAM_UNK_62      = 0x62, // 8810 = 0x31
+	PARAM_UNK_63      = 0x63, // 8810 = 0x30
+	PARAM_UNK_64      = 0x64, // 8810 = 0x30
+
+	PARAM_UNK_70      = 0x70, // 2245 = 0x22f8, 6145 = 0x24ba
+	PARAM_UNK_71      = 0x71, // 2245 = 0x01
+	PARAM_UNK_72      = 0x72, // 6145 = 0x84
+	PARAM_UNK_73      = 0x73, // 6145 = 0x8b
+	PARAM_UNK_74      = 0x74, // 6145 = 0x89
+	PARAM_UNK_75      = 0x75, // 6145 = 0x80
+
+	PARAM_UNK_81      = 0x81, // 8810 = 0xffffffff, 7000 = 0xffffffff
+	PARAM_UNK_82      = 0x82, // 8810 = 0xfffffff9, 7000 = 0xfffffffe
+	PARAM_UNK_83      = 0x83, // 8810 = 0xfffffffc, 7000 = 0xffffffee
+	PARAM_UNK_84      = 0x84, // 8810 = 0x02, 7000 = 0x01
+	PARAM_UNK_8A      = 0x8a, // 8810 = 0x05
+	PARAM_UNK_8B      = 0x8b, // 8810 = 0x05
+	PARAM_UNK_8C      = 0x8c, // 8810 = 0x00
+	PARAM_UNK_8D      = 0x8d, // 8810 = 0x00
+
+	PARAM_UNK_91      = 0x91, // 2245 = 0xfffffffc, 6145 = 0xfffffffa, 8810 = 0x7e, 7000 = 0x6c
+	PARAM_UNK_92      = 0x92, // 2245 = 0x00, 6145 = 0x06, 8810 = 0x7d, 7000 = 0x87
+	PARAM_UNK_93      = 0x93, // 2245 = 0x06, 6145 = 0x06, 8810 = 0x77, 7000 = 0x67
+	PARAM_UNK_94      = 0x94, // 7000 = 0x76
+
+	PARAM_UNK_A0      = 0xa0, // 2245 = 0x01, 8810 = 0x05, 7000 = 0x05
+	PARAM_UNK_A1      = 0xa1, // 2245 = 0xffffffff, 8810 = 0x00, 7000 = 0x00
+	PARAM_UNK_A2      = 0xa2, // 2245 = 0xffffffff, 8810 = 0x08, 7000 = 0x10
+	PARAM_UNK_A3      = 0xa3, // 2245 = 0xffffffff, 8810 = 0x30, 7000 = 0x3b
+	PARAM_UNK_A4      = 0xa4, // 2245 = 0xffffffff, 8810 = 0x30, 7000 = 0x3b
+	PARAM_UNK_A5      = 0xa5, // 2245 = 0x42, 6145 = 0x4d, 8810 = 0x46, 7000 = 0x3e
+	PARAM_UNK_A6      = 0xa6, // 2245 = 0x00, 6145 = 0x01, 8810 = 0x01, 7000 = 0x01
+	PARAM_UNK_A7      = 0xa7, // 2245 = 0x01, 8810 = 0x14, 7000 = 0x14
+	PARAM_UNK_A8      = 0xa8, // 2245 = 0x01, 6145 = 0x01, 8810 = 0x01, 7000 = 0x01
+	PARAM_UNK_A9      = 0xa9, // 6145 = 0xffffffff, 8810 = 0xffffffff, 7000 = 0xffffffff
+
+	PARAM_UNK_B0      = 0xb0, // 2245 = 0x1a
+	PARAM_UNK_B1      = 0xb1, // 2245 = 0x70
+
+	PARAM_UNK_C1      = 0xc1, // 8810 = 0x02, 7000 = 0x02
+	PARAM_UNK_C2      = 0xc2, // 8810 = 0xc8, 7000 = 0xc8
+	PARAM_UNK_C3      = 0xc3, // 8810 = 0xc8, 7000 = 0xc8
+	PARAM_UNK_C4      = 0xc4, // 8810 = 0x4d0, 7000 = 0x200
+
+	PARAM_UNK_D3      = 0xd3, // 6145 = 0x00
+	PARAM_UNK_D4      = 0xd3, // 6145 = 0x00
+	PARAM_UNK_D5      = 0xd3, // 6145 = 0xff
+	PARAM_UNK_D6      = 0xd3, // 6145 = 0xff
+	PARAM_UNK_D7      = 0xd3, // 6145 = 0x00
+	PARAM_UNK_D8      = 0xd3, // 6145 = 0xff
+	PARAM_UNK_DC      = 0xdc, // 2245 = 0x00
+	PARAM_UNK_DD      = 0xdd, // 2245 = 0x0c
+	PARAM_UNK_DE      = 0xde, // 2245 = 0x32
+	PARAM_UNK_DF      = 0xdf, // 2245 = 0x00
+
+	PARAM_UNK_E1      = 0xe1, // 2245 = 0x33, 6145 = 0x213e
+	PARAM_UNK_E2      = 0xe2, // 2245 = 0x33, 6145 = 0x213e
+	PARAM_UNK_E3      = 0xe3, // 6145 = 0x00
+	PARAM_UNK_E4      = 0xe4, // 2245 = 0x78, 6145 = 0x43ab
+	PARAM_UNK_E5      = 0xe5, // 2245 = 0x33, 6145 = 0x213e
+	PARAM_UNK_E6      = 0xe6, // 2245 = 0x0194, 6145 = 0x00
+	PARAM_UNK_E7      = 0xe7, // 2245 = 0x0194, 6145 = 0x84f8
+	PARAM_UNK_E8      = 0xe8, // 2245 = 0x00, 6145 = 0x84f8
+	PARAM_UNK_E9      = 0xe9, // 2245 = 0x00, 6145 = 0x84f8
+	PARAM_UNK_EA      = 0xea, // 2245 = 0x33, 6145 = 0x00
+	PARAM_UNK_EB      = 0xeb, // 2245 = 0x0194
+
+	PARAM_UNK_F1      = 0xf1, // 8810 = 0x22, 7000 = 0x68
+	PARAM_UNK_F2      = 0xf2, // 8810 = 0x22, 7000 = 0x68
+	PARAM_UNK_F3      = 0xf3, // 8810 = 0x47, 7000 = 0x94
+	PARAM_UNK_F4      = 0xf4, // 8810 = 0x22, 7000 = 0x68
+};
+
+// S6145, S2245, S6245
+#define PARAM_DRIVER_WIZOFF 0x00000000
+#define PARAM_DRIVER_WIZON  0x00000001
+
+// S6145, S2245, S6245
+#define PARAM_PAPER_NOCUT   0x00000000
+#define PARAM_PAPER_CUTLOAD 0x00000001
+
+// S6145, S6245
+#define PARAM_SLEEP_5MIN    0x00000000
+#define PARAM_SLEEP_15MIN   0x00000001
+#define PARAM_SLEEP_30MIN   0x00000002
+#define PARAM_SLEEP_60MIN   0x00000003
+#define PARAM_SLEEP_120MIN  0x00000004
+#define PARAM_SLEEP_240MIN  0x00000005
+
 /* Common usb functions */
 struct sinfonia_usbdev {
 	struct dyesub_connection *conn;

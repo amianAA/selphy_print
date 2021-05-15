@@ -57,69 +57,65 @@ struct s6245_print_cmd {
 
 static const struct sinfonia_param ek8810_params[] =
 {
-	{ 0x01, "Unknown_01" }, // 00000001
-	{ 0x11, "Unknown_11" }, // 00000001
-	{ 0x12, "? Matte Gloss" }, // 00000069
-	{ 0x13, "? Matte Degloss Black" }, // 000000c3
-	{ 0x14, "? Matte Degloss White" }, // 000000cd
-	{ 0x21, "Unknown_21" }, // 000003e8
-	{ 0x22, "Unknown_22" }, // 0000041a
-	{ 0x23, "Unknown_23" }, // 00000152
-	{ 0x24, "Unknown_24" }, // 0000044c
-	{ 0x25, "Unknown_25" }, // 0000044c
+	{ PARAM_UNK_01, "Unknown_01" },
+	{ PARAM_UNK_11, "Unknown_11" },
+	{ PARAM_UNK_12, "? Matte Gloss" },
+	{ PARAM_UNK_13, "? Matte Degloss Black" },
+	{ PARAM_UNK_14, "? Matte Degloss White" },
+	{ PARAM_UNK_21, "Unknown_21" },
+	{ PARAM_UNK_22, "Unknown_22" },
+	{ PARAM_UNK_23, "Unknown_23" },
+	{ PARAM_UNK_24, "Unknown_24" },
+	{ PARAM_UNK_25, "Unknown_25" },
 
-	{ 0x2f, "Unknown_2f" }, // 00000320
-	{ 0x41, "Unknown_41" }, // 0000005d
-	{ 0x42, "Unknown_42" }, // 00000048
-	{ 0x43, "Unknown_43" }, // 0000007c
-	{ 0x44, "Unknown_44" }, // 00000088
-	{ 0x45, "Unknown_45" }, // 00000000
-	{ 0x46, "Unknown_46" }, // 00000002
-	{ 0x47, "Unknown_47" }, // 00000063
-	{ 0x48, "Unknown_48" }, // 00000008
-	{ 0x61, "Unknown_61" }, // 00000050
+	{ PARAM_UNK_2F, "Unknown_2f" },
+	{ PARAM_UNK_41, "Unknown_41" },
+	{ PARAM_UNK_42, "Unknown_42" },
+	{ PARAM_UNK_43, "Unknown_43" },
+	{ PARAM_UNK_44, "Unknown_44" },
+	{ PARAM_UNK_45, "Unknown_45" },
+	{ PARAM_UNK_46, "Unknown_46" },
+	{ PARAM_UNK_47, "Unknown_47" },
+	{ PARAM_UNK_48, "Unknown_48" },
+	{ PARAM_UNK_61, "Unknown_61" },
 
-	{ 0x62, "Unknown_62" }, // 00000031
-	{ 0x63, "Unknown_63" }, // 00000030
-	{ 0x64, "Unknown_64" }, // 00000030
-	{ 0x81, "Unknown_81" }, // ffffffff
-	{ 0x82, "Unknown_82" }, // fffffff9
-	{ 0x83, "Unknown_83" }, // fffffffc
-	{ 0x84, "Unknown_84" }, // 00000002
-	{ 0x8a, "Unknown_8a" }, // 00000005
-	{ 0x8b, "Unknown_8b" }, // 00000005
-	{ 0x8c, "Unknown_8c" }, // 00000000
+	{ PARAM_UNK_62, "Unknown_62" },
+	{ PARAM_UNK_63, "Unknown_63" },
+	{ PARAM_UNK_64, "Unknown_64" },
+	{ PARAM_UNK_81, "Unknown_81" },
+	{ PARAM_UNK_82, "Unknown_82" },
+	{ PARAM_UNK_83, "Unknown_83" },
+	{ PARAM_UNK_84, "Unknown_84" },
+	{ PARAM_UNK_8A, "Unknown_8a" },
+	{ PARAM_UNK_8B, "Unknown_8b" },
+	{ PARAM_UNK_8C, "Unknown_8c" },
 
-	{ 0x8d, "Unknown_8d" }, // 00000000
-	{ 0x91, "Unknown_91" }, // 0000007e
-	{ 0x92, "Unknown_92" }, // 0000007d
-	{ 0x93, "Unknown_93" }, // 00000077
-	{ 0xa0, "Unknown_a0" }, // 00000005
-	{ 0xa1, "Unknown_a1" }, // 00000000
-	{ 0xa2, "Unknown_a2" }, // 00000008
-	{ 0xa3, "Unknown_a3" }, // 00000030
-	{ 0xa4, "Unknown_a4" }, // 00000030
-	{ 0xa5, "? Thermal Protect Lamination" }, // 00000046
+	{ PARAM_UNK_8D, "Unknown_8d" },
+	{ PARAM_UNK_91, "Unknown_91" },
+	{ PARAM_UNK_92, "Unknown_92" },
+	{ PARAM_UNK_93, "Unknown_93" },
+	{ PARAM_UNK_A0, "Unknown_a0" },
+	{ PARAM_UNK_A1, "Unknown_a1" },
+	{ PARAM_UNK_A2, "Unknown_a2" },
+	{ PARAM_UNK_A3, "Unknown_a3" },
+	{ PARAM_UNK_A4, "Unknown_a4" },
+	{ PARAM_UNK_A5, "? Thermal Protect Lamination" },
 
-	{ 0xa6, "Unknown_a6" }, // 00000001
-	{ 0xa7, "Unknown_a7" }, // 00000014
-	{ 0xa8, "Unknown_a8" }, // 00000001
-	{ 0xa9, "Unknown_a9" }, // ffffffff
-	{ 0xc1, "Unknown_c1" }, // 00000002
-	{ 0xc2, "Unknown_c2" }, // 000000c8
-	{ 0xc3, "Unknown_c3" }, // 000000c8
-	{ 0xc4, "Unknown_c4" }, // 000004d0
-	{ 0xf1, "Unknown_f1" }, // 00000022
-	{ 0xf2, "Unknown_f2" }, // 00000022
+	{ PARAM_UNK_A6, "Unknown_a6" },
+	{ PARAM_UNK_A7, "Unknown_a7" },
+	{ PARAM_UNK_A8, "Unknown_a8" },
+	{ PARAM_UNK_A9, "Unknown_a9" },
+	{ PARAM_UNK_C1, "Unknown_c1" },
+	{ PARAM_UNK_C2, "Unknown_c2" },
+	{ PARAM_UNK_C3, "Unknown_c3" },
+	{ PARAM_UNK_C4, "Unknown_c4" },
+	{ PARAM_UNK_F1, "Unknown_f1" },
+	{ PARAM_UNK_F2, "Unknown_f2" },
 
-	{ 0xf3, "Unknown_f3" }, // 00000047
-	{ 0xf4, "Unknown_f4" }, // 00000022
+	{ PARAM_UNK_F3, "Unknown_f3" },
+	{ PARAM_UNK_F4, "Unknown_f4" },
 };
 #define ek8810_params_num (sizeof(ek8810_params) / sizeof(struct sinfonia_param))
-
-#define PARAM_DRIVER_MODE  0x3e
-#define PARAM_PAPER_MODE   0x3f
-#define PARAM_SLEEP_TIME   0x54
 
 static const struct sinfonia_param s6245_params[] =
 {
@@ -128,19 +124,6 @@ static const struct sinfonia_param s6245_params[] =
 	{ PARAM_SLEEP_TIME,  "Sleep Time" },
 };
 #define s6245_params_num (sizeof(s6245_params) / sizeof(struct sinfonia_param))
-
-#define PARAM_DRIVER_WIZOFF 0x00000000
-#define PARAM_DRIVER_WIZON  0x00000001
-
-#define PARAM_PAPER_NOCUT   0x00000000
-#define PARAM_PAPER_CUTLOAD 0x00000001
-
-#define PARAM_SLEEP_5MIN    0x00000000
-#define PARAM_SLEEP_15MIN   0x00000001
-#define PARAM_SLEEP_30MIN   0x00000002
-#define PARAM_SLEEP_60MIN   0x00000003
-#define PARAM_SLEEP_120MIN  0x00000004
-#define PARAM_SLEEP_240MIN  0x00000005
 
 static const char *s6245_error_codes(uint8_t major, uint8_t minor)
 {
@@ -814,7 +797,7 @@ static void shinkos6245_cmdline(void)
 	DEBUG("\t\t[ -R ]           # Reset printer to factory defaults\n");
 	DEBUG("\t\t[ -s ]           # Query status\n");
 	DEBUG("\t\t[ -X jobid ]     # Abort a printjob\n");
-//	DEBUG("\t\t[ -Z ]           # Dump all parameters\n");
+//	DEBUG("\t\t[ -Z 0 | 1 ]     # Dump all parameters\n");
 }
 
 static int shinkos6245_cmdline_arg(void *vctx, int argc, char **argv)
@@ -825,7 +808,7 @@ static int shinkos6245_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "b:c:C:eFik:l:L:mrR:sX:Z:")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "b:c:C:eFik:l:L:mrR:sX:Z")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'b':

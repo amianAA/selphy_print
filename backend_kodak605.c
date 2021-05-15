@@ -77,55 +77,55 @@ struct kodak605_status {
 
 static const struct sinfonia_param ek7000_params[] =
 {
-	{ 0x01, "Unknown_01" }, // 00000001
-	{ 0x11, "Unknown_11" }, // 00000001
-	{ 0x12, "Matte Gloss" }, // 00000069
-	{ 0x13, "Matte Degloss Black" }, // 000000c3
-	{ 0x14, "Matte Degloss White" }, // 000000cd
-	{ 0x21, "Exit Speed With Sorter 4x6" }, // 000003e8
-	{ 0x22, "Exit Speed With Sorter 8x6" }, // 0000041a
-	{ 0x23, "Exit Speed With Backprinting" }, // 00000152
-	{ 0x24, "Exit Speed Without PPAC 4x6" }, // 0000044c
-	{ 0x25, "Exit Speed Without PPAC 8x6" }, // 0000044c
+	{ PARAM_UNK_01, "Unknown_01" },
+	{ PARAM_UNK_11, "Unknown_11" },
+	{ PARAM_UNK_12, "Matte Gloss" },
+	{ PARAM_UNK_13, "Matte Degloss Black" },
+	{ PARAM_UNK_14, "Matte Degloss White" },
+	{ PARAM_UNK_21, "Exit Speed With Sorter 4x6" },
+	{ PARAM_UNK_22, "Exit Speed With Sorter 8x6" },
+	{ PARAM_UNK_23, "Exit Speed With Backprinting" },
+	{ PARAM_UNK_24, "Exit Speed Without PPAC 4x6" },
+	{ PARAM_UNK_25, "Exit Speed Without PPAC 8x6" },
 
-	{ 0x2f, "Unknown_2f" }, // 00000320
-	{ 0x41, "Unknown_41" }, // 0000006d
-	{ 0x42, "Unknown_42" }, // 00000051
-	{ 0x43, "Unknown_43" }, // 0000003b
-	{ 0x44, "Unknown_44" }, // 00000082
-	{ 0x45, "Unknown_45" }, // 00000000
-	{ 0x46, "Unknown_46" }, // 00000000
-	{ 0x47, "Unknown_47" }, // 00000028
-	{ 0x48, "Unknown_48" }, // 00000002
-	{ 0x81, "Unknown_81" }, // ffffffff
+	{ PARAM_UNK_2F, "Unknown_2f" },
+	{ PARAM_UNK_41, "Unknown_41" },
+	{ PARAM_UNK_42, "Unknown_42" },
+	{ PARAM_UNK_43, "Unknown_43" },
+	{ PARAM_UNK_44, "Unknown_44" },
+	{ PARAM_UNK_45, "Unknown_45" },
+	{ PARAM_UNK_46, "Unknown_46" },
+	{ PARAM_UNK_47, "Unknown_47" },
+	{ PARAM_UNK_48, "Unknown_48" },
+	{ PARAM_UNK_81, "Unknown_81" },
 
-	{ 0x82, "Unknown_82" }, // fffffffe
-	{ 0x83, "Unknown_83" }, // ffffffee
-	{ 0x84, "Unknown_84" }, // 00000001
-	{ 0x91, "Unknown_91" }, // 0000006c
-	{ 0x92, "Unknown_92" }, // 00000077
-	{ 0x93, "Unknown_93" }, // 00000067
-	{ 0x94, "Unknown_94" }, // 00000076
-	{ 0xa0, "Unknown_a0" }, // 00000005
-	{ 0xa1, "Unknown_a1" }, // 00000000
-	{ 0xa2, "Unknown_a2" }, // 00000010
+	{ PARAM_UNK_82, "Unknown_82" },
+	{ PARAM_UNK_83, "Unknown_83" },
+	{ PARAM_UNK_84, "Unknown_84" },
+	{ PARAM_UNK_91, "Unknown_91" },
+	{ PARAM_UNK_92, "Unknown_92" },
+	{ PARAM_UNK_93, "Unknown_93" },
+	{ PARAM_UNK_94, "Unknown_94" },
+	{ PARAM_UNK_A0, "Unknown_a0" },
+	{ PARAM_UNK_A1, "Unknown_a1" },
+	{ PARAM_UNK_A2, "Unknown_a2" },
 
-	{ 0xa3, "Unknown_a3" }, // 0000003b
-	{ 0xa4, "Unknown_a4" }, // 0000003b
-	{ 0xa5, "Thermal Protect Lamination" }, // 0000003e
-	{ 0xa6, "Unknown_a6" }, // 00000001
-	{ 0xa7, "Unknown_a7" }, // 00000014
-	{ 0xa8, "Unknown_a8" }, // 00000001
-	{ 0xa9, "Unknown_a9" }, // ffffffff
-	{ 0xc1, "Unknown_c1" }, // 00000002
-	{ 0xc2, "Unknown_c2" }, // 000000c8
-	{ 0xc3, "Unknown_c3" }, // 000000c8
+	{ PARAM_UNK_A3, "Unknown_a3" },
+	{ PARAM_UNK_A4, "Unknown_a4" },
+	{ PARAM_UNK_A5, "Thermal Protect Lamination" },
+	{ PARAM_UNK_A6, "Unknown_a6" },
+	{ PARAM_UNK_A7, "Unknown_a7" },
+	{ PARAM_UNK_A8, "Unknown_a8" },
+	{ PARAM_UNK_A9, "Unknown_a9" },
+	{ PARAM_UNK_C1, "Unknown_c1" },
+	{ PARAM_UNK_C2, "Unknown_c2" },
+	{ PARAM_UNK_C3, "Unknown_c3" },
 
-	{ 0xc4, "Unknown_c4" }, // 00000200
-	{ 0xf1, "Unknown_f1" }, // 00000068
-	{ 0xf2, "Unknown_f2" }, // 00000068
-	{ 0xf3, "Unknown_f3" }, // 00000094
-	{ 0xf4, "Unknown_f4" }, // 00000068
+	{ PARAM_UNK_C4, "Unknown_c4" },
+	{ PARAM_UNK_F1, "Unknown_f1" },
+	{ PARAM_UNK_F2, "Unknown_f2" },
+	{ PARAM_UNK_F3, "Unknown_f3" },
+	{ PARAM_UNK_F4, "Unknown_f4" },
 };
 #define ek7000_params_num (sizeof(ek7000_params) / sizeof(struct sinfonia_param))
 
