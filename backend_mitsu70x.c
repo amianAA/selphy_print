@@ -271,8 +271,8 @@ struct mitsu70x_calinfo_resp {  /* Interpretations valid for ASK300 */
 	/* Note!  All values below are ASCII hex! ie 0x23 -> 0x32 0x33 */
 
 	uint8_t adj_horiz[2];  /* +- 128, units of 0.085 mm */
-	uint8_t adj_vertA[2];  /*  +- 128 */
-	uint8_t adj_vertB[2];  /*  values are in units of 0.08 mm */
+	uint8_t adj_vertA[2];  /* +- 128 */
+	uint8_t adj_vertB[2];  /*  values are in units of 0.085 mm */
 	uint8_t adj_vertC[2];  /*  A is -1->9, B is -4->6, C is -1->9 */
 	uint8_t adj_fine[4]; /* 00DC */
 	uint8_t adj_m3[2]; /* -100 -> 100 (converted to hex) */
@@ -1527,23 +1527,23 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 		memcpy(buf, calinfo->adj_horiz, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f *= 0.085;
-		INFO("Horizontal Calibration: %2.3f\n", f);
+		f *= 0.085; /* 300dpi = 0.085mm/pixel */
+		INFO("Horizontal Calibration: %2.3f mm\n", f);
 		memcpy(buf, calinfo->adj_vertA, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f *= 0.08; /* Are these 0.08 or 0.085 ? */
-		INFO("Vertical Calibration A: %2.3f\n", f);
+		f *= 0.085;
+		INFO("Vertical Calibration A: %2.3f mm\n", f);
 		memcpy(buf, calinfo->adj_vertB, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f *= 0.08;
-		INFO("Vertical Calibration B: %2.3f\n", f);
+		f *= 0.085;
+		INFO("Vertical Calibration B: %2.3f mm\n", f);
 		memcpy(buf, calinfo->adj_vertC, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f *= 0.08;
-		INFO("Vertical Calibration C: %2.2f\n", f);
+		f *= 0.085;
+		INFO("Vertical Calibration C: %2.2f mm\n", f);
 	}
 
 	/* Get eeprom dump.. */
@@ -1572,8 +1572,8 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 
 	   where ?? ?? is ASCII representation of hex value
 
-	   Horiz = x70 31 31, range 0x00->0xff (unit 0.085 mm, def 0)
-	   VertA = x70 31 32, range -1 -> 9 (unit 0.08mm, def 4)
+	   Horiz = x70 31 31, range 0x00->0xff (unit is pixels or 0.085 mm, def 0)
+	   VertA = x70 31 32, range -1 -> 9 (unit is pixels or 0.085mm, def 4)
 	   VertB = x70 31 33, range -4 -> 6 (def 1)
 	   VertC = x70 31 34, range -1 -> 9 (def 4)
            M1    = x71 31 31, range -128 -> +127 step 0.05v (NOT on ASK300 / D70, one value ?)
