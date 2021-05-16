@@ -270,9 +270,9 @@ struct mitsu70x_calinfo_resp {  /* Interpretations valid for ASK300 */
 
 	/* Note!  All values below are ASCII hex! ie 0x23 -> 0x32 0x33 */
 
-	uint8_t adj_horiz[2];  /* 00 -> ff  (signed, presumably) */
-	uint8_t adj_vertA[2];  /* +- 128 */
-	uint8_t adj_vertB[2];  /*   values are in units of 0.08 */
+	uint8_t adj_horiz[2];  /* +- 128, units of 0.085 mm */
+	uint8_t adj_vertA[2];  /*  +- 128 */
+	uint8_t adj_vertB[2];  /*  values are in units of 0.08 mm */
 	uint8_t adj_vertC[2];  /*  A is -1->9, B is -4->6, C is -1->9 */
 	uint8_t adj_fine[4]; /* 00DC */
 	uint8_t adj_m3[2]; /* -100 -> 100 (converted to hex) */
@@ -1527,17 +1527,18 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 		memcpy(buf, calinfo->adj_horiz, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		INFO("Horizontal Calibration: %f\n", f);
+		f *= 0.085;
+		INFO("Horizontal Calibration: %2.3f\n", f);
 		memcpy(buf, calinfo->adj_vertA, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
-		f *= 0.08;
-		INFO("Vertical Calibration A: %2.2f\n", f);
+		f *= 0.08; /* Are these 0.08 or 0.085 ? */
+		INFO("Vertical Calibration A: %2.3f\n", f);
 		memcpy(buf, calinfo->adj_vertB, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
 		f *= 0.08;
-		INFO("Vertical Calibration B: %2.2f\n", f);
+		INFO("Vertical Calibration B: %2.3f\n", f);
 		memcpy(buf, calinfo->adj_vertC, 2);
 		f = strtol(buf, NULL, 16);
 		if (f > 127) f -= 256;
@@ -1571,12 +1572,13 @@ static int mitsu70x_test_dump(struct mitsu70x_ctx *ctx)
 
 	   where ?? ?? is ASCII representation of hex value
 
-	   Horiz = x70 31 31, range 0x00->0xff
-	   VertA = x70 31 32, range -1 -> 9 (def 4)
+	   Horiz = x70 31 31, range 0x00->0xff (unit 0.085 mm, def 0)
+	   VertA = x70 31 32, range -1 -> 9 (unit 0.08mm, def 4)
 	   VertB = x70 31 33, range -4 -> 6 (def 1)
 	   VertC = x70 31 34, range -1 -> 9 (def 4)
-           M1    = x71 31 31, range -100 -> +100
-           M3    = x71 31 32, range -100 -> +100
+           M1    = x71 31 31, range -128 -> +127 step 0.05v (NOT on ASK300 / D70, one value ?)
+           M1v2  = x71 31 35, range -128 -> +127 step 0.05v (for on ASK300 / D70, two values? Fine / UFine )
+           M3    = x71 31 32, range -100 -> +100 (unknown unit, value is unique to each M3 motor)
            UFine = x71 31 35, (legal values are enum)
 	   Density = x73 31 31, 6800d -> 9000d (steps of 80d)
 	   24v   = x61 30 00  (range 0x00 -> 0xff)
@@ -2583,7 +2585,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.104" " (lib " LIBMITSU_VER ")",
+	.version = "0.105" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
