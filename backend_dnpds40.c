@@ -89,6 +89,7 @@ struct dnpds40_ctx {
 	int last_matte;
 	int partialmatte;
 
+	int media_sticker;
 	int mediaoffset;
 	int correct_count;
 	int needs_mlot;
@@ -456,7 +457,7 @@ static const char *dnpds40_printer_type(int type, int mfg)
 	return "Unknown";
 }
 
-static const char *dnpds40_media_types(int media)
+static const char *dnpds40_media_types(int media, int sticker)
 {
 	switch (media) {
 	case 100: return "UNKNOWN100"; // seen in driver dumps
@@ -465,11 +466,11 @@ static const char *dnpds40_media_types(int media)
 	case 151: return "4x8";
 	case 160: return "4.5x6";
 	case 161: return "4.5x8";
-	case 200: return "5x3.5 (L)";
-	case 210: return "5x7 (2L)";
-	case 300: return "6x4 (PC)";
-	case 310: return "6x8 (A5)";
-	case 400: return "6x9 (A5W)";
+	case 200: return sticker ? "5x3.5 (L): Sticker" : "5x3.5 (L)";
+	case 210: return sticker ? "5x7 (2L) Sticker" : "5x7 (2L)";
+	case 300: return sticker ? "6x4 (PC) Sticker" : "6x4 (PC)";
+	case 310: return sticker ? "6x8 (A5) Sticker" : "6x8 (A5)";
+	case 400: return sticker ? "6x9 (A5W) Sticker" : "6x9 (A5W)";
 	case 500: return "8x10";
 	case 510: return "8x12";
 	case 600: return "A4";
@@ -484,7 +485,7 @@ static const char *dnpds620_media_extension_code(int media)
 {
 	switch (media) {
 	case  0: return "Normal Paper";
-	case  1: return "Sticky Paper";
+	case  1: return "Sticker Paper";
 	case 99: return "Unknown Paper";
 	default:
 		break;
@@ -1063,6 +1064,20 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 			free(resp);
 		}
 
+		/* And sticker */
+		if (ctx->supports_media_ext) {
+			int type;
+			dnpds40_build_cmd(&cmd, "INFO", "MEDIA_EXT_CODE", 0);
+			resp = dnpds40_resp_cmd(ctx, &cmd, &len);
+			if (!resp)
+				return CUPS_BACKEND_FAILED;
+
+			dnpds40_cleanup_string((char*)resp, len);
+			type = atoi((char*)resp+7);
+			ctx->media_sticker = (type == 1);
+			free(resp);
+		}
+
 		if (ctx->conn->type == P_DNP_DS80D) {
 			if (dnpds80dx_query_paper(ctx))
 				return CUPS_BACKEND_FAILED;
@@ -1336,11 +1351,11 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 	/* Fill out marker message */
 	if (ctx->supports_mediaclassrfid) {
 		snprintf(ctx->media_text, sizeof(ctx->media_text),
-			 "%s %s", dnpds40_media_types(ctx->media),
+			 "%s %s", dnpds40_media_types(ctx->media, ctx->media_sticker),
 			 rfid_media_subtypes(ctx->media_subtype));
 	} else {
 		snprintf(ctx->media_text, sizeof(ctx->media_text),
-			 "%s", dnpds40_media_types(ctx->media));
+			 "%s", dnpds40_media_types(ctx->media, ctx->media_sticker));
 	}
 	/* Fill out marker structure */
 	ctx->marker[0].color = "#00FFFF#FF00FF#FFFF00";
@@ -2882,7 +2897,7 @@ static int dnpds40_get_status(struct dnpds40_ctx *ctx)
 	free(resp);
 
 	/* Report media */
-	INFO("Media Type: %s\n", dnpds40_media_types(ctx->media));
+	INFO("Media Type: %s\n", dnpds40_media_types(ctx->media, ctx->media_sticker));
 
 	if (ctx->supports_media_ext) {
 		int type;
@@ -2892,8 +2907,8 @@ static int dnpds40_get_status(struct dnpds40_ctx *ctx)
 			return CUPS_BACKEND_FAILED;
 
 		dnpds40_cleanup_string((char*)resp, len);
-		*(resp+2) = 0;  // Only the first two chars are used.
-		type = atoi((char*)resp);
+		type = atoi((char*)resp+7);
+		ctx->media_sticker = (type == 1);
 		INFO("Media Code: %s\n", dnpds620_media_extension_code(type));
 		free(resp);
 	}
@@ -3436,7 +3451,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.137",
+	.version = "0.138",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
