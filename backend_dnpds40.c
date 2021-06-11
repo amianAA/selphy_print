@@ -448,13 +448,13 @@ static void dnpds40_cleanup_string(char *start, int len)
 static const char *dnpds40_printer_type(int type, int mfg)
 {
 	switch(type) {
-	case P_DNP_DS40: return mfg == 1? "CX" : "DS40";
-	case P_DNP_DS80: return mfg == 1? "CW" : (mfg == 2 ? "CP3800" : "DS80");
+	case P_DNP_DS40: return mfg == MFG_CITIZEN? "CX" : "DS40";
+	case P_DNP_DS80: return mfg == MFG_CITIZEN? "CW" : (mfg == MFG_MITSUBISHI ? "CP3800" : "DS80");
 	case P_DNP_DS80D: return "DS80DX";
-	case P_DNP_DSRX1: return mfg == 1 ? "CY" : "DSRX1";
-	case P_DNP_DS620: return mfg == 1 ? "CX-02" : "DS620";
-	case P_DNP_DS820: return type == 1 ? "CX-02W" : "DS820";
-	case P_DNP_QW410: return mfg == 1 ? "CZ-01" : "QW410";
+	case P_DNP_DSRX1: return mfg == MFG_CITIZEN ? "CY" : "DSRX1";
+	case P_DNP_DS620: return mfg == MFG_CITIZEN ? "CX-02" : "DS620";
+	case P_DNP_DS820: return mfg == MFG_CITIZEN ? "CX-02W" : "DS820";
+	case P_DNP_QW410: return mfg == MFG_CITIZEN ? "CZ-01" : "QW410";
 	case P_CITIZEN_CW01: return "CW01";
 	case P_CITIZEN_OP900II: return "CW-02 / OP900ii";
 	default: break;
