@@ -980,18 +980,18 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 		ctx->supports_6x6 = 1;
 		ctx->supports_5x5 = 1;
 		ctx->supports_lowspeed = 1;
+		ctx->supports_3x5x2 = 1;
 
 		if (ctx->mfg == MFG_CITIZEN) { /* Citizen and DNP firmware diverge */
-			ctx->supports_adv_fullcut = ctx->supports_advmatte = 1;
+			ctx->supports_adv_fullcut 1;
+			ctx->supports_advmatte = 1;
 			ctx->supports_luster = 1;
-			ctx->supports_finematte = 1;
-			ctx->supports_3x5x2 = 1;
 
+			if (FW_VER_CHECK(1,01))
+				ctx->supports_finematte = 1;
 			if (FW_VER_CHECK(1,10))
 				ctx->supports_6x9 = ctx->supports_6x4_5 = 1;
 		} else {
-			if (FW_VER_CHECK(0,30))
-				ctx->supports_3x5x2 = 1;
 			if (FW_VER_CHECK(1,10))
 				ctx->supports_6x9 = ctx->supports_6x4_5 = 1;
 			if (FW_VER_CHECK(1,20))
@@ -1029,13 +1029,11 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 		ctx->supports_ctrld_ext = 1;
 		ctx->supports_mediaoffset = 1;
 		ctx->supports_mediaclassrfid = 1;
+		ctx->supports_gamma = 1;
 
 		if (ctx->mfg == MFG_CITIZEN) { /* Citizen and DNP firmware diverge */
-			ctx->supports_gamma = 1;
-			ctx->supports_a4x6 = 1; // XXX revisit his in particular
+			ctx->supports_a4x6 = 1; // XXX need to confirm this!
 		} else {
-			if (FW_VER_CHECK(0,50))
-				ctx->supports_gamma = 1;
 			if (FW_VER_CHECK(1,06))
 				ctx->supports_a4x6 = 1;
 		}
@@ -3473,7 +3471,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.139",
+	.version = "0.140",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
