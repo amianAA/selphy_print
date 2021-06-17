@@ -983,7 +983,7 @@ static int dnpds40_attach(void *vctx, struct dyesub_connection *conn, uint8_t jo
 		ctx->supports_3x5x2 = 1;
 
 		if (ctx->mfg == MFG_CITIZEN) { /* Citizen and DNP firmware diverge */
-			ctx->supports_adv_fullcut 1;
+			ctx->supports_adv_fullcut = 1;
 			ctx->supports_advmatte = 1;
 			ctx->supports_luster = 1;
 
