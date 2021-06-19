@@ -1135,28 +1135,26 @@ static int shinkos6245_main_loop(void *vctx, const void *vjob) {
 		}
 	}
 
-#if 0  /* Doesn't work on EK8810.  Not sure about S6245 */
-	int i;
-	/* Validate print sizes */
-	for (i = 0; i < ctx->media.count ; i++) {
-		/* Look for matching media */
-		if (ctx->media.items[i].columns == job->jp.columns &&
-		    ctx->media.items[i].rows == job->jp.rows)
-			break;
+	if (ctx->dev.conn->type == P_KODAK_8810) {
+		if (ctx->media.ribbon_code != RIBBON_8x12K &&
+		    job->jp.rows > 3024) { // 3036 on 6245
+			ERROR("Incorrect media loaded for print!\n");
+			return CUPS_BACKEND_HOLD;
+		}
+	} else {
+		int i;
+		/* Validate print sizes */
+		for (i = 0; i < ctx->media.count ; i++) {
+			/* Look for matching media */
+			if (ctx->media.items[i].columns == job->jp.columns &&
+			    ctx->media.items[i].rows == job->jp.rows)
+				break;
+		}
+		if (i == ctx->media.count) {
+			ERROR("Incorrect media loaded for print!\n");
+			return CUPS_BACKEND_HOLD;
+		}
 	}
-	if (i == ctx->media.count) {
-		ERROR("Incorrect media loaded for print!\n");
-		return CUPS_BACKEND_HOLD;
-	}
-#else
-	if (ctx->media.ribbon_code != RIBBON_8x12 &&
-	    ctx->media.ribbon_code != RIBBON_8x12K &&
-	    job->jp.rows > 3024) {
-		ERROR("Incorrect media loaded for print!\n");
-		return CUPS_BACKEND_HOLD;
-	}
-
-#endif
 
 	/* Send Set Time */
 	if (ctx->dev.conn->type != P_KODAK_8810) {
@@ -1456,7 +1454,7 @@ static const char *shinkos6245_prefixes[] = {
 
 const struct dyesub_backend shinkos6245_backend = {
 	.name = "Sinfonia CHC-S6245 / Kodak 8810",
-	.version = "0.37" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.38" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6245_prefixes,
 	.cmdline_usage = shinkos6245_cmdline,
 	.cmdline_arg = shinkos6245_cmdline_arg,

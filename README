@@ -64,6 +64,7 @@
    Shinko CHC-S1245 (aka Sinfonia E1 and DNP Q8)
    Shinko CHC-S2145 (aka Sinfonia S2)
    Shinko CHC-S6145 (aka Sinfonia CS2)
+   Shinko CHC-S6245 (aka Sinfonia CE1)
    Sony UP-CR10L (aka DNP DS-SL10)
    Sony UP-DR80MD
    Sony UP-DR150
@@ -94,7 +95,6 @@
    Olmec OP900
    Shinko CHC-S2245 (aka Sinfonia S3)
    Shinko CHC-S6145-5A (aka Sinfonia CS2-c)
-   Shinko CHC-S6245 (aka Sinfonia CE1)
    Sony UP-CR20L (aka DNP DS-SL20)
    Sony UP-DR80
 
@@ -731,7 +731,7 @@
 	 technical and legal limitations are acceptible to you, we
 	 recommend you use these official supported libraries.
 
-       * libS6145ImageReProcess and libS2245ImageReProocess -- GPL'd
+       * libS6145ImageReProcess and libS2245ImageReProcess -- GPL'd
          re-implementations of the Sinfonia algorithms, available as
          source.  They are drop-in replacement that appears to generate
          identical output to the proprietary Sinfonia libraries.
@@ -809,11 +809,11 @@
    Verified supported printers:
 
      Kodak 8810
+     Shinko CHC-S6245 (aka "Sinfonia CE1")
 
    Work-in-process printers:
 
      HiTi P910L
-     Shinko CHC-S6245 (aka "Sinfonia CE1")
 
    Valid commands:
 
