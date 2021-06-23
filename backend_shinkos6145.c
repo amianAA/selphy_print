@@ -1893,11 +1893,16 @@ static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 		stats->mfg = "Ciaat";
 		stats->model = "Brava 21";
 		break;
-	case P_SHINKO_S2245:
+	case P_KODAK_6900:
+		stats->mfg = "Kodak";
 		if (usbID == 0x0003) {
-			stats->mfg = "Kodak";
 			stats->model = "6900";
-		} else if (usbID == 0x0010) {
+		} else if (usbID == 0x0004) {
+			stats->model = "6950";
+		}
+		break;
+	case P_SHINKO_S2245:
+		if (usbID == 0x0010) {
 			stats->mfg = "HiTi";
 			stats->model = "M610";
 		} else if (usbID == 0x0039) {
@@ -1965,7 +1970,7 @@ static const char *shinkos6145_prefixes[] = {
 
 const struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.45" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.46" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,
@@ -1984,7 +1989,8 @@ const struct dyesub_backend shinkos6145_backend = {
 		{ 0x10ce, 0x0019, P_SHINKO_S6145, NULL, "shinko-chcs6145"}, /* Duplicate */
 		{ 0x10ce, 0x001e, P_SHINKO_S6145D, NULL, "ciaat-brava-21"},
 		{ 0x10ce, 0x0039, P_SHINKO_S2245, NULL, "sinfonia-chcs2245"},
-		{ 0x29cc, 0x0003, P_SHINKO_S2245, NULL, "kodak-6900"},      /* aka CHC-S2245-6A */
+		{ 0x29cc, 0x0003, P_KODAK_6900, NULL, "kodak-6900"},      /* aka CHC-S2245-6A */
+		{ 0x29cc, 0x0004, P_KODAK_6900, NULL, "kodak-6950"},      /* aka CHC-S2245-6C */
 		{ 0x0d16, 0x0010, P_SHINKO_S2245, NULL, "hiti-m610"},
 		{ 0, 0, 0, NULL, NULL}
 	}

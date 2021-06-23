@@ -86,7 +86,7 @@
    HiTi P910L
    HiTi CS-200e / CS-220e
    ICI Imagedata OP900
-   Kodak 6900
+   Kodak 6900 / 6950
    Kodak 7010 / 7015
    Magicard Rio 2E (and other Magicard models)
    Mitsubishi CP3020D/DE and CP3020DA/DAE
@@ -696,7 +696,7 @@
    Model IDs recognized:
 
      sinfonia-chcs6145 ciaat-brava-21 shinko-chcs6145
-     sinfonia-chcs2245 hiti-m610 kodak-6900
+     sinfonia-chcs2245 hiti-m610 kodak-6900 kodak-6950
 
    Model IDs for backwards compatibility with older releases:
 
@@ -711,7 +711,7 @@
    Work-in-progress printers:
 
      HiTi M610
-     Kodak 6900
+     Kodak 6900 / 6950
      Shinko CHC-S6145-5A (aka "CS2-c")
 
    *** VERY IMPORTANT ***
