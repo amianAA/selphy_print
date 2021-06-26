@@ -199,18 +199,19 @@ struct mitsud90_job_hdr {
 	uint8_t  colorcorr; /* Always 1 on M1 */
 	uint8_t  sharp_h;   /* Always 0 on M1 */
 	uint8_t  sharp_v;   /* Always 0 on M1 */
-	uint8_t  zero_b[4]; /* 0 on D90, on M1, zero_b[3] is the not-raw flag */
+	uint8_t  zero_b[5]; /* 0 on D90, on M1, zero_b[3] is the not-raw flag */
 	struct {
-		uint16_t on;     /* 0x0001 when pano is on, or always 0x0002 on M1  */
-		uint8_t  total;  /* 2 or 3 */
-		uint8_t  page;   /* 1, 2, 3 */
-		uint16_t rows;   /* always 0x097c (BE), ie 2428 ie 8" print */
-		uint16_t rows2;  /* Always 0x30 less than pano_rows */
-		uint16_t zero;   /* 0x0000 */
+/* @x3a */	uint8_t  on;      /* 0x01 when pano is on / always 0x02 on M1 */
+		uint8_t  zero_a;
+		uint8_t  total;   /* 2 or 3 */
+		uint8_t  page;    /* 1, 2, 3 */
+		uint16_t rows;    /* always 0x097c (BE), ie 2428 ie 8" print */
+/* @x40 */	uint16_t rows2;   /* Always 0x30 less than pano_rows */
+		uint16_t zero_b;  /* 0x0000 */
 		uint16_t overlap; /* always 0x0258, ie 600 or 2 inches */
 		uint8_t  unk[4];  /* 00 0c 00 06 */
 	} pano __attribute__((packed));
-	uint8_t zero_c[7];
+	uint8_t zero_c[6];
 /*@x50*/uint8_t unk_m1;   /* 00 on d90 & m1 Linux, 01 on m1 (windows) */
 	uint8_t rgbrate;  /* M1 only, see below */
 	uint8_t oprate;   /* M1 only, see below */
@@ -1905,7 +1906,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.33"  " (lib " LIBMITSU_VER ")",
+	.version = "0.34"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
@@ -1949,7 +1950,7 @@ const struct dyesub_backend mitsud90_backend = {
    1b 53 50 30 00 33 XX XX  YY YY TT 00 00 01 MM NN  XX XX == COLS, YY XX ROWS (BE)
    ?? ?? ?? ?? ?? ?? ?? ??  ?? ?? ?? ?? 00 00 00 00  NN == num of cuts, ?? see below
    00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  MM == 0 for no margin cut, 1 for margin cut
-   QQ RR SS HH VV 00 00 00  00 00 ZZ 00 03 II 09 7c  QQ == 02 matte (D90) or 03 (M1), 00 glossy,
+   QQ RR SS HH VV 00 00 00  00 00 ZZ 00 JJ II 09 7c  QQ == 02 matte (D90) or 03 (M1), 00 glossy,
    09 4c 00 00 02 58 00 0c  00 06 00 00 00 00 00 00  RR == 00 auto, (D90: 03 == fine, 02 == superfine), (M1: 05 == Fast)
    Z0 Z1 Z2 00 00 00 00 00  00 00 00 00 00 00 00 00  SS == 00 colorcorr, 01 == none (always 01 on M1)
                                                      HH/VV sharpening for Horiz/Vert, 0-8, 0 is off, 4 is normal (always 00 on M1)
@@ -1972,6 +1973,7 @@ const struct dyesub_backend mitsud90_backend = {
 
     from [ZZ 00 03 03] onwards, only shows in 8x20" PANORAMA prints.  Assume 2" overlap.
     ZZ == 00 (normal) or 01 (panorama)
+    JJ == 02 03 (num of panorama panels)
     II == 01 02 03 (which panel # in panorama!)
     [02 58] == 600, aka 2" * 300dpi?
     [09 4c] == 2380  (48 less than 8 size? (trim length on ends?)
