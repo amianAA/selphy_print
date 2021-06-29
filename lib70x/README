@@ -1,22 +1,23 @@
    LibMitsuD70ImageReProcess -- Re-implemented image processing library for
                                 the Mitsubishi CP-D70 family of printers
 
-   Copyright (c) 2016-2020 Solomon Peachy <pizza@shaftnet.org>
+   Copyright (c) 2016-2021 Solomon Peachy <pizza@shaftnet.org>
 
    ** ** ** ** Do NOT contact Mitsubishi about this library! ** ** ** **
 
    This library is a platform-independent reimplementation of the image
    processing algorithms that are necessary to utilize the Mitsubishi
-   CP-D70 family of printers.
+   CP-D70, CP-M1, CP9800, and CP30 families of printers.
 
    Mitsubishi was *NOT* involved in the creation of this library, and is
    not responsible in any way for the library or any deficiencies in its
    output.  They will provide no support if it is used.
 
-   However, without this library, it is nearly impossible to utilize the
-   D70 family of printers under Linux and similar operating systems.
+   However, without this library, it is nearly impossible to utilize the 
+   the above families of printers under Linux and similar operating 
+   systems.
 
-   The following printers are known to function with this library:
+   The following printers are known to utilize this library:
 
      * Mitsubishi CP-D70DW
      * Mitsubishi CP-D707DW
@@ -24,16 +25,17 @@
      * Mitsubishi CP-D80DW
      * Mitsubishi CP-M1
      * Mitsubishi CP-M15
+     * Mitsubishi CP30DW
+     * Mitsubishi CP9800DW    [*1]
+     * Mitsubishi CP9810DW    [*1]
+     * Mitsubishi CP9820DW-S  [*1]
      * Kodak 305
      * Fujifilm ASK-300
+     * Fujifilm ASK-500       [*2]
 
-   Additionally, the CP98xx family now uses this library.  These
-   models are expected to function, but likely have bugs affecting the
-   output quality:
-
-     * Mitsubishi CP9800DW
-     * Mitsubishi CP9810DW
-     * Mitsubishi CP9820DW-S
+   [*1] The CP98xx family is expected to function, but likely has
+        bugs affecting the output quality.
+   [*2] The ASK500 is expected to function but has not been tested.
 
    ** ** ** **
 
@@ -55,4 +57,3 @@
 
 	echo "/usr/local/lib" >> /etc/ld.so.conf
 	ldconfig
-
