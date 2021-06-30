@@ -768,6 +768,23 @@ const struct dyesub_backend kodak1400_backend = {
  e4 72 00 00  02 00 00 00  -- media off, error red. [out of paper]
  e4 72 00 00  02 00 50 50  -- media on, error red. [paper jam while laminating]
 
+                    ^^ ^^  Status
+
+                    00 00   Idle
+                    50 59   Printing Y
+                    50 4d   Printing M
+                    50 53   Printing C
+                    50 50   Printing O
+              ^^ ^^   Error code
+    00 08   No paper tray
+    02 00   Paper jam
+    02 01   Cover popped open during printing
+    08 00   Top open
+    10 00   Media mismatch
+    10 01   ??
+    40 00   Failed to load media (paper empty?)
+
+
  *********************************************
   Calibration data:
 
