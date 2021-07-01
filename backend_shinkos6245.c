@@ -1063,10 +1063,13 @@ static int shinkos6245_main_loop(void *vctx, const void *vjob) {
 	copies = job->copies;
 
 	/* Cap copies */
-	// XXX 120 for 8x10 media, 100 for 8x12 media (S6245 / P910L)
-	// 250 for 8x12, 300 for 8x10 (Kodak 8810)
-	if (copies > 120)
-		copies = 120;
+	if (ctx->dev.conn->type == P_KODAK_8810) {
+		if (copies > 250)
+			copies = 250; // XXX 300 for 8x12 media
+	} else {
+		if (copies > 120)
+			copies = 120; // XXX 100 for 8x12 media
+	}
 
 	/* Set up mcut */
 	switch (job->jp.media) {
@@ -1454,7 +1457,7 @@ static const char *shinkos6245_prefixes[] = {
 
 const struct dyesub_backend shinkos6245_backend = {
 	.name = "Sinfonia CHC-S6245 / Kodak 8810",
-	.version = "0.38" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.39" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6245_prefixes,
 	.cmdline_usage = shinkos6245_cmdline,
 	.cmdline_arg = shinkos6245_cmdline_arg,
