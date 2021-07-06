@@ -1502,7 +1502,7 @@ static int shinkos6145_main_loop(void *vctx, const void *vjob) {
 
 	uint32_t cur_mode;
 
-	struct sinfonia_printjob *job = (struct sinfonia_printjob*) vjob; /* XXX stupid, we can't do this. */
+	struct sinfonia_printjob *job = (struct sinfonia_printjob*) vjob;
 
 	if (!job)
 		return CUPS_BACKEND_FAILED;

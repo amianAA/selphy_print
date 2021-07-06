@@ -80,6 +80,24 @@ struct kodak1400_ctx {
 	struct marker marker;
 };
 
+static const char *kodak1400_errormsgs(uint8_t code1, uint8_t code2)
+{
+	if (code1 == 0x00 && code2 == 0x08)
+		return "No paper tray";
+	else if (code1 == 0x02 && code2 == 0x00)
+		return "Paper jam";
+	else if (code1 == 0x02 && code2 == 0x01)
+		return "Cover open during printing";
+	else if (code1 == 0x08 && code2 == 0x00)
+		return "Top cover open";
+	else if (code1 == 0x10) // code2 == 0x00 and 0x01
+		return "Media mismatch";
+	else if (code1 == 0x40 && code2 == 0x00)
+		return "Paper empty";
+	else
+		return "Unknown";
+}
+
 static int send_plane(struct kodak1400_ctx *ctx,
 		      const struct kodak1400_printjob *job,
 		      uint8_t planeno, uint8_t *planedata,
@@ -443,9 +461,10 @@ top:
 
 	/* Error handling */
 	if (rdbuf[4] || rdbuf[5]) {
-		ERROR("Error code reported by printer (%02x/%02x), terminating print\n",
+		ERROR("Error code reported: %s (%02x/%02x), terminating print\n",
+		      kodak1400_errormsgs(rdbuf[4], rdbuf[5]),
 		      rdbuf[4], rdbuf[5]);
-		return CUPS_BACKEND_STOP;  // HOLD/CANCEL/FAILED?  XXXX parse error!
+		return CUPS_BACKEND_STOP;  // HOLD/CANCEL/FAILED?
 	}
 
 	fflush(logger);
@@ -617,7 +636,7 @@ static const char *kodak1400_prefixes[] = {
 
 const struct dyesub_backend kodak1400_backend = {
 	.name = "Kodak 1400/805",
-	.version = "0.42",
+	.version = "0.43",
 	.uri_prefixes = kodak1400_prefixes,
 	.cmdline_usage = kodak1400_cmdline,
 	.cmdline_arg = kodak1400_cmdline_arg,

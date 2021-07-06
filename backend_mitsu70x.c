@@ -1822,7 +1822,6 @@ static int mitsu70x_main_loop(void *vctx, const void *vjob)
 	job->datalen += 3*job->planelen;
 
 	/* Clean up */
-	// XXX not really necessary.
 	free(job->spoolbuf);
 	job->spoolbuf = NULL;
 	job->spoolbuflen = 0;

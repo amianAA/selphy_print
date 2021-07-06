@@ -930,7 +930,7 @@ static int shinkos2145_main_loop(void *vctx, const void *vjob) {
 
 	int i, last_state = -1, state = S_IDLE;
 
-	struct sinfonia_printjob *job = (struct sinfonia_printjob*) vjob;
+	const struct sinfonia_printjob *job = vjob;
 	struct sinfonia_cmd_hdr cmd;
 	struct s2145_status_resp sts, sts2;
 

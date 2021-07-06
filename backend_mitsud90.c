@@ -1937,6 +1937,7 @@ const struct dyesub_backend mitsud90_backend = {
      * cut limit?
      * Validate Fujifilm ASK500 support
      * Confirm ASK500 spool format
+     * Validate Panorama mode
 
  */
 
