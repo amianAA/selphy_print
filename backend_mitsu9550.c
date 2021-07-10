@@ -143,10 +143,11 @@ struct mitsu9550_media {
 	uint8_t  hdr[2];  /* 24 2e */
 	uint8_t  unk[12];
 	uint8_t  type;
-	uint8_t  unka[13];
-	uint16_t max;  /* BE, prints per media */
+	uint8_t  unka[11];
+	uint16_t unkb;    /* 0d 00 (CP9810), 00 00 (others?) */
+	uint16_t max;     /* BE, prints per media */
 	uint16_t remain2; /* BE, prints remaining  (CP30)*/
-	uint16_t remain; /* BE, prints remaining (Everything else) */
+	uint16_t remain;  /* BE, prints remaining (Everything else) */
 	uint8_t  unkc[14];
 } __attribute__((packed));
 
@@ -1786,9 +1787,9 @@ const struct dyesub_backend mitsu9550_backend = {
   [[ Status Query C ]]
 
  -> 1b 56 21 00                                       [ Most models ]
- <- 21 2e 00 80 00 22 a8 0b  00 00 00 00 00 00 00 00
+ <- 21 2e 00 80 00 22 XX 0b  00 00 00 00 00 00 00 00 :: XX == a8 (most) 08 (9810)
     00 00 00 00 00 00 00 00  00 00 00 QQ 00 00 00 00 :: QQ == Prints in job?
-    00 00 00 00 00 00 00 00  00 00 NN NN 0A 00 00 01 :: NN NN = Remaining media
+    00 00 00 00 00 00 00 00  00 00 NN NN 0a 00 00 01 :: NN NN = Remaining media
 
     21 2e 00 00 00 20 08 02  00 00 00 00 00 00 00 00   [ CP30 ]
     00 00 00 00 00 00 00 00  00 00 00 XX 00 00 00 00  :: XX == seen 01 and 02.  Unknown.
@@ -1941,6 +1942,8 @@ const struct dyesub_backend mitsu9550_backend = {
     31  be 80 01  80 4b
      [...]
 
+    00  be 80 01  76 37  :: printed 4x6 on 6x9?
+
  Working theory of interpreting the status flags:
 
   MM :: 00 is idle, else mechanical printer state.
@@ -1948,8 +1951,8 @@ const struct dyesub_backend mitsu9550_backend = {
   QQ :: ?? 0x3e + 0x40 or 0x80 (see below)
   RR :: ?? 0x00 is idle, 0x40 or 0x80 is "printing"?
   SS :: ?? 0x00 means "ready for another print" but 0x01 is "busy"
-  TT :: ?? seen values between 0x7c through 0x96)
-  UU :: ?? seen values between 0x43 and 0x4c -- temperature?
+  TT :: ?? seen values between 0x76 through 0x96)
+  UU :: ?? seen values between 0x37 and 0x4c -- temperature?
   ZZ :: ?? Error code  (08 = Door open on 9600)
 
   ***
