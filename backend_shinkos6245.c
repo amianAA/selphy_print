@@ -982,6 +982,33 @@ static int shinkos6245_read_parse(void *vctx, const void **vjob, int data_fd, in
 	else
 		job->copies = copies;
 
+	if (ctx->dev.conn->type == P_KODAK_8810 &&
+	    job->jp.rows > 3624) {
+		// XXX PANORAMA PANORAMA PANORAMA
+#if 0
+		if (job->copies > 1) {
+			WARNING("Multiple copies of panorama prints is not supported!\n");
+			job->copies = 1;
+		}
+
+		if (job->jp.media) {
+			ERROR("Don't support multi-cut with panorama!\n");
+			return CUPS_BACKEND_CANCEL;
+		}
+
+		if (job->jp.rows > 9624 &&
+		    ctx->media.ribbon_code != RIBBON_8x12 &&
+		    ctx->media.ribbon_code != RIBBON_8x12K) {
+			/* Sizes over 8x24 require 8x12 media */
+			ERROR("Incorrect media loaded for print!\n");
+				return CUPS_BACKEND_HOLD;
+		}
+#endif
+
+		ERROR("Panorma not implemented yet!\n");
+		return CUPS_BACKEND_CANCEL;
+	}
+
 	*vjob = job;
 
 	return CUPS_BACKEND_OK;
@@ -1116,25 +1143,6 @@ static int shinkos6245_main_loop(void *vctx, const void *vjob) {
 			break;
 		default:
 			break;
-		}
-
-		/* EK8810 supports multi-panel panorama! */
-		if (job->jp.rows > 3624) {
-			if (copies > 1) {
-				WARNING("Multiple copies of panorama prints is not supported!\n");
-				copies = 1;
-			}
-			if (job->jp.media) {
-				ERROR("Don't support multi-cut with panorama!\n");
-				return CUPS_BACKEND_CANCEL;
-			}
-			if (job->jp.rows > 9624 &&
-			    ctx->media.ribbon_code != RIBBON_8x12 &&
-			    ctx->media.ribbon_code != RIBBON_8x12K) {
-				/* Sizes over 8x24 require 8x12 media */
-				ERROR("Incorrect media loaded for print!\n");
-				return CUPS_BACKEND_HOLD;
-			}
 		}
 	}
 
@@ -1457,7 +1465,7 @@ static const char *shinkos6245_prefixes[] = {
 
 const struct dyesub_backend shinkos6245_backend = {
 	.name = "Sinfonia CHC-S6245 / Kodak 8810",
-	.version = "0.39" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.40" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6245_prefixes,
 	.cmdline_usage = shinkos6245_cmdline,
 	.cmdline_arg = shinkos6245_cmdline_arg,

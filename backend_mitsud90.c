@@ -201,7 +201,7 @@ struct mitsud90_job_hdr {
 	uint8_t  sharp_v;   /* Always 0 on M1 */
 	uint8_t  zero_b[5]; /* 0 on D90, on M1, zero_b[3] is the not-raw flag */
 	struct {
-/* @x3a */	uint8_t  on;      /* 0x01 when pano is on / always 0x02 on M1 */
+/* @x3a */	uint8_t  on;      /* 0x01 when pano is on / always 0x02 on M1 / 0x03 on D90 panorama that needs backend processing */
 		uint8_t  zero_a;
 		uint8_t  total;   /* 2 or 3 */
 		uint8_t  page;    /* 1, 2, 3 */
@@ -456,6 +456,7 @@ struct mitsud90_printjob {
 	uint32_t datalen;
 
 	int is_raw;
+	int is_pano;
 
 	int m1_colormode;
 
@@ -849,6 +850,12 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		/* If it's a raw M1 job, the pixels are 2 bytes each */
 		if (job->is_raw)
 			remain *= 2;
+	} else {
+		if (job->hdr.zero_b[3] && job->hdr.pano.on == 0x03) {
+			job->is_pano = 1;
+			job->hdr.zero_b[3] = 0;
+			job->hdr.pano.on = 0x01;
+		}
 	}
 
 	/* Add in the plane header */
@@ -925,6 +932,12 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 			}
 		}
 		job->hdr.colorcorr = 1; // XXX not sure if right for ASK500?
+	}
+
+	if (job->is_pano) {
+		// XXX PANORAMA PANORAMA
+		ERROR("Panorama processing not yet implemented!");
+		return CUPS_BACKEND_CANCEL;
 	}
 
 	/* All further work is in main loop */
@@ -1906,7 +1919,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.34"  " (lib " LIBMITSU_VER ")",
+	.version = "0.35"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
@@ -2251,5 +2264,19 @@ Comms Protocol for D90 & CP-M1
  [ cp-m1 ]
    00 00 01 f2 00 07 00 00 00 0f 00 a7 02 9f 03 91  00 00 00 00 00 00 02 36 00 07 03 ff 02 07 03 ff  03 4c 00 01 10 00 00 00 00 00 00 00 05 80 00 24  04 00
 
+  D90 Panorama data table files ("CP90PAN??.dat")
+
+  struct win_pano {   // All files are LE
+    uint32_t header;          // @0     0x00000007 (ie number of ymc tuples)
+    uint32_t [3][16] table1;  // @4     YMC values, only first 7 used
+    uint32_t pad;             // @192   0x00000000
+    uint32_t header2;         // @196   0x00000011  (ie number of bgr tuples?)
+    uint32_t [3][17] table2;  // @200   BGR values
+    double   table3[600][184] // @408    TBD (or maybe 600*23*8 ??)
+    double   unk[]            // @110808 TBD
+    uint8_t  footer[8]        // @71208408 "PA17424a"
+  };
+
+    -- Table 3 seems to be a set of 600 row blocks  (1 per overlap row?)
 
  */
