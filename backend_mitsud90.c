@@ -764,12 +764,12 @@ static int mitsud90_panorama_splitjob(struct mitsud90_printjob *injob, struct mi
 			ERROR("Memory allocation failure");
 			return CUPS_BACKEND_RETRY_CURRENT;
 		}
-		panels[i] = malloc(cols * panel_rows[i] * 3);
+		panels[i] = malloc(cols * panel_rows[i] * 3) + sizeof(struct mitsud90_plane_hdr);
 		if (!panels[i]) {
 			ERROR("Memory allocation failure");
 			return CUPS_BACKEND_RETRY_CURRENT;
 		}
-		/* Fill in header differences */
+		/* Fill in job header differences */
 		memcpy(newjobs[i], injob, sizeof(struct mitsud90_printjob));
 		newjobs[i]->databuf = panels[i];
 		newjobs[i]->hdr.rows = cpu_to_be16(panel_rows[i]);
@@ -781,7 +781,18 @@ static int mitsud90_panorama_splitjob(struct mitsud90_printjob *injob, struct mi
 		newjobs[i]->hdr.pano.overlap = cpu_to_be16(overlap_rows);
 		newjobs[i]->hdr.pano.unk[1] = 0x0c;
 		newjobs[i]->hdr.pano.unk[3] = 0x06;
+		newjobs[i]->has_footer = 0;
+
+		/* Fill in plane header differences */
+		memcpy(newjobs[i]->databuf, injob->databuf, sizeof(struct mitsud90_plane_hdr));
+		struct mitsud90_plane_hdr *phdr = (struct mitsud90_plane_hdr*)panels[i];
+		phdr->rows = cpu_to_be16(panel_rows[i]);
+		if (phdr->lamrows)
+			phdr->lamrows = cpu_to_be16(panel_rows[i] + 12);
+		panels[i] += sizeof(struct mitsud90_plane_hdr);
 	}
+	/* Last panel gets the footer, if any */
+	newjobs[numpanels - 1]->has_footer = injob->has_footer;
 
 	dyesub_pano_split_rgb8(injob->databuf, cols, inrows,
 			       numpanels, overlap_rows, max_rows,
@@ -811,29 +822,19 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	job->jobsize = sizeof(*job);
 	job->copies = copies;
 
-	/* Just allocate a worst-case buffer */
-	job->datalen = 0;
-	job->databuf = malloc(sizeof(struct mitsud90_job_hdr) +
-			      sizeof(struct mitsud90_plane_hdr) +
-			      1852*2729*3 + 1024);
-
-	if (!job->databuf) {
-		ERROR("Memory allocation failure!\n");
-		mitsud90_cleanup_job(job);
-		return CUPS_BACKEND_RETRY_CURRENT;
-	}
+	/* Read in header */
+	uint8_t *hptr = (uint8_t*) &job->hdr;
+	uint16_t hremain = sizeof(struct mitsud90_job_hdr);
 
 	/* Make sure there's no holdover */
 	if (ctx->holdover_on) {
-		memcpy(job->databuf, &ctx->holdover, sizeof(ctx->holdover));
-		job->datalen += sizeof(ctx->holdover);
+		memcpy(hptr, &ctx->holdover, sizeof(ctx->holdover));
+		hremain -= sizeof(ctx->holdover);
 		ctx->holdover_on = 0;
 	}
-
-	/* Read in first header. */
-	remain = sizeof(struct mitsud90_job_hdr) - job->datalen;
-	while (remain) {
-		i = read(data_fd, (job->databuf + job->datalen), remain);
+	/* Read the rest */
+	while (hremain) {
+		i = read(data_fd, hptr, hremain);
 		if (i == 0) {
 			mitsud90_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
@@ -842,11 +843,20 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 			mitsud90_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
 		}
-		remain -= i;
-		job->datalen += i;
+		hremain -= i;
+		hptr += i;
 	}
-	/* Move over to its final resting place, and reset */
-	memcpy(&job->hdr, job->databuf, sizeof(job->hdr));
+
+	/* Allocate ourselves a payload buffer */
+	job->datalen = 0;
+	job->databuf = malloc(sizeof(struct mitsud90_plane_hdr) + 1024 +
+			      be16_to_cpu(job->hdr.cols) * be16_to_cpu(job->hdr.rows) * 3);
+	if (!job->databuf) {
+		ERROR("Memory allocation failure!\n");
+		mitsud90_cleanup_job(job);
+		return CUPS_BACKEND_RETRY_CURRENT;
+	}
+
 	job->datalen = 0;
 
 	/* Sanity check header */
@@ -1995,7 +2005,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.35"  " (lib " LIBMITSU_VER ")",
+	.version = "0.36"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,
