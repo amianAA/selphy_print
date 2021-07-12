@@ -70,6 +70,9 @@ int sinfonia_raw18_read_parse(int data_fd, struct sinfonia_printjob *job);
 int sinfonia_raw28_read_parse(int data_fd, struct sinfonia_printjob *job);
 void sinfonia_cleanup_job(const void *vjob);
 
+int sinfonia_panorama_splitjob(struct sinfonia_printjob *injob,
+                               uint16_t max_rows,
+                               struct sinfonia_printjob **newjobs);
 
 /* mapping param IDs to names */
 struct sinfonia_param {

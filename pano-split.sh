@@ -23,35 +23,35 @@ fi
 # D90
 case "${model}" in
     kodak-6900|kodak-6950)
-	overlap=600 # XXX Not sure yet
+	overlap=636 # 100 + 36
 	if [ "${printsize}" eq "6x20" ] ; then
 	    cols=1844
-	    inrows=6108 # XXX Not sure
+	    inrows=6036
 	    drows=2436
 	elif [ "${printsize}" eq "6x18" ] ; then
 	    cols=1844
-	    inrows=5508 # XXX Not sure
+	    inrows=5436
 	    drows=2436
 	elif [ "${printsize}" eq "6x14" ] ; then
 	    cols=1844
-	    inrows=4308 # XXX Not sure
+	    inrows=4236
 	    drows=2436
 	elif [ "${printsize}" eq "6x12" ] ; then
 	    cols=1844
-	    inrows=3708 # XXX Not sure
+	    inrows=3636
 	    drows=2436
 	elif [ "${printsize}" eq "5x20" ] ; then
 	    cols=1548
-	    inrows=6108 # XXX Not sure
-            overlap=150 # XXX Not sure
+	    inrows=6036
+            overlap=136 # 100 + 36
 	    drows=2136
 	elif [ "${printsize}" eq "5x15" ] ; then
 	    cols=1548
-	    inrows=4608 # XXX Not sure
+	    inrows=4536
 	    drows=2136
 	elif [ "${printsize}" eq "5x10" ] ; then
 	    cols=1548
-	    inrows=3108 # XXX Not sure
+	    inrows=3036
 	    drows=2136
 	else
 	    echo "EK69xx supports 6x20, 6x18, 6x14, 6x12, 5x20, 5x15, and 5x10 only";
@@ -59,7 +59,7 @@ case "${model}" in
     ;;
     kodak-8810)
 	cols=2464
-	overlap=360
+	overlap=360 ### XXX probably wrong?
 	if [ "${printsize}" eq "8x14" ] ; then
 	    inrows=4224
 	    drows=3024 # or 3624
@@ -76,7 +76,7 @@ case "${model}" in
 	    inrows=9624
 	    drows=3624
 	elif [ "${printsize}" eq "8x36" ] ; then
-	    overlap=180
+	    overlap=180 # XXX probably wrong?
 	    inrows=10824
 	    drows=3624
 	else

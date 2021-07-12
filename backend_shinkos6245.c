@@ -984,8 +984,6 @@ static int shinkos6245_read_parse(void *vctx, const void **vjob, int data_fd, in
 
 	if (ctx->dev.conn->type == P_KODAK_8810 &&
 	    job->jp.rows > 3624) {
-		// XXX PANORAMA PANORAMA PANORAMA
-#if 0
 		if (job->copies > 1) {
 			WARNING("Multiple copies of panorama prints is not supported!\n");
 			job->copies = 1;
@@ -996,20 +994,25 @@ static int shinkos6245_read_parse(void *vctx, const void **vjob, int data_fd, in
 			return CUPS_BACKEND_CANCEL;
 		}
 
-		if (job->jp.rows > 9624 &&
-		    ctx->media.ribbon_code != RIBBON_8x12 &&
-		    ctx->media.ribbon_code != RIBBON_8x12K) {
-			/* Sizes over 8x24 require 8x12 media */
-			ERROR("Incorrect media loaded for print!\n");
-				return CUPS_BACKEND_HOLD;
-		}
-#endif
+		int rval;
+		int maxrows;
 
-		ERROR("Panorma not implemented yet!\n");
-		return CUPS_BACKEND_CANCEL;
+		if (ctx->media.ribbon_code != RIBBON_8x12 &&
+		    ctx->media.ribbon_code != RIBBON_8x12K)
+			maxrows = 3024;
+		else
+			maxrows = 3624;
+
+		rval = sinfonia_panorama_splitjob(job, maxrows,
+						   (struct sinfonia_printjob**)vjob);
+
+		/* Unconditionally clean up original job regardless */
+		sinfonia_cleanup_job(job);
+
+		return rval;
+	} else {
+		*vjob = job;
 	}
-
-	*vjob = job;
 
 	return CUPS_BACKEND_OK;
 }

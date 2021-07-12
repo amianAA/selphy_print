@@ -200,6 +200,136 @@ int sinfonia_raw10_read_parse(int data_fd, struct sinfonia_printjob *job)
 	return CUPS_BACKEND_OK;
 }
 
+int sinfonia_panorama_splitjob(struct sinfonia_printjob *injob,
+			       uint16_t max_rows,
+			       struct sinfonia_printjob **newjobs)
+{
+	uint8_t *panels[3] = { NULL, NULL, NULL };
+	uint16_t panel_rows[3] = { 0, 0, 0 };
+	uint8_t numpanels;
+	uint16_t overlap_rows;
+	uint16_t inrows;
+	uint16_t cols;
+
+	int i;
+
+	inrows = injob->jp.rows;
+	cols = injob->jp.columns;
+
+	switch (cols) {
+	case 1548: /* EK6900/6950 */
+		if (max_rows != 2136) {
+			ERROR("Bad pano input\n");
+			return CUPS_BACKEND_CANCEL;
+		}
+		if (inrows > 3036) // 5x10
+			numpanels = 3;
+		else
+			numpanels = 2;
+
+		overlap_rows = 600 + 36;
+
+		if (numpanels == 3) {
+			if (inrows > 4536) // 5x15
+				overlap_rows = 100 + 36;
+			else
+				overlap_rows = 600 + 36;
+		}
+		break;
+	case 1844: /* EK6900/6950 */
+		if (max_rows != 2436) {
+			ERROR("Bad pano input\n");
+			return CUPS_BACKEND_CANCEL;
+		}
+
+		overlap_rows = 600 + 36;
+
+		if (inrows > 4236) // ie 6x14
+			numpanels = 3;
+		else
+			numpanels = 2;
+
+		break;
+	case 2464: /* EK8810 */
+		if (max_rows != 3624 && max_rows != 3024) {
+			ERROR("Bad pano input\n");
+			return CUPS_BACKEND_CANCEL;
+		}
+		overlap_rows = 600 + 24;
+
+		if (max_rows == 3024) { /* 8x10 media */
+			if (inrows > 5424) // 8x18
+				numpanels = 3;
+			else
+				numpanels = 2;
+		} else { /* 8x12 media */
+			if (inrows > 6624) // 8x22
+				numpanels = 3;
+			else
+				numpanels = 2;
+		}
+
+		if (numpanels == 3) {
+			if (max_rows == 3024) {
+				if (inrows == 6024) // 8x20
+					overlap_rows = 24;
+			} else {
+				if (inrows == 10824) // 8x36
+					overlap_rows = 24;
+			}
+		} else {
+			if (max_rows == 3024) {
+				if (inrows == 9024) // 8x30
+					overlap_rows = 24;
+			} else {
+				if (inrows == 7224) // 8x24
+					overlap_rows = 24;
+			}
+		}
+
+		break;
+	default:
+		ERROR("Unknown pano input cols: %d\n", cols);
+		return CUPS_BACKEND_CANCEL;
+	}
+
+	/* Work out which number of rows per panel */
+	if (!panel_rows[0]) {
+		panel_rows[0] = max_rows;
+		panel_rows[1] = inrows - panel_rows[0] + overlap_rows;
+		if (numpanels > 2)
+			panel_rows[2] = inrows - panel_rows[0] - panel_rows[1] + overlap_rows + overlap_rows;
+	}
+
+	/* Allocate and set up new jobs and buffers */
+	for (i = 0 ; i < numpanels ; i++) {
+		newjobs[i] = malloc(sizeof(struct sinfonia_printjob));
+		if (!newjobs[i]) {
+			ERROR("Memory allocation failure");
+			return CUPS_BACKEND_RETRY_CURRENT;
+		}
+		panels[i] = malloc(cols * panel_rows[i] * 3);
+		if (!panels[i]) {
+			ERROR("Memory allocation failure");
+			return CUPS_BACKEND_RETRY_CURRENT;
+		}
+		/* Fill in header differences */
+		memcpy(newjobs[i], injob, sizeof(struct sinfonia_printjob));
+		newjobs[i]->databuf = panels[i];
+		newjobs[i]->jp.rows = panel_rows[i];
+		// XXX what else?
+	}
+
+	dyesub_pano_split_rgb8(injob->databuf, cols, inrows,
+			       numpanels, overlap_rows, max_rows,
+			       panels, panel_rows);
+
+	// XXX postprocess buffers!
+	// pano_process_rgb8(numpanels, cols, overlap_rows, panels, panel_rows);
+
+	return CUPS_BACKEND_OK;
+}
+
 int sinfonia_raw18_read_parse(int data_fd, struct sinfonia_printjob *job)
 {
 	struct sinfonia_printcmd18_hdr hdr;
