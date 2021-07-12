@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.113"
+#define BACKEND_VERSION "0.114"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -1139,7 +1139,7 @@ static int handle_input(struct dyesub_backend *backend, void *backend_ctx,
 #ifndef _WIN32
 	int i;
 #endif
-	const void *job;
+	const void *jobs[MAX_JOBS_FROM_READ_PARSE];
 	int data_fd = fileno(stdin);
 	int read_page = 0, print_page = 0;
 	struct dyesub_joblist *jlist = NULL;
@@ -1205,15 +1205,17 @@ static int handle_input(struct dyesub_backend *backend, void *backend_ctx,
 
 newpage:
 	/* Read in data */
-	job = NULL;
-	if ((ret = backend->read_parse(backend_ctx, &job, data_fd, ncopies))) {
+	for (i = 0 ; i < MAX_JOBS_FROM_READ_PARSE ; i++)
+		jobs[i] = NULL;
+
+	if ((ret = backend->read_parse(backend_ctx, jobs, data_fd, ncopies))) {
 		if (read_page)
 			goto done_multiple;
 		else
 			goto done;
 	}
 
-	if (!job) {
+	if (!jobs[0]) {
 		WARNING("No job returned by backend read_parse?\n");
 		goto newpage;
 	}
@@ -1223,12 +1225,16 @@ newpage:
 		jlist = dyesub_joblist_create(backend, backend_ctx);
 	}
 	if (!jlist) {
-		backend->cleanup_job(job);
+		for (i = 0 ; i < MAX_JOBS_FROM_READ_PARSE ; i++)
+			backend->cleanup_job(jobs[i]);
 		goto done;
 	}
 
-	/* Stick it onto the end of the list */
-	dyesub_joblist_appendjob(jlist, job);
+	/* Stick jobs onto the end of the list */
+	for (i = 0 ; i < MAX_JOBS_FROM_READ_PARSE ; i++) {
+		if (jobs[i])
+			dyesub_joblist_appendjob(jlist, jobs[i]);
+	}
 	read_page++;
 
 	INFO("Parsed page %d (%d copies)\n", read_page, ncopies);
