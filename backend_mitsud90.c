@@ -736,14 +736,14 @@ static int mitsud90_panorama_splitjob(struct mitsud90_printjob *injob, struct mi
 	inrows = be16_to_cpu(injob->hdr.rows);
 
 	/* Work out parameters */
-	if (inrows == 6084) {
+	if (inrows == 6028) {
 		numpanels = 3;
-		overlap_rows = 600;
+		overlap_rows = 600 + 28;
 		max_rows = 2428;
-	} else if (inrows == 4256) {
+	} else if (inrows == 4228) {
 		numpanels = 2;
 		max_rows = 2428;
-		overlap_rows = 600;
+		overlap_rows = 600 + 28;
 	} else {
 		ERROR("Invalid panorama row count (%d)\n", inrows);
 		return CUPS_BACKEND_CANCEL;

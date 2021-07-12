@@ -22,13 +22,13 @@ case "${model}" in
     mitsubishi-d90dw)
 	cols=1852
 	drows=2428
-	overlap=600
+	overlap=628  # 600 + 28
 	if [ "${printsize}" eq "6x20" ] ; then
-	    inrows=6084
+	    inrows=6028
 	elif [ "${printsize}" eq "6x14" ] ; then
-	    inrows=4256
+	    inrows=4228
 	else
-	    echo "D90 supportx 6x20 and 6x14 only"
+	    echo "D90 supports 6x20 and 6x14 only"
 	    exit 1
 	fi
     ;;
