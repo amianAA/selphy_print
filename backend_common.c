@@ -1136,9 +1136,7 @@ static int handle_input(struct dyesub_backend *backend, void *backend_ctx,
 			const char *fname, char *uri, char *type)
 {
 	int ret = CUPS_BACKEND_OK;
-#ifndef _WIN32
 	int i;
-#endif
 	const void *jobs[MAX_JOBS_FROM_READ_PARSE];
 	int data_fd = fileno(stdin);
 	int read_page = 0, print_page = 0;
