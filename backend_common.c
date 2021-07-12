@@ -1936,6 +1936,33 @@ const void *dyesub_joblist_popjob(struct dyesub_joblist *list)
 	return NULL;
 }
 
+int dyesub_pano_split_rgb8(const uint8_t *src, uint16_t cols,
+			   uint16_t src_rows, uint8_t numpanels,
+			   uint16_t overlap_rows, uint16_t max_rows,
+			   uint8_t *panels[3],
+			   uint16_t panel_rows[3])
+{
+	/* Do nothing if there's no point */
+	if (numpanels < 2 || src_rows <= max_rows)
+		return CUPS_BACKEND_OK;
+
+	/* Work out panel sizes if not specified */
+	if (panel_rows[0] == 0) {
+		panel_rows[0] = max_rows;
+		panel_rows[1] = src_rows - panel_rows[0] + overlap_rows;
+		if (numpanels > 2)
+			panel_rows[2] = src_rows - panel_rows[0] - panel_rows[1] + overlap_rows*2;
+	}
+
+	/* Copy panel data */
+	memcpy(panels[0], src, cols * panel_rows[0] * 3);
+	memcpy(panels[1], src + (panel_rows[0] - overlap_rows) * 3, cols * panel_rows[1] * 3);
+	if (numpanels > 2)
+		memcpy(panels[2], src + (panel_rows[0] - overlap_rows + panel_rows[1] - overlap_rows) * 3, cols * panel_rows[2] * 3);
+
+	return CUPS_BACKEND_OK;
+}
+
 int dyesub_joblist_canwait(struct dyesub_joblist *list)
 {
 	if (list->num_entries == DYESUB_MAX_JOB_ENTRIES)

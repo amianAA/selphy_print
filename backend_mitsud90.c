@@ -721,6 +721,78 @@ STATIC_ASSERT(sizeof(struct mitsud90_plane_hdr) == 512);
 
 static int mitsud90_main_loop(void *vctx, const void *vjob);
 
+static int mitsud90_panorama_splitjob(struct mitsud90_printjob *injob, struct mitsud90_printjob **newjobs)
+{
+	uint8_t *panels[3] = { NULL, NULL, NULL };
+	uint16_t panel_rows[3] = { 0, 0, 0 };
+	uint16_t overlap_rows;
+	uint8_t numpanels;
+	uint16_t cols;
+	uint16_t inrows;
+	uint16_t max_rows;
+	int i;
+
+	cols = be16_to_cpu(injob->hdr.cols);
+	inrows = be16_to_cpu(injob->hdr.rows);
+
+	/* Work out parameters */
+	if (inrows == 6084) {
+		numpanels = 3;
+		overlap_rows = 600;
+		max_rows = 2428;
+	} else if (inrows == 4256) {
+		numpanels = 2;
+		max_rows = 2428;
+		overlap_rows = 600;
+	} else {
+		ERROR("Invalid panorama row count (%d)\n", inrows);
+		return CUPS_BACKEND_CANCEL;
+	}
+
+	/* Work out which number of rows per panel */
+	if (!panel_rows[0]) {
+		panel_rows[0] = max_rows;
+		panel_rows[1] = inrows - panel_rows[0] + overlap_rows;
+		if (numpanels > 2)
+			panel_rows[2] = inrows - panel_rows[0] - panel_rows[1] + overlap_rows + overlap_rows;
+	}
+
+	/* Allocate and set up new jobs and buffers */
+	for (i = 0 ; i < numpanels ; i++) {
+		newjobs[i] = malloc(sizeof(struct mitsud90_printjob));
+		if (!newjobs[i]) {
+			ERROR("Memory allocation failure");
+			return CUPS_BACKEND_RETRY_CURRENT;
+		}
+		panels[i] = malloc(cols * panel_rows[i] * 3);
+		if (!panels[i]) {
+			ERROR("Memory allocation failure");
+			return CUPS_BACKEND_RETRY_CURRENT;
+		}
+		/* Fill in header differences */
+		memcpy(newjobs[i], injob, sizeof(struct mitsud90_printjob));
+		newjobs[i]->databuf = panels[i];
+		newjobs[i]->hdr.rows = cpu_to_be16(panel_rows[i]);
+		newjobs[i]->hdr.pano.on = 1;
+		newjobs[i]->hdr.pano.total = numpanels;
+		newjobs[i]->hdr.pano.page = i;
+		newjobs[i]->hdr.pano.rows = cpu_to_be16(panel_rows[i]);
+		newjobs[i]->hdr.pano.rows2 = cpu_to_be16(panel_rows[i] - 0x30);
+		newjobs[i]->hdr.pano.overlap = cpu_to_be16(overlap_rows);
+		newjobs[i]->hdr.pano.unk[1] = 0x0c;
+		newjobs[i]->hdr.pano.unk[3] = 0x06;
+	}
+
+	dyesub_pano_split_rgb8(injob->databuf, cols, inrows,
+			       numpanels, overlap_rows, max_rows,
+			       panels, panel_rows);
+
+	// XXX process buffers!
+	// pano_process_rgb8(numpanels, cols, overlap_rows, panels, panel_rows);
+
+	return CUPS_BACKEND_OK;
+}
+
 static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int copies) {
 	struct mitsud90_ctx *ctx = vctx;
 	int i, remain;
@@ -935,16 +1007,20 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	}
 
 	if (job->is_pano) {
-		// XXX PANORAMA PANORAMA
-		ERROR("Panorama processing not yet implemented!");
-		return CUPS_BACKEND_CANCEL;
+		int rval;
+
+		rval = mitsud90_panorama_splitjob(job, (struct mitsud90_printjob**)vjob);
+		/* Clean up original parsed job regardless */
+		mitsud90_cleanup_job(job);
+
+		return rval;
+	} else {
+		*vjob = job;
 	}
 
 	/* All further work is in main loop */
 	if (test_mode >= TEST_MODE_NOPRINT)
 		mitsud90_main_loop(ctx, job);
-
-	*vjob = job;
 
 	return CUPS_BACKEND_OK;
 }

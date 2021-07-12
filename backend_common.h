@@ -260,6 +260,12 @@ int dyesub_joblist_canwait(struct dyesub_joblist *list);
 #define BACKEND_FLAG_BADISERIAL 0x00000001
 #define BACKEND_FLAG_DUMMYPRINT 0x00000002
 
+int dyesub_pano_split_rgb8(const uint8_t *src, uint16_t cols,
+			   uint16_t src_rows, uint8_t numpanels,
+			   uint16_t overlap_rows, uint16_t max_rows,
+			   uint8_t *panels[3],
+			   uint16_t panel_rows[3]);
+
 /* Backend Functions */
 struct dyesub_backend {
 	const char *name;
