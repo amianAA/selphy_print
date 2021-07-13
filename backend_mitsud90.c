@@ -847,18 +847,6 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		hptr += i;
 	}
 
-	/* Allocate ourselves a payload buffer */
-	job->datalen = 0;
-	job->databuf = malloc(sizeof(struct mitsud90_plane_hdr) + 1024 +
-			      be16_to_cpu(job->hdr.cols) * be16_to_cpu(job->hdr.rows) * 3);
-	if (!job->databuf) {
-		ERROR("Memory allocation failure!\n");
-		mitsud90_cleanup_job(job);
-		return CUPS_BACKEND_RETRY_CURRENT;
-	}
-
-	job->datalen = 0;
-
 	/* Sanity check header */
 	if (job->hdr.hdr[0] != 0x1b ||
 	    job->hdr.hdr[1] != 0x53 ||
@@ -869,6 +857,20 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		      job->hdr.hdr[2], job->hdr.hdr[3]);
 		mitsud90_cleanup_job(job);
 		return CUPS_BACKEND_CANCEL;
+	}
+
+	/* Initial parsing */
+	if (ctx->conn->type == P_MITSU_M1 ||
+	    ctx->conn->type == P_FUJI_ASK500) {
+		/* See if it's a special gutenprint "not-raw" job */
+		job->is_raw = !job->hdr.zero_b[3];
+		job->hdr.zero_b[3] = 0;
+	} else {
+		if (job->hdr.zero_b[3] && job->hdr.pano.on == 0x03) {
+			job->is_pano = 1;
+			job->hdr.zero_b[3] = 0;
+			job->hdr.pano.on = 0x01;
+		}
 	}
 
 	/* Sanity check panorama parameters */
@@ -920,28 +922,20 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		}
 	}
 
-	/* How many pixels do we need to read? */
 	remain = be16_to_cpu(job->hdr.cols) * be16_to_cpu(job->hdr.rows) * 3;
-
-	if (ctx->conn->type == P_MITSU_M1 ||
-	    ctx->conn->type == P_FUJI_ASK500) {
-		/* See if it's a special gutenprint "not-raw" job */
-		job->is_raw = !job->hdr.zero_b[3];
-		job->hdr.zero_b[3] = 0;
-
-		/* If it's a raw M1 job, the pixels are 2 bytes each */
-		if (job->is_raw)
-			remain *= 2;
-	} else {
-		if (job->hdr.zero_b[3] && job->hdr.pano.on == 0x03) {
-			job->is_pano = 1;
-			job->hdr.zero_b[3] = 0;
-			job->hdr.pano.on = 0x01;
-		}
-	}
-
+	if (job->is_raw)
+		remain *= 2;
 	/* Add in the plane header */
 	remain += sizeof(struct mitsud90_plane_hdr);
+
+	/* Allocate ourselves a payload buffer */
+	job->databuf = malloc(remain + 1024);
+	if (!job->databuf) {
+		ERROR("Memory allocation failure!\n");
+		mitsud90_cleanup_job(job);
+		return CUPS_BACKEND_RETRY_CURRENT;
+	}
+	job->datalen = 0;
 
 	/* Now read in the rest */
 	while(remain) {
