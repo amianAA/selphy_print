@@ -734,6 +734,7 @@ extern struct dyesub_backend sonyupdneo_backend;
 extern struct dyesub_backend kodak6800_backend;
 extern struct dyesub_backend kodak605_backend;
 extern struct dyesub_backend kodak1400_backend;
+extern struct dyesub_backend kodak8800_backend;
 extern struct dyesub_backend shinkos1245_backend;
 extern struct dyesub_backend shinkos2145_backend;
 extern struct dyesub_backend shinkos6145_backend;
@@ -754,6 +755,7 @@ static struct dyesub_backend *backends[] = {
 	&kodak6800_backend,
 	&kodak605_backend,
 	&kodak1400_backend,
+	&kodak8800_backend,
 	&shinkos1245_backend,
 	&shinkos2145_backend,
 	&shinkos6145_backend,

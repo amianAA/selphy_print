@@ -104,7 +104,7 @@ CPPFLAGS += $(OLD_URI) -DCORRTABLE_PATH=\"$(BACKEND_DATA_DIR)\"
 LIBLDFLAGS = -g -shared
 
 # List of backends
-BACKENDS = canonselphy canonselphyneo dnpds40 hiti kodak605 kodak1400 kodak6800 magicard mitsu70x mitsu9550 mitsud90 mitsup95d shinkos1245 shinkos2145 shinkos6145 shinkos6245 sonyupd sonyupdneo
+BACKENDS = canonselphy canonselphyneo dnpds40 hiti kodak605 kodak1400 kodak6800 magicard mitsu70x mitsu9550 mitsud90 mitsup95d shinkos1245 shinkos2145 shinkos6145 shinkos6245 sonyupd sonyupdneo kodak8800
 
 # List of data files
 DATAFILES = $(wildcard hiti_data/*bin) $(wildcard lib70x/data/*raw) \

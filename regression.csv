@@ -97,6 +97,10 @@ shinkos6245,0x10ce,0x001d,shinko_s6245_8x10.raw,0x12
 hitip910,0x0d16,0x000e,shinko_s6245_8x10.raw,0x11
 kodak-8810,0x040a,0x404d,kodak_8810_8x12.raw,0x11
 #
+# 'kodak8800'
+#
+kodak-8800,0x040a,0x4023,kodak_8800_8x10.raw,0x1
+#
 # 'sonyupd'
 #
 sonyupcr10,0x054c,0x0226,sony_upcr10l_4x6.raw,

@@ -88,6 +88,7 @@
    ICI Imagedata OP900
    Kodak 6900 / 6950
    Kodak 7010 / 7015
+   Kodak 8800 / 9810
    Magicard Rio 2E (and other Magicard models)
    Mitsubishi CP3020D/DE and CP3020DA/DAE
    Mitsubishi CP9000DW, CP9500DW, and CP9600DW-S
@@ -591,6 +592,21 @@
 	 '-s' command, specifically the 'Bank' output.
 
     [3] Default printer tone curve is a linear 'val << 3'
+
+ ***************************************************************************
+  BACKEND=kodak8800
+
+   Additional model IDs recognized:
+
+     kodak-8800, kodak-9810
+
+   Work-in-progress printers:
+
+     Kodak 8800/9810
+
+   Valid commands:
+
+      [ none at the moment ]
 
  ***************************************************************************
   BACKEND=shinkos2145
