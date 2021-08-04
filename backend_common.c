@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.114"
+#define BACKEND_VERSION "0.115"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -1337,7 +1337,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (stats_only)
+	if (stats_only && !dyesub_debug)
 		quiet = 1;
 
 	DEBUG("Multi-Call Dye-sublimation CUPS Backend version %s\n",
