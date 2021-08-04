@@ -319,6 +319,7 @@ static int kodak8800_attach(void *vctx, struct dyesub_connection *conn, uint8_t 
 		ctx->marker.levelnow = media.ribbon_remain;
 	else
 		ctx->marker.levelnow = media.paper_remain;
+	ctx->marker.levelnow /= 12;
 
 	ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
 	ctx->marker.numtype = media.media_type;
@@ -551,6 +552,7 @@ static int kodak8800_query_markers(void *vctx, struct marker **markers, int *cou
 		ctx->marker.levelnow = media.ribbon_remain;
 	else
 		ctx->marker.levelnow = media.paper_remain;
+	ctx->marker.levelnow /= 12;
 
 	*markers = &ctx->marker;
 	*count = 1;
@@ -567,8 +569,9 @@ static int kodak8800_query_stats(void *vctx, struct printerstats *stats)
 	stats->mfg = "Kodak";
 	stats->model = "8800/9810";
 
-	if (kodak8800_query_mfgmodel(ctx))
-		return CUPS_BACKEND_FAILED;
+	ret = kodak8800_query_mfgmodel(ctx);
+	if (ret)
+		return ret;
 
 	stats->serial = ctx->serial;
 	stats->fwver = ctx->fwver;
@@ -576,13 +579,14 @@ static int kodak8800_query_stats(void *vctx, struct printerstats *stats)
 	stats->decks = 1;
 	stats->mediatype[0] = ctx->marker.name;
 	stats->levelmax[0] = ctx->marker.levelmax;
-	stats->levelmax[0] = ctx->marker.levelnow;
+	stats->levelnow[0] = ctx->marker.levelnow;
 	stats->name[0] = "Roll";
-	stats->status[0] = "Unknown"; // XXX
+	stats->status[0] = strdup("Unknown"); // XXX
 
 	ret = rtp1_docmd(ctx, rtp_getcounters, NULL, 0, sizeof(counters), (uint8_t*) &counters);
-	if (!ret)
+	if (ret)
 		return ret;
+
 	stats->cnt_life[0] = be32_to_cpu(counters.prints_finished);
 
 	return CUPS_BACKEND_OK;
@@ -597,7 +601,7 @@ static const char *kodak8800_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak8800_backend = {
 	.name = "Kodak 8800/9810",
-	.version = "0.01WIP",
+	.version = "0.02WIP",
 	.uri_prefixes = kodak8800_prefixes,
 	.cmdline_usage = kodak8800_cmdline,
 	.cmdline_arg = kodak8800_cmdline_arg,
