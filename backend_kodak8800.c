@@ -111,6 +111,14 @@ struct rtp1_mfgmodel {
 	uint8_t  fwver[64];
 };
 
+struct rtp1_fwvers {
+	uint8_t  dsp[12];
+	uint8_t  eng[12];
+	uint8_t  system[12];
+	uint8_t  head[12];
+	uint8_t  reset[12];
+};
+
 const uint8_t rtp_sendimagedata[4] = { 0x00, 0x00, 0x00, 0x00 }; /* Resp len 0 */
 const uint8_t rtp_getmaxxfer[4]    = { 0x01, 0x00, 0x00, 0x00 }; /* Resp len 4 (u32) */
 const uint8_t rtp_printfooter[4]   = { 0x11, 0x00, 0x00, 0x00 }; /* Resp len 0 */
@@ -122,6 +130,7 @@ const uint8_t rtp_getmedia[4]      = { 0x06, 0x40, 0x00, 0x00 }; /* Resp len 16 
 const uint8_t rtp_getusererrors[4] = { 0x0c, 0x01, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
 const uint8_t rtp_getserverrors[4] = { 0x0c, 0x02, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
 const uint8_t rtp_getifaceerrors[4] = { 0x0c, 0x03, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
+const uint8_t rtp_getfwversions[4] = { 0x13, 0x80, 0x00, 0x00 }; /* Resp len 60 (rtp1_fwvers) */
 
 /* Unknowns */
 const uint8_t rtp_unknown1[4]      = { 0x06, 0x00, 0x00, 0x00 }; /* Resp len 0 */
@@ -242,8 +251,94 @@ static int rtp1_getmaxxfer(struct kodak8800_ctx *ctx, uint32_t *maxlen)
 	return ret;
 }
 
+static int kodak8800_getinfo(struct kodak8800_ctx *ctx)
+{
+	int ret;
+	struct rtp1_mfgmodel mfgmdl;
+	struct rtp1_serial headsn;
+	struct rtp1_fwvers fwvers;
+
+	ret = rtp1_docmd(ctx, rtp_getmfgmodel, NULL, 0,
+			 sizeof(mfgmdl), (uint8_t*) &mfgmdl);
+	if (ret)
+		return ret;
+	ret = rtp1_docmd(ctx, rtp_getserialhead, NULL, 0,
+			 sizeof(headsn), (uint8_t*) &headsn);
+	if (ret)
+		return ret;
+	ret = rtp1_docmd(ctx, rtp_getfwversions, NULL, 0,
+			 sizeof(fwvers), (uint8_t*) &fwvers);
+	if (ret)
+		return ret;
+
+	fwvers.dsp[11] = 0; /* It's special */
+
+	INFO("Manufacturer: %s\n", (char*) mfgmdl.mfg);
+	INFO("Model: %s\n", (char*) mfgmdl.model);
+	INFO("Serial: %s\n", (char*) mfgmdl.serial);
+	INFO("Head Serial: %s\n", (char*) headsn.serial);
+	INFO("Main FW Version: %s\n", (char*) mfgmdl.fwver);
+	INFO("DSP FW Version: %s\n", (char*) fwvers.dsp);
+	INFO("Engine FW Version: %s\n", (char*) fwvers.eng);
+	INFO("System FW Version: %s\n", (char*) fwvers.system);
+	INFO("Head FW Version: %s\n", (char*) fwvers.head);
+	INFO("Reset FW Version: %s\n", (char*) fwvers.reset);
+
+	return CUPS_BACKEND_OK;
+}
+
+static int kodak8800_getmedia(struct kodak8800_ctx *ctx)
+{
+	int ret;
+	struct rtp1_mediastatus media;
+
+	ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0,
+			 sizeof(media), (uint8_t*) &media);
+	if (ret)
+		return ret;
+
+	media.media_type = be16_to_cpu(media.media_type);
+	media.paper_type = be16_to_cpu(media.paper_type);
+	media.ribbon_remain = be32_to_cpu(media.ribbon_remain);
+	media.paper_remain = be32_to_cpu(media.paper_remain);
+
+	INFO("Ribbon Type: %s (%d)\n", media.paper_type == MEDIA_TYPE_8x10_G ? "Kodak 8810S" : " Unknown", media.media_type);
+	INFO("Paper Type: %s (%d)\n", media.paper_type == PAPER_TYPE_7 ? "8\"" : "Unknown", media.paper_type); //XXX
+	INFO("Remaining Paper: %d feet\n", media.paper_remain / 12);
+	INFO("Remaining Ribbon: %d feet\n", media.ribbon_remain / 12);
+
+	return CUPS_BACKEND_OK;
+}
+
+static int kodak8800_getcounters(struct kodak8800_ctx *ctx)
+{
+	int ret;
+	struct rtp1_counters counters;
+
+	ret = rtp1_docmd(ctx, rtp_getcounters, NULL, 0,
+			 sizeof(counters), (uint8_t*) &counters);
+	if (ret)
+		return ret;
+
+	counters.cutter_count = be32_to_cpu(counters.cutter_count);
+	counters.prints_finished = be32_to_cpu(counters.prints_finished);
+	counters.prints_started = be32_to_cpu(counters.prints_started);
+	counters.ribbon_head = be32_to_cpu(counters.ribbon_head);
+	counters.paper_total = be32_to_cpu(counters.paper_total);
+
+	INFO("Lifetime prints %d / %d\n", (int) counters.prints_finished, (int) counters.prints_started);
+	INFO("Cutter actuations: %d\n", (int) counters.cutter_count);
+	INFO("Total ribbon usage: %d feet\n", counters.ribbon_head / 300 / 12);
+	INFO("Total paper usage: %d feet\n", counters.paper_total / 300 / 12);
+
+	return CUPS_BACKEND_OK;
+}
+
 static void kodak8800_cmdline(void)
 {
+	DEBUG("\t\t[ -i ]           # Query printer info\n");
+	DEBUG("\t\t[ -m ]           # Query media info\n");
+	DEBUG("\t\t[ -n ]           # Query counters\n");
 }
 
 static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
@@ -254,9 +349,18 @@ static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "imn")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
+		case 'i':
+			j = kodak8800_getinfo(ctx);
+			break;
+		case 'm':
+			j = kodak8800_getmedia(ctx);
+			break;
+		case 'n':
+			j = kodak8800_getcounters(ctx);
+			break;
 		default:
 			break;  /* Ignore completely */
 		}

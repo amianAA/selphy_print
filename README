@@ -606,7 +606,9 @@
 
    Valid commands:
 
-      [ none at the moment ]
+     -i                 Query printer info
+     -m                 Query media info
+     -n                 Query counters
 
  ***************************************************************************
   BACKEND=shinkos2145
