@@ -37,15 +37,48 @@ struct rtp1_req {
 	uint8_t  payload[];
 };
 
+struct rtp1_sts {
+	uint8_t  base[2];  // x10 x10 or x10 x12 ? (10 == ok, 12 == error?)
+	uint16_t err;      /* RTP_ERROR_* */
+	uint8_t  sts[4];   // [0] STATE_* [2] PRINT_*
+};
+
 struct rtp1_resp {
 	uint8_t  hdr[4]; /* "RTP1" */
 	uint8_t  cmd[4];
-	uint8_t  sts1[2];
-	uint8_t  sts2[3];
-	uint8_t  zero[3];
+	struct rtp1_sts sts;
 	uint32_t payload_len; /* BE */
 	uint8_t  payload[];
 };
+
+#define STS_OK   0x10
+#define STS_ERR  0x12
+#define STS_ERR2 0x13 // Not sure what's different
+
+#define STATE_IDLE  0x00
+#define STATE_UNK   0x01 // XXX
+#define STATE_PRINT 0x02
+
+#define PRINT_IDLE  0x00
+#define PRINT_FEED  0x01
+#define PRINT_Y     0x02
+#define PRINT_M     0x03
+#define PRINT_C     0x04
+#define PRINT_O     0x05
+#define PRINT_EJECT 0x06
+
+#define RTP_ERROR_UKNOWN_0105      0x0105  // seen after issuing START command
+#define RTP_ERROR_JOB_NOT_OPEN     0x0203
+#define RTP_ERROR_COMMAND_DISABLED 0x0307
+#define RTP_ERROR_RIBBON_TOO_SHORT 0x0420
+#define RTP_ERROR_OPERATING_SYS    0x0503
+#define RTP_ERROR_DOOR_OPEN        0x0504
+#define RTP_ERROR_RIBBON_CHECK     0x2001
+#define RTP_ERROR_PAPER_CHECK      0x2004
+#define RTP_ERROR_ENGINE_PROTOCOL  0x4302
+#define RTP_ERROR_BARCODE_SENSE    0x430A
+#define RTP_ERROR_HOST_READ        0xFF02
+#define RTP_ERROR_UNKNOWN_FF04     0xFF04 // seen when issuing CANCELJOB
 
 struct rtp1_counters {
 	uint32_t  cutter_count;
@@ -63,17 +96,6 @@ struct rtp1_errorrecord {
 	uint32_t ribbonnum;
 	uint32_t papernum;
 };
-
-#define RTP_ERROR_JOB_NOT_OPEN     0x0203
-#define RTP_ERROR_COMMAND_DISABLED 0x0307
-#define RTP_ERROR_RIBBON_TOO_SHORT 0x0420
-#define RTP_ERROR_OPERATING_SYS    0x0503
-#define RTP_ERROR_DOOR_OPEN        0x0504
-#define RTP_ERROR_RIBBON_CHECK     0x2001
-#define RTP_ERROR_PAPER_CHECK      0x2004
-#define RTP_ERROR_ENGINE_PROTOCOL  0x4302
-#define RTP_ERROR_BARCODE_SENSE    0x430A
-#define RTP_ERROR_HOST_READ        0xFF02
 
 struct rtp1_errorlog {
 	struct rtp1_errorrecord row[32];
@@ -119,32 +141,36 @@ struct rtp1_fwvers {
 	uint8_t  reset[12];
 };
 
+struct rtp1_sensors {
+	uint8_t unk[6];
+	// -> 02 00 06 2a  ff 00
+	// -> 02 00 06 2a  ff 00
+	// -> 10 00 02 2a  ff 00
+	uint8_t head_temp;
+	uint8_t head_temp_target;
+};
+
 const uint8_t rtp_sendimagedata[4] = { 0x00, 0x00, 0x00, 0x00 }; /* Resp len 0 */
 const uint8_t rtp_getmaxxfer[4]    = { 0x01, 0x00, 0x00, 0x00 }; /* Resp len 4 (u32) */
-const uint8_t rtp_printfooter[4]   = { 0x11, 0x00, 0x00, 0x00 }; /* Resp len 0 */
-const uint8_t rtp_getserial[4]     = { 0x81, 0x01, 0x00, 0x00 }; /* Resp len 64 (rtp1_serial) */
-const uint8_t rtp_getserialhead[4] = { 0x81, 0x01, 0x01, 0x00 }; /* Resp len 64 (rtp1_serial) */
-const uint8_t rtp_getmfgmodel[4]   = { 0x13, 0x00, 0x00, 0x00 }; /* Resp len 256 (rtp1_mfgmodel) */
-const uint8_t rtp_getcounters[4]   = { 0x81, 0x04, 0x00, 0x00 }; /* Resp len 20 (rtp1_counters) */
+const uint8_t rtp_getstatus[4]     = { 0x06, 0x00, 0x00, 0x00 }; /* Resp len 0 */
+const uint8_t rtp_getjobstatus[4]  = { 0x06, 0x03, 0x00, 0x00 }; /* Req len 4, resp 14 XXX */
+const uint8_t rtp_getjobqstatus[4] = { 0x06, 0x05, 0x00, 0x00 }; /* Req len 4, resp 14 XXX */
 const uint8_t rtp_getmedia[4]      = { 0x06, 0x40, 0x00, 0x00 }; /* Resp len 16 (rtp1_mediastatus) */
+const uint8_t rtp_getsensors[4]    = { 0x06, 0x80, 0x00, 0x00 }; /* Resp len 8 (rtp1_sensors */
 const uint8_t rtp_getusererrors[4] = { 0x0c, 0x01, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
 const uint8_t rtp_getserverrors[4] = { 0x0c, 0x02, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
 const uint8_t rtp_getifaceerrors[4] = { 0x0c, 0x03, 0x00, 0x00 }; /* Resp len 512 (rtp1_errorlog) */
+const uint8_t rtp_openjob[4]       = { 0x10, 0x00, 0x00, 0x00 }; /* Resp len 4 (u32) */
+const uint8_t rtp_closejob[4]      = { 0x11, 0x00, 0x00, 0x00 }; /* Resp len 0 */
+const uint8_t rtp_canceljob[4]     = { 0x12, 0x00, 0x00, 0x00 }; /* Resp len 0 */
+const uint8_t rtp_canceljobid[4]   = { 0x12, 0x01, 0x00, 0x00 }; /* Req len 4, Resp len 0 */
+const uint8_t rtp_getmfgmodel[4]   = { 0x13, 0x00, 0x00, 0x00 }; /* Resp len 256 (rtp1_mfgmodel) */
 const uint8_t rtp_getfwversions[4] = { 0x13, 0x80, 0x00, 0x00 }; /* Resp len 60 (rtp1_fwvers) */
+const uint8_t rtp_getserial[4]     = { 0x81, 0x01, 0x00, 0x00 }; /* Resp len 64 (rtp1_serial) */
+const uint8_t rtp_getserialhead[4] = { 0x81, 0x01, 0x01, 0x00 }; /* Resp len 64 (rtp1_serial) */
+const uint8_t rtp_getcounters[4]   = { 0x81, 0x04, 0x00, 0x00 }; /* Resp len 20 (rtp1_counters) */
 
-/* Unknowns */
-const uint8_t rtp_unknown1[4]      = { 0x06, 0x00, 0x00, 0x00 }; /* Resp len 0 */
-  // Read Status?
-const uint8_t rtp_unknown2[4]      = { 0x06, 0x80, 0x00, 0x00 }; /* Resp len 8 */
-  // -> 02 00 06 2a ff 00 1d 27
-  // -> 02 00 06 2a ff 00 1e 27
-  // -> 10 00 02 2a ff 00 26 27
-const uint8_t rtp_unknown3[4]      = { 0x10, 0x00, 0x00, 0x00 }; /* Resp len 4 */
-  // -> 00 00 00 01    Seen prior to sending data to printer.  status/ready?
-  //  ReadCapabilities?
-const uint8_t rtp_unknown4[4]      = { 0x06, 0x03, 0x00, 0x00 }; /* Req len 4, resp 14?? */
-
-// *** XXX head temp (&target), ribbon type, paper type, cut & page alignment, media total
+// *** XXX cut & page alignment, media total?
 //     plus state of cutter, cover, ribbon panel position, etc..
 
 struct rosetta_header {
@@ -184,7 +210,7 @@ struct kodak8800_ctx {
 /* Helper Functions */
 static int rtp1_docmd(struct kodak8800_ctx *ctx, const uint8_t *cmd,
 		      const uint8_t *payload, uint32_t payload_len,
-		      uint32_t maxresp_len, uint8_t *respbuf)
+		      uint32_t maxresp_len, uint8_t *respbuf, struct rtp1_sts *sts)
 {
 	int ret;
 	int num;
@@ -220,11 +246,22 @@ static int rtp1_docmd(struct kodak8800_ctx *ctx, const uint8_t *cmd,
 		goto done;
 	}
 
-	// XXX check response header!  pass up to higher level?
+	/* Copy over the error code */
+	if (sts) {
+		memcpy(sts, &resp.sts, sizeof(resp.sts));
+		sts->err = be16_to_cpu(sts->err);
+	}
 
-	/* Read response payload, if anything */
+
+	/* Read response payload, if any  */
 	resp.payload_len = be32_to_cpu(resp.payload_len);
-	if (resp.payload_len > maxresp_len || (maxresp_len && !respbuf)) {
+	if (!maxresp_len || !respbuf) {
+		if (resp.payload_len)
+			ERROR("No buffer supplied but printer sending %d bytes\n", (int)resp.payload_len);
+		goto done;
+	}
+
+	if (resp.payload_len > maxresp_len) {
 		ERROR("Oversize response (%d/%d)\n", resp.payload_len, maxresp_len);
 		return CUPS_BACKEND_FAILED;
 	}
@@ -244,7 +281,7 @@ static int rtp1_getmaxxfer(struct kodak8800_ctx *ctx, uint32_t *maxlen)
 {
 	int ret;
 
-	ret = rtp1_docmd(ctx, rtp_getmaxxfer, NULL, 0, 4, (uint8_t*)maxlen);
+	ret = rtp1_docmd(ctx, rtp_getmaxxfer, NULL, 0, 4, (uint8_t*)maxlen, NULL);
 
 	*maxlen = be32_to_cpu(*maxlen);
 
@@ -259,15 +296,15 @@ static int kodak8800_getinfo(struct kodak8800_ctx *ctx)
 	struct rtp1_fwvers fwvers;
 
 	ret = rtp1_docmd(ctx, rtp_getmfgmodel, NULL, 0,
-			 sizeof(mfgmdl), (uint8_t*) &mfgmdl);
+			 sizeof(mfgmdl), (uint8_t*) &mfgmdl, NULL);
 	if (ret)
 		return ret;
 	ret = rtp1_docmd(ctx, rtp_getserialhead, NULL, 0,
-			 sizeof(headsn), (uint8_t*) &headsn);
+			 sizeof(headsn), (uint8_t*) &headsn, NULL);
 	if (ret)
 		return ret;
 	ret = rtp1_docmd(ctx, rtp_getfwversions, NULL, 0,
-			 sizeof(fwvers), (uint8_t*) &fwvers);
+			 sizeof(fwvers), (uint8_t*) &fwvers, NULL);
 	if (ret)
 		return ret;
 
@@ -293,7 +330,7 @@ static int kodak8800_getmedia(struct kodak8800_ctx *ctx)
 	struct rtp1_mediastatus media;
 
 	ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0,
-			 sizeof(media), (uint8_t*) &media);
+			 sizeof(media), (uint8_t*) &media, NULL);
 	if (ret)
 		return ret;
 
@@ -306,6 +343,7 @@ static int kodak8800_getmedia(struct kodak8800_ctx *ctx)
 	INFO("Paper Type: %s (%d)\n", media.paper_type == PAPER_TYPE_7 ? "8\"" : "Unknown", media.paper_type); //XXX
 	INFO("Remaining Paper: %d feet\n", media.paper_remain / 12);
 	INFO("Remaining Ribbon: %d feet\n", media.ribbon_remain / 12);
+	INFO("Remaining Prints: %d\n", media.ribbon_remain / 12 / 4);
 
 	return CUPS_BACKEND_OK;
 }
@@ -316,7 +354,7 @@ static int kodak8800_getcounters(struct kodak8800_ctx *ctx)
 	struct rtp1_counters counters;
 
 	ret = rtp1_docmd(ctx, rtp_getcounters, NULL, 0,
-			 sizeof(counters), (uint8_t*) &counters);
+			 sizeof(counters), (uint8_t*) &counters, NULL);
 	if (ret)
 		return ret;
 
@@ -334,11 +372,32 @@ static int kodak8800_getcounters(struct kodak8800_ctx *ctx)
 	return CUPS_BACKEND_OK;
 }
 
+static int kodak8800_canceljob(struct kodak8800_ctx *ctx, int id)
+{
+	int ret;
+	uint8_t jobcmd[4];
+	uint32_t jobid;
+
+	memcpy(jobcmd, rtp_canceljob, sizeof(jobcmd));
+
+	if (id > 0) {
+		jobid = id;
+		jobid = cpu_to_be32(jobid);
+		jobcmd[1] = 1; // XXX this might need to be the jobid
+		ret = rtp1_docmd(ctx, jobcmd, (uint8_t*)&jobid, sizeof(jobid), 0, NULL, NULL);
+	} else {
+		ret = rtp1_docmd(ctx, jobcmd, NULL, 0, 0, NULL, NULL);
+	}
+
+	return ret;
+}
+
 static void kodak8800_cmdline(void)
 {
 	DEBUG("\t\t[ -i ]           # Query printer info\n");
 	DEBUG("\t\t[ -m ]           # Query media info\n");
 	DEBUG("\t\t[ -n ]           # Query counters\n");
+	DEBUG("\t\t[ -X id ]        # Cancel job (0 for all)\n");
 }
 
 static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
@@ -349,7 +408,7 @@ static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "imn")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "imnX:")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
 		case 'i':
@@ -361,6 +420,10 @@ static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
 		case 'n':
 			j = kodak8800_getcounters(ctx);
 			break;
+		case 'X':
+			j = kodak8800_canceljob(ctx, atoi(optarg));
+			break;
+
 		default:
 			break;  /* Ignore completely */
 		}
@@ -402,7 +465,7 @@ static int kodak8800_attach(void *vctx, struct dyesub_connection *conn, uint8_t 
 		ret = kodak8800_query_mfgmodel(ctx);
 		if (ret)
 			return CUPS_BACKEND_FAILED;
-		ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0, sizeof(media), (uint8_t*)&media);
+		ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0, sizeof(media), (uint8_t*)&media, NULL);
 		if (ret)
 			return CUPS_BACKEND_FAILED;
 
@@ -559,6 +622,7 @@ static int kodak8800_main_loop(void *vctx, const void *vjob) {
 	struct kodak8800_ctx *ctx = vctx;
 
 	int ret;
+	struct rtp1_sts sts;
 
 	const struct kodak8800_printjob *job = vjob;
 
@@ -567,15 +631,37 @@ static int kodak8800_main_loop(void *vctx, const void *vjob) {
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	// query printer for shit
-
 	INFO("Waiting for printer idle\n");
 
-	// update marker levels?
-
-	// RTP1 status etc?
+	/* Query status */
+	do {
+		ret = rtp1_docmd(ctx, rtp_getstatus, NULL, 0, 0, NULL, &sts);
+		if (ret)
+			return ret;
+		if (sts.err) {
+			ERROR("Printer reports error: %04x\n", sts.err);
+			return CUPS_BACKEND_FAILED; // XXX make it more subtle!
+		}
+		if (sts.sts[0] == STATE_IDLE) {
+			break;
+		}
+		sleep(1);
+	} while (1);
 
 	INFO("Sending image data\n");
+
+	uint32_t jobid;
+	ret = rtp1_docmd(ctx, rtp_openjob, NULL, 0, 4, (uint8_t*)&jobid, &sts);
+	if (ret)
+		return ret;
+
+	jobid = be32_to_cpu(jobid);
+	if (sts.err) {
+		ERROR("Printer reports error: %04x\n", sts.err);
+		return CUPS_BACKEND_FAILED;
+	}
+	INFO("Printer assigned Job ID: %d\n", (int) jobid);
+
 	/* Sent over data blocks */
 	uint32_t offset = 0;
 	while (offset < job->jobsize) {
@@ -584,23 +670,48 @@ static int kodak8800_main_loop(void *vctx, const void *vjob) {
 		if (ret)
 			return ret;
 
+		if (job->jobsize - offset < max_blocksize)
+			max_blocksize = job->jobsize - offset;
+
 		ret = rtp1_docmd(ctx, rtp_sendimagedata,
 				 job->databuf + offset, max_blocksize,
-				 0, NULL);
+				 0, NULL, &sts);
 		if (ret)
 			return ret;
+		if (sts.err) {
+			ERROR("Printer reports error: %04x\n", sts.err);
+			return CUPS_BACKEND_FAILED;
+		}
+
+		offset += max_blocksize;
 	}
 	/* Send payload footer */
-	ret = rtp1_docmd(ctx, rtp_printfooter,
-			 NULL, 0, 0, NULL);
+	ret = rtp1_docmd(ctx, rtp_closejob,
+			 NULL, 0, 0, NULL, &sts);
 	if (ret)
 		return ret;
 
 	INFO("Waiting for printer to acknowledge completion\n");
 
-	// RTP1 status etc?
+	do {
+		sleep(1);
 
-	// update marker levels?
+		ret = rtp1_docmd(ctx, rtp_getstatus, NULL, 0, 0, NULL, &sts);
+		if (ret)
+			return ret;
+		if (sts.err) {
+			ERROR("Printer reports error: %04x\n", sts.err);
+			return CUPS_BACKEND_FAILED;
+		}
+		if (sts.sts[0] == STATE_IDLE) {
+			break;
+		}
+		if (fast_return) {
+			INFO("Fast return mode enabled.\n");
+			break;
+		}
+		sleep(1);
+	} while (1);
 
 	INFO("Print complete\n");
 
@@ -616,7 +727,7 @@ static int kodak8800_query_serno(struct dyesub_connection *conn, char *respbuf, 
 		.conn = conn,
 	};
 
-	ret = rtp1_docmd(&ctx, rtp_getserial, NULL, 0, sizeof(buf), buf);
+	ret = rtp1_docmd(&ctx, rtp_getserial, NULL, 0, sizeof(buf), buf, NULL);
 
 	if (!ret)
 		memcpy(respbuf, buf, buf_len);
@@ -629,7 +740,7 @@ static int kodak8800_query_mfgmodel(struct kodak8800_ctx *ctx)
 	uint8_t buf[256];
 	int ret;
 
-	ret = rtp1_docmd(ctx, rtp_getmfgmodel, NULL, 0, sizeof(buf), buf);
+	ret = rtp1_docmd(ctx, rtp_getmfgmodel, NULL, 0, sizeof(buf), buf, NULL);
 
 	if (!ret) {
 		memcpy(ctx->serial, buf + 64*2, sizeof(ctx->serial));
@@ -644,7 +755,7 @@ static int kodak8800_query_markers(void *vctx, struct marker **markers, int *cou
 	struct rtp1_mediastatus media;
 	int ret;
 
-	ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0, sizeof(media), (uint8_t*)&media);
+	ret = rtp1_docmd(ctx, rtp_getmedia, NULL, 0, sizeof(media), (uint8_t*)&media, NULL);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 
@@ -668,6 +779,8 @@ static int kodak8800_query_stats(void *vctx, struct printerstats *stats)
 {
 	struct kodak8800_ctx *ctx= vctx;
 	struct rtp1_counters counters;
+	struct rtp1_sts sts;
+
 	int ret;
 
 	stats->mfg = "Kodak";
@@ -685,13 +798,24 @@ static int kodak8800_query_stats(void *vctx, struct printerstats *stats)
 	stats->levelmax[0] = ctx->marker.levelmax;
 	stats->levelnow[0] = ctx->marker.levelnow;
 	stats->name[0] = "Roll";
-	stats->status[0] = strdup("Unknown"); // XXX
 
-	ret = rtp1_docmd(ctx, rtp_getcounters, NULL, 0, sizeof(counters), (uint8_t*) &counters);
+	ret = rtp1_docmd(ctx, rtp_getcounters, NULL, 0, sizeof(counters), (uint8_t*) &counters, &sts);
 	if (ret)
 		return ret;
 
 	stats->cnt_life[0] = be32_to_cpu(counters.prints_finished);
+
+	const char *status;
+	if (sts.err)
+		status = "Error";
+	else if (sts.sts[0] == STATE_IDLE)
+		status = "Idle";
+	else if (sts.sts[0] == STATE_PRINT)
+		status = "Printing";
+	else
+		status = "Unknown";
+
+	stats->status[0] = strdup(status); // XXX
 
 	return CUPS_BACKEND_OK;
 }
@@ -705,7 +829,7 @@ static const char *kodak8800_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak8800_backend = {
 	.name = "Kodak 8800/9810",
-	.version = "0.02WIP",
+	.version = "0.05",
 	.uri_prefixes = kodak8800_prefixes,
 	.cmdline_usage = kodak8800_cmdline,
 	.cmdline_arg = kodak8800_cmdline_arg,
@@ -883,107 +1007,21 @@ const struct dyesub_backend kodak8800_backend = {
 
 >  52 54 50 31 xx xx xx xx  yy yy yy yy l1 l1 l1 l1
 >> [ l1l1l1l1 bytes of payload ]
-<  52 54 40 31 xx xx xx xx  ss ss s2 s2 s2 00 00 00  l2 l2 l2 l2
+<  52 54 40 31 xx xx xx xx  ss ss EE EE s2 00 00 00  l2 l2 l2 l2
 << [ l2l2l2l2 bytes of payload ]
 
      xx xx xx xx == command
      yy yy yy yy == response buffer length (ie l2l2l2l2 must be <= yyyyyyyy)
-     ss ss == status message (10 10 is ok, 10 12 ok, dunno about errors)
-     s2 s2 s2 == secondary status (seen 00 00 00, 00 00 02, 05 04 02)
+     ss ss == status message (10 10 is ok, 10 12 error)
+     EE EE == error code
+     s2 == secondary status (seen 00, 01, 02)
 
- Specific commands seen when printing:
 
- 52 54 50 31 [....]  "RTP1"
+ **************** TODO
 
-   media status:
-
->            06 40 00 00  00 10 00 00 00 00 00 00
-<            06 40 00 00  10 10 00 00 00 00 00 00  00 00 00 10
-<<                        00 01 00 02 00 01 00 01  00 00 04 a4 00 00 01 20
-
-   max xfer len:
->            01 00 00 00  00 00 00 04 00 00 00 00
-<            01 00 00 00  10 10 00 00 02 00 00 00  00 00 00 04
-<<                        00 18 00 00
-
-   media status:
->            06 40 00 00  00 10 00 00 00 00 00 00
-<            06 40 00 00  10 10 00 00 00 00 00 00  00 00 00 10
-<<                        00 01 00 02 00 01 00 01  00 00 04 a4 00 00 01 20
-
-   some sort of status?
->            10 00 00 00  00 00 00 04 00 00 00 00
-<            10 00 00 00  10 10 00 00 00 00 00 00  00 00 00 04
-<<                        00 00 00 01
-
- [ Each data block gets this sequence ]
-
->            01 00 00 00  00 00 00 04 00 00 00 00
-<            01 00 00 00  10 10 00 00 02 00 00 00  00 00 00 04
-<<                        00 18 00 00  <-- Max available xfer buffer size!
->            00 00 00 00  00 00 00 00 ll ll ll ll
->>            [ llllllll bytes of data, in 4K transfers, up to max size]
-<            00 00 00 00  10 10 00 00 02 00 00 00  00 00 00 00
-
- [ after final block ]
-
->            01 00 00 00  00 00 00 04 00 00 00 00
-<            01 00 00 00  10 10 00 00 02 00 00 00  00 00 00 04
-<<                        00 00 00 00 <-- finished?
-
- [ footer ]
-
->            11 00 00 00  00 00 00 00 00 00 00 00
-<            11 00 00 00  10 10 00 00 02 00 00 00  00 00 00 00
-
- **** COMMANDS:
-
-    Query Printer Serial Number (Matches what's in IEEE1284) =~ 98C070902445
-
->            81 01 00 00  00 00 ff ff 00 00 00 00
-<            81 01 00 00  10 12 05 04 01 00 00 00  00 00 00 40
-<<                        39 38 43 30 37 30 39 30  32 34 34 35 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-        Serial number is ASCII, null-terminated, 64 byte payload
-
-    Query Head Serial Number (??) =~ 6J3867
-
->            81 01 01 00  00 00 ff ff 00 00 00 00
-<            81 01 01 00  10 12 05 04 01 00 00 00  00 00 00 40
-<<                        39 38 43 30 37 30 39 30  32 34 34 35 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-        Serial number is ASCII, null-terminated, 64 byte payload
-
-    Query Mfg, Model, Serial & Firmware info (??)
-
->            13 00 00 00  00 00 01 00 00 00 00 00
-<            13 00 00 00  10 12 05 04 01 00 00 00  00 00 01 00
-<<                        45 61 73 74 6d 61 6e 20  4b 6f 64 61 6b 20 43 6f
-<<                        6d 70 61 63 79 00 20 20  20 20 20 20 20 20 20 20
-<<                        20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20
-<<                        20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20
-
-		[ followed by three more 64 byte sections ]
-
-        Each section is ASCII, null-terminated/padded, 64 byte payload
-        4 sections: Manufacturer, Model, Serial, FW Version
-
-    Query FW sub-versions
-
->            13 80 00 00  00 00 00 3c 00 00 00 00
-<            13 80 00 00  10 12 05 04 01 00 00 00  00 00 00 3c
-<<                        39 38 43 30 37 30 39 30  32 34 34 35 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-<<                        00 00 00 00 00 00 00 00  00 00 00 00 00
-
-        Five blocks of 12 bytes, not always null-terminated!
-        DSP, ??, System, Head, Reset
+ * Sensor reporting (and queries)
+ * Job status / Job queue status
+ * Print status & errors
+ * 8x12 media crap
 
  */

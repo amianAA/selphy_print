@@ -609,6 +609,7 @@
      -i                 Query printer info
      -m                 Query media info
      -n                 Query counters
+     -X id              Cancel job (0 for all/current)
 
  ***************************************************************************
   BACKEND=shinkos2145
