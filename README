@@ -606,6 +606,7 @@
 
    Valid commands:
 
+     -e [ 1|2|3 ]       Query error logs
      -i                 Query printer info
      -m                 Query media info
      -n                 Query counters

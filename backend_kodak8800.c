@@ -77,8 +77,10 @@ struct rtp1_resp {
 #define RTP_ERROR_PAPER_CHECK      0x2004
 #define RTP_ERROR_ENGINE_PROTOCOL  0x4302
 #define RTP_ERROR_BARCODE_SENSE    0x430A
+#define RTP_ERROR_UNKNOWN_FF01     0xFF01 // seen in interface log
 #define RTP_ERROR_HOST_READ        0xFF02
 #define RTP_ERROR_UNKNOWN_FF04     0xFF04 // seen when issuing CANCELJOB
+#define RTP_ERROR_UNKNOWN_FFFF     0xFFFF // Seen in interface log
 
 struct rtp1_counters {
 	uint32_t  cutter_count;
@@ -89,16 +91,22 @@ struct rtp1_counters {
 };
 
 struct rtp1_errorrecord {
-	uint8_t  unk;  // 12 == user, 13 == service, 0 == invalid/terminator?
+	uint8_t  type;  // ERROR_TYPE_*
 	uint16_t code;
 	uint8_t  plane; // 0-3
 	uint32_t printnum;
 	uint32_t ribbonnum;
 	uint32_t papernum;
-};
+} __attribute__((packed));
+
+#define ERROR_TYPE_END     0x00
+#define ERROR_TYPE_USER    0x12
+#define ERROR_TYPE_SERVICE 0x13
+
+#define NUM_ERRORRECS 32
 
 struct rtp1_errorlog {
-	struct rtp1_errorrecord row[32];
+	struct rtp1_errorrecord row[NUM_ERRORRECS];
 };
 
 struct rtp1_mediastatus {
@@ -238,13 +246,20 @@ static int rtp1_docmd(struct kodak8800_ctx *ctx, const uint8_t *cmd,
 			return ret;
 
 	/* Read response header */
+	int try = 0;
+retry:
 	ret = read_data(ctx->conn, (uint8_t*) &resp,
 			sizeof(resp), &num);
+	if (try == 0 && num == 0) {
+		try = 1;
+		goto retry;
+	}
 	if (num != (int)sizeof(resp)) {
 		ERROR("Short Read! (%d/%d)\n", num, (int)sizeof(resp));
 		ret = -4;
 		goto done;
 	}
+
 
 	/* Copy over the error code */
 	if (sts) {
@@ -392,8 +407,45 @@ static int kodak8800_canceljob(struct kodak8800_ctx *ctx, int id)
 	return ret;
 }
 
+static int kodak8800_geterrorlog(struct kodak8800_ctx *ctx, int id)
+{
+	int ret;
+	uint8_t jobcmd[4];
+	struct rtp1_errorlog errors;
+	int i;
+
+	if (id < 1 || id > 3)
+		return CUPS_BACKEND_FAILED;
+
+	memcpy(jobcmd, rtp_getusererrors, sizeof(jobcmd));
+
+	jobcmd[1] = id;
+
+	ret = rtp1_docmd(ctx, jobcmd, NULL, 0, sizeof(errors), (uint8_t*)&errors, NULL);
+
+	if (ret)
+		return CUPS_BACKEND_FAILED;
+	DEBUG("PRINT  / PAPER  / RIBBON @ PL : CODE\n");
+
+	for (i = 0; i < NUM_ERRORRECS; i++) {
+		if (errors.row[i].type == ERROR_TYPE_END)
+			continue;
+		INFO(" %06d / %06d / %06d @ %02d : x%04x\n",
+		     be32_to_cpu(errors.row[i].printnum),
+		     be32_to_cpu(errors.row[i].papernum) / 300 / 12,
+		     be32_to_cpu(errors.row[i].ribbonnum) / 300 / 12,
+		     errors.row[i].plane,
+		     be16_to_cpu(errors.row[i].code));
+	}
+
+	/* After an error log query, have to kick things */
+	ret = rtp1_docmd(ctx, rtp_getstatus, NULL, 0, 0, NULL, NULL);
+
+	return ret;
+}
 static void kodak8800_cmdline(void)
 {
+	DEBUG("\t\t[ -e 1|2|3 ]     # Query error logs\n");
 	DEBUG("\t\t[ -i ]           # Query printer info\n");
 	DEBUG("\t\t[ -m ]           # Query media info\n");
 	DEBUG("\t\t[ -n ]           # Query counters\n");
@@ -408,9 +460,12 @@ static int kodak8800_cmdline_arg(void *vctx, int argc, char **argv)
 	if (!ctx)
 		return -1;
 
-	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "imnX:")) >= 0) {
+	while ((i = getopt(argc, argv, GETOPT_LIST_GLOBAL "e:imnX:")) >= 0) {
 		switch(i) {
 		GETOPT_PROCESS_GLOBAL
+		case 'e':
+			j = kodak8800_geterrorlog(ctx, atoi(optarg));
+			break;
 		case 'i':
 			j = kodak8800_getinfo(ctx);
 			break;
@@ -829,7 +884,7 @@ static const char *kodak8800_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak8800_backend = {
 	.name = "Kodak 8800/9810",
-	.version = "0.05",
+	.version = "0.06",
 	.uri_prefixes = kodak8800_prefixes,
 	.cmdline_usage = kodak8800_cmdline,
 	.cmdline_arg = kodak8800_cmdline_arg,
