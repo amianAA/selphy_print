@@ -1768,7 +1768,7 @@ top:
 			print.media = 0;  /* ignore job->jp.media! */
 
 			print.ipp = SINFONIA_PRINT28_IPP_CONTOUR; // XXX make configurable?
-			print.method = cpu_to_le32(job->jp.method | SINFONIA_PRINT28_METHOD_ERR_RECOVERY | SINFONIA_PRINT28_METHOD_ERR_PREHEAT);
+			print.method = cpu_to_le32(job->jp.method | SINFONIA_PRINT28_METHOD_ERR_RECOVERY | SINFONIA_PRINT28_METHOD_PREHEAT);
 
 			if ((ret = sinfonia_docmd(&ctx->dev,
 						  (uint8_t*)&print, sizeof(print),
