@@ -989,6 +989,7 @@ static void CImageEffect70_CalcSA(struct BandImage *img,
 	}
 }
 
+/* Returns 1 for OK, 0 for do NOT rewind! */
 static int CImageEffect70_JudgeReverseSkipRibbon_int(struct BandImage *img,
 						     int32_t *REV,
 						     int invert)
@@ -1042,32 +1043,55 @@ static int CImageEffect70_JudgeReverseSkipRibbon_int(struct BandImage *img,
 	return 1;
 }
 
-// called twice, once with param1 == 1, once with param1 == 2.
+/* called twice, once with param1 == 1, once with param1 == 2.
+   Returns 0 for DO NOT REWIND, 1 for REWIND OK */
 static int CImageEffect70_JudgeReverseSkipRibbon(struct CPCData *cpc,
 						 struct BandImage *img,
-						 int is_6inch,
+						 int cols, int rows,
 						 int param1)
 {
 	int offset = -1;
 
-	if (param1 == 1) {
-		if (is_6inch) {
-			offset = 0; // REV[0][0]
-		} else {
-			offset = 19; // REV[1][0]
+	if (cols == 0x748) { // 6"
+		if (rows == 0x4c2) { // 6x4"
+			if (param1 == 1)
+				offset = 0; // REV[0][0] aka 6x4" p1
+			else if (param1 == 2)
+				offset = 19*2; // REV[2][0] aka 6x4" p2
+		} else if (rows == 0x39e ) { // 6x3"
+			if (param1 == 1)
+				offset = 19*5; // REV[5][0] aka 6x3" p1
+			else if (param1 == 2)
+				offset = 19*8; // REV[8][0] aka 6x3" p2
+		} else if (rows == 0x270 ) { // 6x2"
+			if (param1 == 1)
+				offset = 19*4; // REV[4][0] aka 6x2" p1
+			else if (param1 == 2)
+				offset = 19*7; // REV[7][0] aka 6x2" p2
 		}
-	} else if (param1 == 2) {
-		if (is_6inch) {
-			offset = 38; // REV[2][0]
-		} else {
-			offset = 57; // REV[3][0]
+	} else if (cols == 0x620) { // 5"
+		if (rows == 0x434) {
+			if (param1 == 1) // 5x3.5"
+				offset = 19*1; // REV[1][0] aka 5x3.5" p1
+			else if (param1 == 2)
+				offset = 19*3; // REV[3][0] aka 5x3.5" p2
+		} else if (rows == 0x39e) { // 5x3"
+			if (param1 == 1)
+				offset = 19*6; // REV[6][0] aka 5x3" p1
+			else if (param1 == 2)
+				offset = 19*9; // REV[9][0] aka 5x3" p2
 		}
 	}
+
+	/* Make sure we have a table entry; if not, no rewind for you! */
+	if (! cpc->REV[offset])
+		offset = -1;
+
 	if (offset != -1) {
 		return CImageEffect70_JudgeReverseSkipRibbon_int(img, &cpc->REV[offset], 1);
 	}
 
-	return 0;
+	return 0; /* Do NOT rewind is default */
 }
 
 static void CImageEffect70_DoConv(struct CImageEffect70 *data,
@@ -1227,26 +1251,13 @@ int do_image_effect80(struct CPCData *cpc, struct CPCData *ecpc, struct BandImag
 
 	/* Figure out if we can get away with rewinding, or not... */
 	if (cpc->REV[0]) {
-		int is_6 = -1;
-
-		/* Only allow rewinds for 4x6 and 5x3.5" prints */
-		if (input->cols == 0x0620 && input->rows == 0x0434)
-			is_6 = 0;
-		else if (input->cols == 0x0748 && input->rows == 0x04c2)
-			is_6 = 1;
-
-		rew[1] = 1;
-		if (ecpc == NULL)  /* IOW, only do the rewind check for SuperFine */
-			rew[0] = 1;
-		else if (is_6 != -1) {
-			rew[0] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, is_6, 1);
-		} else {
-			rew[0] = 1;
-		}
+		rew[0] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, input->cols, input->rows, 1);
 	}
+	rew[1] = 1;
 
-	/* If we're rewinding, we have to switch to the other CPC file and restart the process */
-	if (! rew[0] ) {
+	/* If we're NOT rewinding,
+	   we have to switch to the other CPC file and restart the process */
+	if ( ! rew[0] ) {
 		CImageEffect70_Destroy(data);
 		data = CImageEffect70_Create(ecpc);
 		if (!data)
@@ -1277,18 +1288,8 @@ int do_image_effect60(struct CPCData *cpc, struct CPCData *ecpc, struct BandImag
 
 	/* Figure out if we can get away with rewinding, or not... */
 	if (cpc->REV[0]) {
-		int is_6 = -1;
-
-		/* Only allow rewinds for 4x6 and 5x3.5" prints */
-		if (input->cols == 0x0620 && input->rows == 0x0434)
-			is_6 = 0;
-		else if (input->cols == 0x0748 && input->rows == 0x04c2)
-			is_6 = 1;
-
-		if (is_6 != -1) {
-			rew[0] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, is_6, 1);
-			rew[1] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, is_6, 2);
-		}
+		rew[0] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, input->cols, input->rows, 1);
+		rew[1] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, input->cols, input->rows, 2);
 	}
 
 	CImageEffect70_Destroy(data);
