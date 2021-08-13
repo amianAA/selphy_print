@@ -107,6 +107,7 @@ shinko-chcs1245,0x10ce,0x0007,0,PageSize=c8x10;StpLaminate=Matte
 shinko-chcs1245,0x10ce,0x0007,0,PageSize=c8x10;StpLaminate=MatteFine
 #
 shinko-chcs2145,0x10ce,0x000e,0,PageSize=w144h432
+shinko-chcs2145,0x10ce,0x000e,0,PageSize=w262h414
 shinko-chcs2145,0x10ce,0x000e,0,PageSize=w288h432
 shinko-chcs2145,0x10ce,0x000e,1,PageSize=w288h432-div2
 shinko-chcs2145,0x10ce,0x000e,6,PageSize=w432h576
@@ -207,6 +208,12 @@ sony-updr150,0x054c,0x01e8,,PageSize=w360h504
 sony-upcr10l,0x054c,0x0226,,PageSize=w288h432
 sony-upcr10l,0x054c,0x0226,,PageSize=B7
 sony-upcr10l,0x054c,0x0226,,PageSize=w260h504
+sony-upcr10l,0x054c,0x0226,,PageSize=w288h576
+#
+sony-upcx1,0x054c,0x02d4,,PageSize=w288h432
+sony-upcx1,0x054c,0x02d4,,PageSize=B7
+sony-upcx1,0x054c,0x02d4,,PageSize=w260h504
+sony-upcx1,0x054c,0x02d4,,PageSize=w288h576
 #
 sony-updr200,0x054c,0x035f,,PageSize=w288h432
 sony-updr200,0x054c,0x035f,,PageSize=w288h432-div2
