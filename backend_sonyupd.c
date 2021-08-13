@@ -745,6 +745,7 @@ const struct dyesub_backend sonyupd_backend = {
 		{ 0x054c, 0x01e8, P_SONY_UPDR150, NULL, "sony-updr150"},
 		{ 0x054c, 0x035f, P_SONY_UPDR150, NULL, "sony-updr200"},
 		{ 0x054c, 0x0226, P_SONY_UPCR10, NULL, "sony-upcr10l"},
+//		{ 0x054c, 0x02d4, P_SONY_UPCR10, NULL, "sony-upcx1"},
 		{ 0x054c, 0x0049, P_SONY_UPD895, NULL, "sony-upd895"},
 		{ 0x054c, 0x01e7, P_SONY_UPD897, NULL, "sony-upd897"},
 		{ 0, 0, 0, NULL, NULL}
