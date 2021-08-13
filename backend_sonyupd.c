@@ -139,7 +139,7 @@ static int sonyupd_media_maxes(uint8_t type, uint8_t media)
 // 2UPC-R155         (335)
 // 2UPC-R156         (295)
 
-// UP-CR10L
+// UP-CR10L & UP-CX1
 
 // 2UPC-C13          (300)
 // 2UPC-C14          (200)
@@ -745,7 +745,7 @@ const struct dyesub_backend sonyupd_backend = {
 		{ 0x054c, 0x01e8, P_SONY_UPDR150, NULL, "sony-updr150"},
 		{ 0x054c, 0x035f, P_SONY_UPDR150, NULL, "sony-updr200"},
 		{ 0x054c, 0x0226, P_SONY_UPCR10, NULL, "sony-upcr10l"},
-//		{ 0x054c, 0x02d4, P_SONY_UPCR10, NULL, "sony-upcx1"},
+		{ 0x054c, 0x02d4, P_SONY_UPCR10, NULL, "sony-upcx1"},
 		{ 0x054c, 0x0049, P_SONY_UPD895, NULL, "sony-upd895"},
 		{ 0x054c, 0x01e7, P_SONY_UPD897, NULL, "sony-upd897"},
 		{ 0, 0, 0, NULL, NULL}
@@ -930,12 +930,15 @@ const struct dyesub_backend sonyupd_backend = {
 
  **************
 
-  Sony UP-CL10 / DNP SL-10 spool format:
+  Sony UP-CL10 / DNP SL-10 / UP-CX1 spool format:
 
-60 ff ff ff f8 ff ff ff  fd ff ff ff
+60 ff ff ff
+f8 ff ff ff
+fd ff ff ff        (or: f0 ff ff ff)
 14 00 00 00
 1b 15 00 00 00 0d 00 00  00 00 00 07 00 00 00 00  WW WW HH HH
-fb ff ff ff f4 ff ff ff
+fb ff ff ff
+f4 ff ff ff
 0b 00 00 00
 1b ea 00 00 00 00 SH SH  SH SH 00
 SL SL SL SL
@@ -946,13 +949,14 @@ f3 ff ff ff
 0f 00 00 00
 1b e5 00 00 00 08 00 00  00 00 00 00 00 00 00
 12 00 00 00
-1b e1 00 00 00 0b 00 00  80 00 00 00 00 00 WW WW  HH HH
+1b e1 00 00 00 0b 00 00  80 GG 00 00 00 00 WW WW  HH HH
 fa ff ff ff
 09 00 00 00
 1b ee 00 00 00 02 00 00  NN
 07 00 00 00
 1b 0a 00 00 00 00 00
-f9 ff ff ff fc ff ff ff
+f9 ff ff ff
+fc ff ff ff
 07 00 00 00
 1b 17 00 00 00 00 00
 f7 ff ff ff
@@ -962,6 +966,7 @@ f7 ff ff ff
  SL SL SL SL == Plane size, Little Endian (Rows * Cols * 3)
  SH SH SH SH == Plane size, Big Endian (Rows * Cols * 3)
  NN == Copies
+ GG == Overcoat, 0x00 glossy, 0x0c matte (UP-CX1 only)
 
  **************
 

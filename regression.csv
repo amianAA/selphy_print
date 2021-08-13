@@ -104,6 +104,7 @@ kodak-8800,0x040a,0x4023,kodak_8800_8x10.raw,0x1
 # 'sonyupd'
 #
 sonyupcr10,0x054c,0x0226,sony_upcr10l_4x6.raw,
+sony-upcx1,0x054c,0x02d4,sony_upcr10l_4x6.raw,
 sonyupdr150,0x054c,0x01e8,sony_updr150_4x6.raw,
 sonyupdr150,0x054c,0x01e8,sony_updr150_8x6.raw,
 sonyupdr200,0x054c,0x035f,sony_updr200_2x6.raw,

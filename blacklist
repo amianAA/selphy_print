@@ -165,6 +165,9 @@
 # Sony UP-CR10L
 0x054c 0x0226 blacklist
 
+# Sony UP-CX1
+0x054c 0x02d4 blacklist
+
 # Sony UP-D895
 0x054c 0x0049 blacklist
 
