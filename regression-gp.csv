@@ -214,6 +214,8 @@ sony-upcx1,0x054c,0x02d4,,PageSize=w288h432
 sony-upcx1,0x054c,0x02d4,,PageSize=B7
 sony-upcx1,0x054c,0x02d4,,PageSize=w260h504
 sony-upcx1,0x054c,0x02d4,,PageSize=w288h576
+sony-upcx1,0x054c,0x02d4,,PageSize=w288h576;StpLaminate=Glossy
+sony-upcx1,0x054c,0x02d4,,PageSize=w288h576;StpLaminate=Matte
 #
 sony-updr200,0x054c,0x035f,,PageSize=w288h432
 sony-updr200,0x054c,0x035f,,PageSize=w288h432-div2
