@@ -57,7 +57,7 @@
 
 */
 
-#define LIB_VERSION "0.10.0"
+#define LIB_VERSION "0.10.1"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -172,7 +172,7 @@ struct CPCData {
 	/* Used by roller mark correction (K60/D80/EK305) -- Unused! */
 	uint32_t ROLK[13];       // @42084
 	/* Used by reverse/skip logic (K60/D80/EK305) */
-	 int32_t REV[76];        // @42136 // Actually int32_t[4][19]
+	 int32_t REV[190];       // @42136 // Actually int32_t[10][19]
 	                         // @42440
 };
 
@@ -477,7 +477,7 @@ struct CPCData *get_CPCData(const char *filename)
 			data->ROLK[line] = strtol(ptr, NULL, 10);
 
 		}
-		if (line < 76) { // REV, not present on D70
+		if (line < 190) { // REV, not present on D70.
 			ptr = strtok(NULL, delim);
 			if (!ptr)
 				continue;
