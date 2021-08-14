@@ -636,6 +636,7 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 		resp.lower.media_type = media_code;
 		resp.dual_deck = 0x80;  /* Make it a dual deck */
 		resp.vers[0].ver[0] = 0;
+		resp.subtype = 0x5e;
 	}
 
 	/* Figure out if we're a D707 with two decks */
