@@ -57,7 +57,7 @@
 
 */
 
-#define LIB_VERSION "0.10.1"
+#define LIB_VERSION "0.10.2"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -1250,9 +1250,10 @@ int do_image_effect80(struct CPCData *cpc, struct CPCData *ecpc, struct BandImag
 	CImageEffect70_DoGamma(data, input, output, reverse);
 
 	/* Figure out if we can get away with rewinding, or not... */
-	if (cpc->REV[0]) {
+	if (!ecpc)
+		rew[0] = 1;  /* if we don't have ecpc data (ie not in superfine mode) then rewinding is ok */
+	else if (cpc->REV[0])
 		rew[0] = CImageEffect70_JudgeReverseSkipRibbon(cpc, output, input->cols, input->rows, 1);
-	}
 	rew[1] = 1;
 
 	/* If we're NOT rewinding,
