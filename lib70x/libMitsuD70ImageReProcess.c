@@ -1,7 +1,7 @@
 /* LibMitsuD70ImageReProcess -- Re-implemented image processing library for
                                 the Mitsubishi CP-D70 family of printers
 
-   Copyright (c) 2016-2020 Solomon Peachy <pizza@shaftnet.org>
+   Copyright (c) 2016-2021 Solomon Peachy <pizza@shaftnet.org>
 
    ** ** ** ** Do NOT contact Mitsubishi about this library! ** ** ** **
 
@@ -34,7 +34,7 @@
      * Mitsubishi CP9810DW
      * Mitsubishi CP9820DW-S
 
-   Finally, the CP30D family uses this library too.  This includes tehse models:
+   Finally, the CP30D family uses this library too:
 
      * Mitsubishi CP30D/DW
 
