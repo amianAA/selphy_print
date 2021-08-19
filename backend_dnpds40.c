@@ -642,6 +642,7 @@ static const char *dnpds40_statuses(int status)
 	case 2700: return "Ribbon Tension Error";
 	case 2800: return "RF-ID Module Error";
 	case 3000: return "System Error";
+	case 9999: return "Communication Failure"; /* Special */
 	default:
 		break;
 	}
@@ -1432,6 +1433,29 @@ static void dnpds40_teardown(void *vctx) {
 	free(ctx);
 }
 
+static int dnpds40_query_status(struct dnpds40_ctx *ctx)
+{
+	struct dnpds40_cmd cmd;
+	uint8_t *resp;
+	int count, len;
+
+	if (test_mode >= TEST_MODE_NOATTACH)
+		return 9999;
+
+	/* Generate command */
+	dnpds40_build_cmd(&cmd, "STATUS", "", 0);
+
+	resp = dnpds40_resp_cmd(ctx, &cmd, &len);
+	if (!resp)
+		return 9999;
+
+	dnpds40_cleanup_string((char*)resp, len);
+	count = atoi((char*)resp);
+	free(resp);
+
+	return count;
+}
+
 #define MAX_PRINTJOB_LEN (((ctx->native_width*ctx->max_height+1024+54+10))*3+1024) /* Worst-case, YMC */
 
 static int dnpds40_read_parse(void *vctx, const void **vjob, int data_fd, int copies) {
@@ -1832,6 +1856,15 @@ parsed:
 	if (job->multicut == 0)
 		goto skip_multicut;
 
+	/* Extra sanity checks */
+	if (ctx->media == 0) {
+		int status = dnpds40_query_status(ctx);
+		if (status > 1000) {
+			ERROR("Fatal Printer Error: %d => %s, halting queue!\n", status, dnpds40_statuses(status));
+			return CUPS_BACKEND_HOLD;
+		}
+	}
+
 	if (job->multicut < 100) {
 		switch(ctx->media) {
 		case 150: // 4x6, QW410
@@ -2145,13 +2178,7 @@ static int dnpds40_main_loop(void *vctx, const void *vjob) {
 top:
 
 	/* Query status */
-	dnpds40_build_cmd(&cmd, "STATUS", "", 0);
-	resp = dnpds40_resp_cmd(ctx, &cmd, &len);
-	if (!resp)
-		return CUPS_BACKEND_FAILED;
-	dnpds40_cleanup_string((char*)resp, len);
-	status = atoi((char*)resp);
-	free(resp);
+	status = dnpds40_query_status(ctx);
 
 	/* Figure out what's going on */
 	switch(status) {
@@ -2361,13 +2388,7 @@ top:
 
 		while (1) {
 			/* Query status */
-			dnpds40_build_cmd(&cmd, "STATUS", "", 0);
-			resp = dnpds40_resp_cmd(ctx, &cmd, &len);
-			if (!resp)
-				return CUPS_BACKEND_FAILED;
-			dnpds40_cleanup_string((char*)resp, len);
-			status = atoi((char*)resp);
-			free(resp);
+			status = dnpds40_query_status(ctx);
 
 			/* If we're idle or there's an error..*/
 			if (status == 0 && started)
@@ -2375,7 +2396,10 @@ top:
 			if (status)
 				started = 1;
 			if (status >= 1000) {
-				ERROR("Printer encountered error: %s\n", dnpds40_statuses(status));
+				ERROR("Printer encountered error: %d -> %s\n", status, dnpds40_statuses(status));
+				/* Note: We are *not* returning a backend error code here as we don't want to
+				   stop the queue unnecessarily.  If another job is submitted and the error is
+				   still present, the queue will halt at that time */
 				break;
 			}
 			sleep(1);
@@ -2861,18 +2885,9 @@ static int dnpds40_get_status(struct dnpds40_ctx *ctx)
 	int count;
 
 	/* Generate command */
-	dnpds40_build_cmd(&cmd, "STATUS", "", 0);
-
-	resp = dnpds40_resp_cmd(ctx, &cmd, &len);
-	if (!resp)
-		return CUPS_BACKEND_FAILED;
-
-	dnpds40_cleanup_string((char*)resp, len);
-	count = atoi((char*)resp);
+	count = dnpds40_query_status(ctx);
 
 	INFO("Printer Status: %s (%d)\n", dnpds40_statuses(count), count);
-
-	free(resp);
 
 	/* Figure out Duplexer */
 	if (ctx->conn->type == P_DNP_DS80D) {
@@ -3390,13 +3405,7 @@ static int dnp_query_stats(void *vctx, struct printerstats *stats)
 	stats->name[0] = "Roll";
 
 	/* Query status */
-	dnpds40_build_cmd(&cmd, "STATUS", "", 0);
-	resp = dnpds40_resp_cmd(ctx, &cmd, &len);
-	if (!resp)
-		return CUPS_BACKEND_FAILED;
-	dnpds40_cleanup_string((char*)resp, len);
-	stats->status[0] = strdup(dnpds40_statuses(atoi((char*)resp)));
-	free(resp);
+	stats->status[0] = strdup(dnpds40_statuses(dnpds40_query_status(ctx)));
 
 	/* Query lifetime counter */
 	dnpds40_build_cmd(&cmd, "MNT_RD", "COUNTER_LIFE", 0);
@@ -3471,7 +3480,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.140",
+	.version = "0.141",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
