@@ -1,7 +1,7 @@
  /*
  *   Shinko/Sinfonia Common Code
  *
- *   (c) 2019-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2019-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
@@ -631,6 +631,14 @@ struct kodak8810_cutlist {
 
 #define CODE_8x12K   0x02  /* Kodak 8810 */
 
+#define CODE_6x4K    0x01  /* Kodak 605 & 70xx */
+#define CODE_6x8K    0x03
+#define CODE_5x7K    0x06
+#define CODE_5x4K    0x07
+#define CODE_5x5K    0x08
+#define CODE_5x7_5K  0x09
+#define CODE_5x3_5K  0x0d
+#define CODE_6x6K    0x0e
 
 #define CODE_89x60mm 0x10
 #define CODE_89x59mm 0x11

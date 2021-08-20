@@ -932,9 +932,20 @@ const struct dyesub_backend kodak605_backend = {
   CC CC                          Number of copies (1-???)
   WW WW                          Number of columns (Fixed at 1844 or 1548)
   HH HH                          Number of rows
-  DD                             0x01 (4x6) 0x03 (8x6)
+  DD                             Print Mode/Media? See below
   LL                             Laminate, 0x01/0x02/0x03 (off/on/satin[70xx only])
-  00                             Print Mode (???)
+  00                             Print Method?
+
+   Media/Mode codes:
+
+     0x01   6x4
+     0x03   6x8
+     0x06   5x7
+     0x07   5x4
+     0x08   5x5
+     0x09   5x7.5
+     0x0d   5x3.5
+     0x0e   6x6
 
   ************************************************************************
 
