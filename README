@@ -99,6 +99,8 @@
    Shinko CHC-S6145-5A (aka Sinfonia CS2-c)
    Sony UP-CR20L (aka DNP DS-SL20)
    Sony UP-DR80
+   Sony UP-970AD / UP-990AD
+   Sony UP-971AD / UP-991AD
 
  ***************************************************************************
 
@@ -923,6 +925,7 @@
   Work-in-progress printers (Lack USB PIDs)
 
     Sony UP-CR20L
+    Sony UP-971AD / UP-991AD
     DNP DS-SL20
 
   Valid commands:
