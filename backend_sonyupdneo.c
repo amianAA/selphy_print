@@ -120,9 +120,10 @@ static const char *updneo_medias(uint32_t mdi)
 	switch(mdi2) {
 	case 0x11: return "UPC-R81MD (Letter)";
 		// UPC-R80MD (A4)
-	case 0x20: if (mdi & 0xff == 0x04) {
+	case 0x20:
+		if ((mdi & 0xff) == 0x04) {
 			return "UPP-110 Roll";
-		} else if (mdi & 0xff == 0x06) {
+		} else if ((mdi & 0xff) == 0x06) {
 			return "UPP-110 Roll";
 		} else {
 			return "Unknown thermal roll";
@@ -152,6 +153,8 @@ static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t job
 	} else {
 		if (ctx->conn->type == P_SONY_UPD898) {
 			strcpy(ctx->sts.scsyi, "100005001000050000000000014500");
+		} else if (ctx->conn->type == P_SONY_UP9x1) {
+			strcpy(ctx->sts.scsyi, "1E000A001E000A0000000000014500");
 		} else if (ctx->conn->type == P_SONY_UPDR80) {
 			strcpy(ctx->sts.scsyi, "0A300E5609A00C7809A00C78012D00");
 		}
@@ -165,7 +168,7 @@ static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t job
 
 	ctx->marker.name = updneo_medias(ctx->sts.scmdi);
 
-	if (ctx->conn->type == P_SONY_UPD898) {
+	if (ctx->conn->type == P_SONY_UPD898 || ctx->conn->type == P_SONY_UP9x1) {
 		ctx->marker.color = "#000000";  /* Ie black! */
 		ctx->native_bpp = 1;
 		ctx->marker.levelmax = CUPS_MARKER_UNAVAILABLE;
@@ -347,7 +350,7 @@ static int updneo_read_parse(void *vctx, const void **vjob, int data_fd, int cop
 		memcpy(h, ctx->sts.scsyi + 4, 4);
 		w[4] = 0;
 
-		if (ctx->conn->type == P_SONY_UPD898) {
+		if (ctx->conn->type == P_SONY_UPD898 || ctx->conn->type == P_SONY_UP9x1) {
 			mw = strtol(h, NULL, 16);
 			mh = strtol(w, NULL, 16);
 		} else {
@@ -681,7 +684,7 @@ static int updneo_query_markers(void *vctx, struct marker **markers, int *count)
 		return ret;
 	}
 
-	if (ctx->conn->type != P_SONY_UPD898) {
+	if (ctx->conn->type != P_SONY_UPD898 && ctx->conn->type != P_SONY_UP9x1) {
 		ctx->marker.levelnow = ctx->sts.scmds[4];
 	}
 
@@ -709,15 +712,14 @@ const struct dyesub_backend sonyupdneo_backend = {
 	.query_markers = updneo_query_markers,
 	.query_serno = updneo_query_serno,
 	.devices = {
-//		{ 0x054c, 0x02d4, P_SONY_UPCX1, NULL, "sony-upcx1"},
 		{ 0x054c, 0x0877, P_SONY_UPD898, NULL, "sony-upd898"},
 //		{ 0x054c, 0x589a, P_SONY_UPD898, NULL, "sony-upd898"}, // ???
 		{ 0x054c, 0xbcde, P_SONY_UPCR20L, NULL, "sony-upcr20l"}, // XXXX
 		{ 0x054c, 0x03c5, P_SONY_UPDR80, NULL, "sony-updr80"},
 		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
 		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
-		{ 0x054c, 0x087e, P_SONY_UPD898, NULL, "sony-up971ad"},
-		{ 0x054c, 0x087e, P_SONY_UPD898, NULL, "sony-up991ad"},	// Dupe
+		{ 0x054c, 0x087e, P_SONY_UP9x1, NULL, "sony-up971ad"},
+		{ 0x054c, 0x087e, P_SONY_UP9x1, NULL, "sony-up991ad"},	// Dupe
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
