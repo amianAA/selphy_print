@@ -1,7 +1,7 @@
 /*
  *   Sony UP-D series (new) Photo Printer CUPS backend -- libusb-1.0 version
  *
- *   (c) 2019-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2019-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
@@ -114,13 +114,20 @@ static void* updneo_init(void)
 
 static const char *updneo_medias(uint32_t mdi)
 {
-	mdi >>= 16;
-	mdi &= 0xff;
+	uint32_t mdi2 = mdi >> 16;
+	mdi2 &= 0xff;
 
-	switch(mdi) {
+	switch(mdi2) {
 	case 0x11: return "UPC-R81MD (Letter)";
 		// UPC-R80MD (A4)
-	case 0x20: return "UPP-110 Roll";
+	case 0x20: if (mdi & 0xff == 0x04) {
+			return "UPP-110 Roll";
+		} else if (mdi & 0xff == 0x06) {
+			return "UPP-110 Roll";
+		} else {
+			return "Unknown thermal roll";
+		}
+		break;
 	default: return "Unknown";
 	}
 }
@@ -689,7 +696,7 @@ static const char *sonyupdneo_prefixes[] = {
 
 const struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
-	.version = "0.14",
+	.version = "0.15",
 	.flags = BACKEND_FLAG_BADISERIAL, /* UP-D898MD at least */
 	.uri_prefixes = sonyupdneo_prefixes,
 	.cmdline_arg = updneo_cmdline_arg,
@@ -709,7 +716,8 @@ const struct dyesub_backend sonyupdneo_backend = {
 		{ 0x054c, 0x03c5, P_SONY_UPDR80, NULL, "sony-updr80"},
 		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
 		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
-
+		{ 0x054c, 0x087e, P_SONY_UPD898, NULL, "sony-up971ad"},
+		{ 0x054c, 0x087e, P_SONY_UPD898, NULL, "sony-up991ad"},	// Dupe
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
@@ -769,6 +777,28 @@ Note:  All multi-byte values are BIG ENDIAN
   00000370  00 00 00 00 00 00 00 00  00 c0 00 82 LL LL LL LL   LL == payload bytes, BE (== XX * YY * 1)
 
    [payload of LL bytes follows]
+
+ UP-971/991AD  18*16+2 == 290 byte header
+
+  00000250                                             00 00  XX XX = columns (fixed at 0a 00)
+  00000260  01 00 00 10 0f 00 1c 00  00 00 00 00 00 00 00 00  YY YY = rows (varies)
+  00000270  00 00 SS TT TT GG 02 00  09 00 NN 01 00 11 01 08  SS == sharpening (00-0e)
+  00000280  00 1a 00 00 00 00 XX XX  YY YY 09 00 28 01 01 26  GG == gamma (00/01/02 == 1/2/3)
+  00000290  00 00 07 b3 YY YY 00 00  13 01 00 04 00 80 00 23  TT TT == tone, +-32 (signed, BE)
+  000002a0  00 0c 01 09 XX XX YY YY  00 00 00 00 08 ff 08 00  NN == copies (00 for printer, 01-???)
+  000002b0  19 00 00 00 00 XX XX YY  YY 00 00 81 80 00 8f 00
+  000002c0  b8 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  000002d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  000002e0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  000002f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000300  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000310  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000320  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000330  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000340  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000350  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000360  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+  00000370  00 00 00 00 00 00 00 00  00 c0 00 82 LL LL LL LL   LL == payload bytes, BE (== XX * YY * 1)
 
  UP-CR20L:   290 byte header, 330 dpi, 1210x1728/1382x2048/1728*2380/2724*2048 (L/PC/2L/2PC)
 
@@ -980,6 +1010,12 @@ Note:  All multi-byte values are BIG ENDIAN
 
   [ This adds SCQTI; SCSNO is formatted differently, no SCPRS/SCJBI ]
 
+    UP-971AD / UP-991AD
+
+      MFG:Sony;MDL:UP-991AD_971AD;DES:Sony UP-991AD_971AD;CMD:SPJL-DS,SPDL-DS2;CLS:PRINTER;SCDIV:0100;SCSYV:01050000;SCSYS:0000001000010000000000;SCMDS:00000500000100000000;SCSYE:00;SCMDE:0000;SCMCE:00;SCSYI:1E000A001E000A0000000000014500;SCSVI:000002000002;SCMDI:200404;SCSNO:0739166---------;SCJBS:0000;SCCAI:00000000000000;SCGSI:00;SCQTI:0001;SPUQI:0000
+
+  [ Appears to be largely similar to 898 series ]
+
 Breakdown:
 
   (+) means referenced by their Windows driver
@@ -1003,7 +1039,7 @@ Breakdown:
   SCCAI
   SCGAI
   SCGSI
- +SCMDI  # MeDiaInfo: 110154 OK w/UPD-R81MD(Letter), 1100FF with no paper, 000154 with no ribbon
+ +SCMDI  # MeDiaInfo: 110154 OK w/UPD-R81MD(Letter), 1100FF with no paper, 000154 with no ribbon, 200404 on A4 thermal printers, 2000406 on 6" thermal printers?
   SCQTI  # QT Info  (898MD)
   SPUQI  # UQ Info  (898MD)
 

@@ -177,6 +177,9 @@
 # Sony UP-D898MD
 0x054c 0x0877 blacklist
 
+# Sony UP-971AD / UP-991AD
+0x054c 0x087e blacklist
+
 # Sony UP-DR80
 0x054c 0x03c5 blacklist
 
