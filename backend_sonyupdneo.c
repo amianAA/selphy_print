@@ -699,7 +699,7 @@ static const char *sonyupdneo_prefixes[] = {
 
 const struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
-	.version = "0.15",
+	.version = "0.16",
 	.flags = BACKEND_FLAG_BADISERIAL, /* UP-D898MD at least */
 	.uri_prefixes = sonyupdneo_prefixes,
 	.cmdline_arg = updneo_cmdline_arg,
@@ -718,8 +718,8 @@ const struct dyesub_backend sonyupdneo_backend = {
 		{ 0x054c, 0x03c5, P_SONY_UPDR80, NULL, "sony-updr80"},
 		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
 		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
-		{ 0x054c, 0x087e, P_SONY_UP9x1, NULL, "sony-up971ad"},
-		{ 0x054c, 0x087e, P_SONY_UP9x1, NULL, "sony-up991ad"},	// Dupe
+		{ 0x054c, 0x0873, P_SONY_UP9x1, NULL, "sony-up971ad"},
+		{ 0x054c, 0x0873, P_SONY_UP9x1, NULL, "sony-up991ad"},	// Dupe
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

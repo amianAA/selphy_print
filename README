@@ -73,6 +73,8 @@
    Sony UP-D895
    Sony UP-D897
    Sony UP-D898 series
+   Sony UP-971AD
+   Sony UP-991AD
    Stryker SDP1000
 
   Work-in-progress Printers:
@@ -100,7 +102,6 @@
    Sony UP-CR20L (aka DNP DS-SL20)
    Sony UP-DR80
    Sony UP-970AD / UP-990AD
-   Sony UP-971AD / UP-991AD
 
  ***************************************************************************
 
@@ -917,11 +918,11 @@
     Sony UP-DR80MD
     Stryker SDP1000
     Sony UP-D898 / UP-X898
+    Sony UP-971AD / UP-991AD
 
   Work-in-progress printers
 
     Sony UP-DR80
-    Sony UP-971AD / UP-991AD
 
   Work-in-progress printers (Lack USB PIDs)
 
