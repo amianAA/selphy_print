@@ -719,7 +719,7 @@ const struct dyesub_backend sonyupdneo_backend = {
 		{ 0x054c, 0x03c3, P_SONY_UPDR80, NULL, "sony-updr80md"},
 		{ 0x054c, 0x03c4, P_SONY_UPDR80, NULL, "stryker-sdp1000"},
 		{ 0x054c, 0x0873, P_SONY_UP9x1, NULL, "sony-up971ad"},
-		{ 0x054c, 0x0873, P_SONY_UP9x1, NULL, "sony-up991ad"},	// Dupe
+//		{ 0x054c, 0x0873, P_SONY_UP9x1, NULL, "sony-up991ad"},	// Dupe ?
 		{ 0, 0, 0, NULL, NULL}
 	}
 };
