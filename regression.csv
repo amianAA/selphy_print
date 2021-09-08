@@ -120,9 +120,9 @@ sony-upd897,0x054c,0x01e7,sony_upd897-1280x1280.raw,
 sony-updr80md,0x054c,0x03c3,sony_updr80md-a4.raw,
 sony-upcr20l,0x054c,0xbcde,sony_upcr20l_4x6.raw,
 sony-upcr20l,0x054c,0xbcde,sony_upcr20l_8x6.raw,
-sony-upd898,0x054c,0x0877,sony_upd898-1280x1280.raw
-sony-up971ad,0x054c,0x087e,sony_up991-1920x2560.raw
-sony-up991ad,0x054c,0x087e,sony_up991-1920x2560.raw
+sony-upd898,0x054c,0x0877,sony_upd898-1280x1280.raw,
+sony-up971ad,0x054c,0x087e,sony_up991-1920x2560.raw,
+sony-up991ad,0x054c,0x087e,sony_up991-1920x2560.raw,
 #
 # 'mitsu9xxx'  [9810/9820 need MATTE job]
 #

@@ -47,7 +47,7 @@ struct updneo_printjob {
 struct updneo_sts {
 	uint16_t scdiv;
 	uint32_t scsyv;
-	char     scsno[17]; /* 16 char string, leading 0s */
+	char     scsno[17]; /* 16 char string, leading 0s, possibly trailing -- */
 	char     scsys[23]; /* 22 char string, mostly unknown */
 	uint16_t scmds[5];
 	uint16_t scprs;
@@ -58,13 +58,13 @@ struct updneo_sts {
 	uint16_t scmde;
 	uint8_t  scmce;
 	char     scjbi[17]; /* 16 char string, unknown */
-	char     scsyi[31]; /* 30 char string, max resolution? */
+	char     scsyi[31]; /* 30 char string, max resolutions * 3, one more 6-char field */
 	uint32_t scsvi[2];  /* 2* 6char numbers */
 	uint32_t scmni[2];  /* 2* 6char numbers */
 	char     sccai[15]; /* 14 char string, unknown */
 	uint16_t scgai;
 	uint8_t  scgsi;
-	uint32_t scmdi;
+	uint32_t scmdi; /* xxxyyy : xxx is ribbon type, yyy is paper type?  */
 	uint32_t scqti;
 	uint32_t spuqi;
 };
@@ -114,17 +114,17 @@ static void* updneo_init(void)
 
 static const char *updneo_medias(uint32_t mdi)
 {
-	uint32_t mdi2 = mdi >> 16;
-	mdi2 &= 0xff;
+	uint32_t mdi2 = mdi >> 12;
+	mdi2 &= 0xfff;
 
 	switch(mdi2) {
-	case 0x11: return "UPC-R81MD (Letter)";
+	case 0x110: return "UPC-R81MD (Letter)";
 		// UPC-R80MD (A4)
-	case 0x20:
-		if ((mdi & 0xff) == 0x04) {
-			return "UPP-110 Roll";
-		} else if ((mdi & 0xff) == 0x06) {
-			return "UPP-110 Roll";
+	case 0x200:
+		if ((mdi & 0xfff) == 0x404) {
+			return "UPP-110 Roll"; // UPP-110HD, UPP-110HG, UPP-110S
+		} else if ((mdi & 0xfff) == 0x406) {
+			return "UPP-210 Roll";  // UPP-210HD, UPP-210SE, UPT-210BL
 		} else {
 			return "Unknown thermal roll";
 		}
@@ -158,13 +158,13 @@ static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t job
 		} else if (ctx->conn->type == P_SONY_UPDR80) {
 			strcpy(ctx->sts.scsyi, "0A300E5609A00C7809A00C78012D00");
 		}
-		// XXX don't forget cr20l here.
+		// XXX don't forget cr20l here!
 	}
 
 	if (test_mode >= TEST_MODE_NOATTACH && getenv("MEDIA_CODE"))
 		ctx->marker.numtype = atoi(getenv("MEDIA_CODE"));
 	else
-		ctx->marker.numtype = (ctx->sts.scmdi >> 16) & 0xff;
+		ctx->marker.numtype = (ctx->sts.scmdi >> 12) & 0xfff;
 
 	ctx->marker.name = updneo_medias(ctx->sts.scmdi);
 
@@ -177,7 +177,7 @@ static int updneo_attach(void *vctx, struct dyesub_connection *conn, uint8_t job
 		ctx->marker.color = "#00FFFF#FF00FF#FFFF00";
 		ctx->native_bpp = 3;
 		ctx->marker.levelmax = 50;
-		ctx->marker.numtype = (ctx->sts.scmdi >> 16) & 0xff;
+		ctx->marker.numtype = (ctx->sts.scmdi >> 12) & 0xfff;
 		ctx->marker.levelnow = ctx->sts.scmds[4];
 	}
 
@@ -423,7 +423,7 @@ static int updneo_get_status(struct updneo_ctx *ctx)
 		} else if (!strcmp("SCSNO", dict[i].key)) {
 			strncpy(ctx->sts.scsno, dict[i].val, sizeof(ctx->sts.scsno) - 1);
 
-			/* Trim trailing '-'s off of serial number (UP-D898)*/
+			/* Trim trailing '-'s off of serial number (UP-D898, UP-9x1)*/
 			for (int i = 0; i < (int) sizeof(ctx->sts.scsno); i++) {
 				if (ctx->sts.scsno[i] == '-') {
 					ctx->sts.scsno[i] = 0;
@@ -1012,9 +1012,9 @@ Note:  All multi-byte values are BIG ENDIAN
 
   [ This adds SCQTI; SCSNO is formatted differently, no SCPRS/SCJBI ]
 
-    UP-971AD / UP-991AD
+  UP-971AD / UP-991AD
 
-      MFG:Sony;MDL:UP-991AD_971AD;DES:Sony UP-991AD_971AD;CMD:SPJL-DS,SPDL-DS2;CLS:PRINTER;SCDIV:0100;SCSYV:01050000;SCSYS:0000001000010000000000;SCMDS:00000500000100000000;SCSYE:00;SCMDE:0000;SCMCE:00;SCSYI:1E000A001E000A0000000000014500;SCSVI:000002000002;SCMDI:200404;SCSNO:0739166---------;SCJBS:0000;SCCAI:00000000000000;SCGSI:00;SCQTI:0001;SPUQI:0000
+    MFG:Sony;MDL:UP-991AD_971AD;DES:Sony UP-991AD_971AD;CMD:SPJL-DS,SPDL-DS2;CLS:PRINTER;SCDIV:0100;SCSYV:01050000;SCSYS:0000001000010000000000;SCMDS:00000500000100000000;SCSYE:00;SCMDE:0000;SCMCE:00;SCSYI:1E000A001E000A0000000000014500;SCSVI:000002000002;SCMDI:200404;SCSNO:0739166---------;SCJBS:0000;SCCAI:00000000000000;SCGSI:00;SCQTI:0001;SPUQI:0000
 
   [ Appears to be largely similar to 898 series ]
 
@@ -1022,33 +1022,33 @@ Breakdown:
 
   (+) means referenced by their Windows driver
 
-  SCDIV
+  SCDIV  # Data Info Version (?) Always seems to be 0100
  +SCSYV  # SYstemVersion (?) (01.06.00.00) ??
   SCSNO  # SerialNO
  +SCSYS  # SystemStatus (?) some sort of state array? 22 fields.  b19 is 1 when data can be sent?, b5 is 1 when printer busy?, b20:21 is 64 sometimes, maybe paper or ribbon feed.  b6:7 is 38 with no paper&|ribbon, or 18 with cover open
  +SCMDS  # MeDiaStatus: five 4-value hex numbers, last three decrease in unison (remaining prints). second one is 0000/0100/0200/0300/0600, maybe Y/M/C/O?
   SCPRS  # PRinterStatus: (0000 = idle, 0002 = printing, 0005 = data xfer?)
- +SCSES
- +SCWTS
+ +SCSES  # "SE" Status
+ +SCWTS  # "WT" Status
  +SCJBS  # JoBStatus (?)
   SCSYE  # SYstemError (?)
  +SCMDE  # MeDiaError: 2000 media mismatch, 0A00 no paper, 0800 cover open, 0002 no ribbon
  +SCMCE  # MediaCoverError: 01 cover open
-  SCJBI  # JoBInfo(?)
-  SCSYI  # SYstemInfo (?) Includes legal job dimensions/parameters. (09a0 0c78 repeated twice!)
+  SCJBI  # JoBInfo (?)
+  SCSYI  # SYstemInfo (?) Includes legal job max dimensions/parameters; up to three dimension sets and a fourth unknown field
  +SCSVI  # print counter(s)?  (XXXXXXYYYYYY, and X = Y so far.  SCSVI and SCMNI are identical so far)
   SCMNI  # print counter(s)?  (see SCSVI)
-  SCCAI
-  SCGAI
-  SCGSI
- +SCMDI  # MeDiaInfo: 110154 OK w/UPD-R81MD(Letter), 1100FF with no paper, 000154 with no ribbon, 200404 on A4 thermal printers, 2000406 on 6" thermal printers?
-  SCQTI  # QT Info  (898MD)
-  SPUQI  # UQ Info  (898MD)
+  SCCAI  # "CA" Info (?)
+  SCGAI  # "GA" Info (?)
+  SCGSI  # "GS" Info (?)
+ +SCMDI  # MeDiaInfo: 110154 OK w/UPD-R81MD(Letter), 1100FF with no paper, 000154 with no ribbon, 200404 on A4 thermal printers, 2000406 on A6 thermal printers?
+  SCQTI  # "QT" Info (?) (898MD, UP9x1)
+  SPUQI  # "UQ" Info (?) (898MD, UP9x1)
 
 Guess:
 
-  SCxxY  SC = Sony Corp
-         xx = class (MD = media?)
-          Y = var type (S = status, I = info, E = error V = ?, O
+  SCxxy  SC = Sony Corp
+         xx = class/field (eg MD = media)
+          y = var type (S = status, I = info, E = error V = version, O
 
  */
