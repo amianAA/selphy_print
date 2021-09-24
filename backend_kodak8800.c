@@ -622,17 +622,17 @@ static int kodak8800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	job->databuf = malloc(sizeof(struct rosetta_header));
 	if (!job->databuf) {
 		ERROR("Memmory allocation failure!\n");
+		kodak8800_cleanup_job(job);
 		return CUPS_BACKEND_RETRY;
 	}
 
 	/* Read rosetta header */
 	ret = read(data_fd, job->databuf, sizeof(struct rosetta_header));
 	if (ret < 0 || ret != sizeof(struct rosetta_header)) {
-		if (ret == 0) {
-			kodak8800_cleanup_job(job);
-			return CUPS_BACKEND_CANCEL;
+		if (ret != 0) {
+			perror("ERROR: read failed");
 		}
-		perror("ERROR: read failed");
+		kodak8800_cleanup_job(job);
 		return CUPS_BACKEND_CANCEL;
 	}
 	job->jobsize += sizeof(struct rosetta_header);
@@ -659,11 +659,10 @@ static int kodak8800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 		/* Read in block header */
 		ret = read(data_fd, block, sizeof(struct rosetta_block));
 		if (ret < 0 || ret != sizeof(struct rosetta_block)) {
-			if (ret == 0) {
-				kodak8800_cleanup_job(job);
-				return CUPS_BACKEND_CANCEL;
+			if (ret != 0) {
+				perror("ERROR: read failed");
 			}
-			perror("ERROR: read failed");
+			kodak8800_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
 		}
 		payload_len = be32_to_cpu(block->payload_len);
@@ -672,11 +671,10 @@ static int kodak8800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 		/* Read in block payload */
 		ret = read(data_fd, block->payload, payload_len);
 		if (ret < 0 || ret != (int) payload_len) {
-			if (ret == 0) {
-				kodak8800_cleanup_job(job);
-				return CUPS_BACKEND_CANCEL;
+			if (ret != 0) {
+				perror("ERROR: read failed");
 			}
-			perror("ERROR: read failed");
+			kodak8800_cleanup_job(job);
 			return CUPS_BACKEND_CANCEL;
 		}
 		job->jobsize += sizeof(struct rosetta_block);
@@ -922,7 +920,7 @@ static const char *kodak8800_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak8800_backend = {
 	.name = "Kodak 8800/9810",
-	.version = "0.06",
+	.version = "0.07",
 	.uri_prefixes = kodak8800_prefixes,
 	.cmdline_usage = kodak8800_cmdline,
 	.cmdline_arg = kodak8800_cmdline_arg,
