@@ -2,7 +2,7 @@
    libS2245ImageReProcess -- Re-implemented Image Processing library for
                              the Sinfonia CHC-S2245 printer family
 
-   Copyright (c) 2020 Solomon Peachy <pizza@shaftnet.org>
+   Copyright (c) 2021 Solomon Peachy <pizza@shaftnet.org>
 
    ** ** ** ** Do NOT contact Sinfonia about this library! ** ** ** **
 
@@ -39,7 +39,7 @@
 
 */
 
-#define LIB_VERSION "0.1.1"
+#define LIB_VERSION "0.1.2"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -986,7 +986,8 @@ static bool CHeatCorrProc_Correction(struct CHeatCorrProc *this,
 	if (!this->tankBuf)
 		goto done;
 
-	CHeatCorrProc_InitTank(this);
+	if (!CHeatCorrProc_InitTank(this))
+		goto done;
 	this->tankRowSrc = (int16_t*) srcData;
 
 	for (this->curRow = 0 ; this->curRow < this->height ; this->curRow++) {
