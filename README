@@ -200,7 +200,7 @@
   CUPS backend usage:
 
    DEVICE_URI=someuri \
-       gutenprint52+usb job-id user title num-copies options [ filename ]
+       gutenprint53+usb job-id user title num-copies options [ filename ]
 
     The backend generates output for CUPS to parse, including logging
     print counts, reporting loaded media types, and remaining media counts.
@@ -209,8 +209,8 @@
     communication with the printer!  Actually generating print jobs requires
     use of Gutenprint compiled with support for CUPS.
 
-   DEVICE_URI=someuri FINAL_CONTENT_TYPE=application/vnd.cups-command \
-       gutenprint52+usb job-id user title num-copies options [ filename ]
+   DEVICE_URI=someuri CONTENT_TYPE=application/vnd.cups-command \
+       gutenprint53+usb job-id user title num-copies options [ filename ]
 
     This parses a CUPS command file and performs actions listed in the file.
 
