@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.115"
+#define BACKEND_VERSION "0.116"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -1349,7 +1349,7 @@ int main (int argc, char **argv)
 
 	use_serno = getenv("SERIAL");
 	uri = getenv("DEVICE_URI");  /* CUPS backend mode! */
-	type = getenv("FINAL_CONTENT_TYPE"); /* CUPS content type -- ie raster or command */
+	type = getenv("CONTENT_TYPE"); /* CUPS content type -- ie raster or command */
 
 	if (uri && strlen(uri)) {  /* CUPS backend mode */
 		int base = optind; /* ie 1 */
