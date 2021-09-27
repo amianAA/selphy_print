@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.116"
+#define BACKEND_VERSION "0.117"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -681,15 +681,20 @@ skip_manuf_model:
 		found = -1;
 	}
 
+	uint8_t bus_num = libusb_get_bus_number(device);
+	uint8_t port_num = libusb_get_port_number(device);
+
 	if (dyesub_debug)
-		DEBUG("VID: %04X PID: %04X Manuf: '%s' Product: '%s' Serial: '%s' found: %d\n",
-		      desc->idVendor, desc->idProduct, manuf, product, serial, found);
+		DEBUG("VID/PID %04X/%04X @ bus/port %03d/%03d Manuf: '%s' Product: '%s' Serial: '%s' found: %d\n",
+		      desc->idVendor, desc->idProduct, bus_num, port_num, manuf, product, serial, found);
 
 	if (found != -1 && conn) {
 		conn->iface = iface;
 		conn->altset = altset;
 		conn->endp_up = endp_up;
 		conn->endp_down = endp_down;
+		conn->bus_num = bus_num;
+		conn->port_num = port_num;
 	}
 
 	/* Free things up */

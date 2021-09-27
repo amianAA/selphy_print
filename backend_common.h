@@ -204,6 +204,9 @@ struct dyesub_connection {
 	uint8_t iface;
 	uint8_t altset;
 
+	uint8_t bus_num;
+	uint8_t port_num;
+
 	// TODO:  mutex/lock
 
 	int type; /* P_XXXX */
