@@ -1188,15 +1188,16 @@ static int handle_input(struct dyesub_backend *backend, void *backend_ctx,
 	signal(SIGTERM, sigterm_handler);
 #endif
 
-	/* Time for the main processing loop */
-	INFO("Printing started (%d copies)\n", ncopies);
-
 	/* See if it's a CUPS command stream, and if yes, handle it! */
 	if (type && !strcmp("application/vnd.cups-command", type))
 	{
+		INFO("CUPS Command mode\n");
 		ret = parse_cmdstream(backend, backend_ctx, data_fd);
 		goto done;
 	}
+
+	/* Time for the main processing loop */
+	INFO("Printing started (%d copies)\n", ncopies);
 
 	/* Emit a verbose marker dump */
 	ret = query_markers(backend, backend_ctx, 1);
