@@ -1863,7 +1863,6 @@ static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 	struct sinfonia_cmd_hdr cmd;
 	struct sinfonia_status_resp status;
 	int num;
-	uint16_t usbID = 0xffff;
 
 	if (shinkos6145_query_markers(ctx, NULL, NULL))
 		return CUPS_BACKEND_FAILED;
@@ -1879,17 +1878,6 @@ static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 		return CUPS_BACKEND_FAILED;
 	}
 
-	/* Query USB ID */
-	{
-		struct libusb_device_descriptor desc;
-		struct libusb_device *dev;
-
-		dev = libusb_get_device(ctx->dev.conn->dev);
-		libusb_get_device_descriptor(dev, &desc);
-
-		usbID = desc.idProduct;
-	}
-
 	switch (ctx->dev.conn->type) {
 	case P_SHINKO_S6145:
 		stats->mfg = "Sinfonia";
@@ -1901,17 +1889,17 @@ static int shinkos6145_query_stats(void *vctx,  struct printerstats *stats)
 		break;
 	case P_KODAK_6900:
 		stats->mfg = "Kodak";
-		if (usbID == 0x0003) {
+		if (ctx->dev.conn->usb_pid == 0x0003) {
 			stats->model = "6900";
-		} else if (usbID == 0x0004) {
+		} else if (ctx->dev.conn->usb_pid == 0x0004) {
 			stats->model = "6950";
 		}
 		break;
 	case P_SHINKO_S2245:
-		if (usbID == 0x0010) {
+		if (ctx->dev.conn->usb_pid == 0x0010) {
 			stats->mfg = "HiTi";
 			stats->model = "M610";
-		} else if (usbID == 0x0039) {
+		} else if (ctx->dev.conn->usb_pid == 0x0039) {
 			stats->mfg = "Sinfonia";
 			stats->model = "S3 / S2245";
 		} else {
@@ -1976,7 +1964,7 @@ static const char *shinkos6145_prefixes[] = {
 
 const struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.47" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.48" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,

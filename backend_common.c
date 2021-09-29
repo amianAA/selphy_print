@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.117"
+#define BACKEND_VERSION "0.118"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -1535,9 +1535,13 @@ bypass:
 
 		conn.type = lookup_printer_type(backend,
 						desc.idVendor, desc.idProduct);
+		conn.usb_vid = desc.idVendor;
+		conn.usb_pid = desc.idProduct;
 	} else {
 		conn.type = lookup_printer_type(backend,
 						extra_vid, extra_pid);
+		conn.usb_vid = extra_vid;
+		conn.usb_pid = extra_pid;
 	}
 
 	if (conn.type <= P_UNKNOWN) {
@@ -1553,8 +1557,6 @@ bypass:
 		ret = CUPS_BACKEND_FAILED;
 		goto done_claimed;
 	}
-
-//	STATE("+org.gutenprint.attached-to-device\n");
 
 	/* Dump stats only */
 	if (stats_only && backend->query_stats) {
@@ -1572,6 +1574,14 @@ bypass:
 		}
 		goto done_claimed;
 	}
+
+	ATTR("org.gutenprint.usb.backend=%s\n", backend_str ? backend_str : backend->name);
+	ATTR("org.gutenprint.usb.vid=%04x\n", conn.usb_vid);
+	ATTR("org.gutenprint.usb.pid=%04x\n", conn.usb_pid);
+	ATTR("org.gutenprint.usb.bus=%03d\n", conn.bus_num);
+	ATTR("org.gutenprint.usb.port=%03d\n", conn.port_num);
+
+//	STATE("+org.gutenprint.attached-to-device\n");
 
 	if (!uri || !strlen(uri)) {
 		if (backend->cmdline_arg(backend_ctx, argc, argv))

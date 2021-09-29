@@ -204,8 +204,11 @@ struct dyesub_connection {
 	uint8_t iface;
 	uint8_t altset;
 
+	/* to make our lives easier later */
 	uint8_t bus_num;
 	uint8_t port_num;
+	uint16_t usb_vid;
+	uint16_t usb_pid;
 
 	// TODO:  mutex/lock
 
