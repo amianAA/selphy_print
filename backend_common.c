@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.118"
+#define BACKEND_VERSION "0.119"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -422,7 +422,6 @@ static int probe_device(struct libusb_device *device,
 	uint8_t endp_up, endp_down;
 
 	DEBUG("Probing VID: %04X PID: %04x\n", desc->idVendor, desc->idProduct);
-	STATE("+connecting-to-device\n");
 
 	if ((i = libusb_open(device, &dev))) {
 #ifdef _WIN32
@@ -720,8 +719,6 @@ abort:
 		free (dict[dlen].key);
 		free (dict[dlen].val);
 	}
-
-	STATE("-connecting-to-device\n");
 
 	return found;
 }
@@ -1470,13 +1467,17 @@ int main (int argc, char **argv)
 	}
 
 	/* Enumerate devices */
+	STATE("+connecting-to-device\n");
+
 	found = find_and_enumerate(argv0, ctx, &list, backend, use_serno, backend_str, 0, NUM_CLAIM_ATTEMPTS, &conn);
 
 	if (found == -1) {
 		ERROR("Printer open failure (No matching printers found!)\n");
+		STATE("+offline-report");
 		ret = CUPS_BACKEND_RETRY;
 		goto done;
 	}
+	STATE("-offline-report");
 
 	if (test_mode) {
 		WARNING("**** TEST MODE %d!\n", test_mode);
@@ -1521,6 +1522,8 @@ int main (int argc, char **argv)
 	}
 
 bypass:
+	STATE("-connecting-to-device\n");
+
 	/* Initialize backend */
 	DEBUG("Initializing '%s' backend (version %s)\n",
 	      backend->name, backend->version);
@@ -1602,6 +1605,8 @@ done_close:
 	if (test_mode < TEST_MODE_NOATTACH)
 		libusb_close(conn.dev);
 done:
+
+	STATE("-connecting-to-device\n");
 
 	if (backend && backend_ctx) {
 		if (backend->teardown)
