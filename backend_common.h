@@ -58,7 +58,7 @@
 #define INFO( ... )  do { if (!quiet) fprintf(logger, "INFO: " __VA_ARGS__ ); } while(0)
 #define WARNING( ... )  do { fprintf(logger, "WARNING: " __VA_ARGS__ ); } while(0)
 #define ERROR( ... ) do { fprintf(logger, "ERROR: " __VA_ARGS__ ); sleep(1); } while (0)
-#define PPD( ... ) do { fprintf(logger, "PPD: " __VA_ARGS__ ); sleep(1); } while (0)
+#define PPD( ... ) do { fprintf(logger, "PPD: " __VA_ARGS__ ); } while (0)
 
 #if (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define le16_to_cpu(__x) __x
