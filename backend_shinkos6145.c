@@ -1329,7 +1329,6 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->jobsize = sizeof(*job);
 
 	/* Common read/parse code */
 	if (ctx->dev.conn->type == P_KODAK_6900) {
@@ -1343,10 +1342,8 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 	}
 
 	/* Use whicever copy count is larger */
-	if ((int)job->jp.copies > copies)
-		job->copies = job->jp.copies;
-	else
-		job->copies = copies;
+	if (job->common.copies < copies)
+		job->common.copies = copies;
 
 	/* S6145 can only combine 2* 4x6 -> 8x6.
 	   2x6 strips and 3.5x5 -> 5x7 can't.
@@ -1358,9 +1355,9 @@ static int shinkos6145_read_parse(void *vctx, const void **vjob, int data_fd, in
 	     ctx->media.ribbon_code == RIBBON_6x9)) {
 
 		if (model == 6145 && job->jp.method == PRINT_METHOD_STD)
-			job->can_combine = 1;
+			job->common.can_combine = 1;
 		else if (model == 2245)
-			job->can_combine = 1;
+			job->common.can_combine = 1;
 	}
 
 	/* Extended spool format to re-purpose an unused header field.
@@ -1735,7 +1732,7 @@ top:
 			print.hdr.len = cpu_to_le16(sizeof (print) - sizeof(cmd));
 
 			print.id = ctx->jobid;
-			print.count = cpu_to_le16(job->copies);
+			print.count = cpu_to_le16(job->common.copies);
 			print.columns = cpu_to_le16(job->jp.columns);
 			print.rows = cpu_to_le16(job->jp.rows);
 			print.image_avg = ctx->image_avg[2]; /* Cyan level */
@@ -1759,7 +1756,7 @@ top:
 			print.hdr.cmd = cpu_to_le16(SINFONIA_CMD_PRINTJOB);
 			print.hdr.len = cpu_to_le16(sizeof (print) - sizeof(cmd));
 			print.jobid = ctx->jobid;
-			print.copies = cpu_to_le16(job->copies);
+			print.copies = cpu_to_le16(job->common.copies);
 			print.columns = cpu_to_le16(job->jp.columns);
 			print.rows = cpu_to_le16(job->jp.rows);
 			print.options = job->jp.oc_mode & 0x3;
@@ -1964,7 +1961,7 @@ static const char *shinkos6145_prefixes[] = {
 
 const struct dyesub_backend shinkos6145_backend = {
 	.name = "Shinko/Sinfonia CHC-S6145/CS2/S2245/S3",
-	.version = "0.48" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.49" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6145_prefixes,
 	.cmdline_usage = shinkos6145_cmdline,
 	.cmdline_arg = shinkos6145_cmdline_arg,

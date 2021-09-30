@@ -91,11 +91,12 @@ static uint8_t gammas[2][256] = {
 };
 
 struct magicard_printjob {
+	struct dyesub_job_common common;
+
 	uint8_t *databuf;
 	int datalen;
 
 	int hdr_len;
-	int copies;
 };
 
 /* Private data structure */
@@ -547,7 +548,8 @@ static int magicard_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* Read in the first chunk */
 	i = read(data_fd, initial_buf, INITIAL_BUF_LEN);
@@ -832,7 +834,7 @@ static int magicard_main_loop(void *vctx, const void *vjob, int wait_for_return)
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 top:
 	if ((ret = send_data(ctx->conn,
 			     job->databuf, job->hdr_len)))
@@ -921,7 +923,7 @@ static const char *magicard_prefixes[] = {
 
 const struct dyesub_backend magicard_backend = {
 	.name = "Magicard family",
-	.version = "0.17",
+	.version = "0.18",
 	.uri_prefixes = magicard_prefixes,
 	.cmdline_arg = magicard_cmdline_arg,
 	.cmdline_usage = magicard_cmdline,

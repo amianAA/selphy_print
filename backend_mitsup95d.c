@@ -34,6 +34,8 @@
 
 /* Private data structure */
 struct mitsup95d_printjob {
+	struct dyesub_job_common common;
+
 	uint8_t *databuf;
 	uint32_t datalen;
 
@@ -191,6 +193,7 @@ static int mitsup95d_read_parse(void *vctx, const void **vjob, int data_fd, int 
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
+	job->common.jobsize = sizeof(*job);
 
 	job->mem_clr_present = 0;
 
@@ -340,6 +343,8 @@ top:
 		if (job->hdr2[13] != 0xff)
 			if (copies > job->hdr2[13])
 				job->hdr2[13] = copies;
+
+		job->common.copies = copies; // XXX use larger?
 
 		*vjob = job;
 		return CUPS_BACKEND_OK;
@@ -602,7 +607,7 @@ static const char *mitsup95d_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsup95d_backend = {
 	.name = "Mitsubishi P93D/P95D",
-	.version = "0.15",
+	.version = "0.16",
 	.uri_prefixes = mitsup95d_prefixes,
 	.cmdline_arg = mitsup95d_cmdline_arg,
 	.cmdline_usage = mitsup95d_cmdline,

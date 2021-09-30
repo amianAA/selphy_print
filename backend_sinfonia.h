@@ -24,7 +24,7 @@
  *
  */
 
-#define LIBSINFONIA_VER "0.18"
+#define LIBSINFONIA_VER "0.19"
 
 #define SINFONIA_HDR1_LEN 0x10
 #define SINFONIA_HDR2_LEN 0x64
@@ -34,7 +34,6 @@
 struct sinfonia_job_param {
 	uint32_t columns;
 	uint32_t rows;
-	uint32_t copies;
 
 	uint32_t method;
 	uint32_t media;
@@ -52,10 +51,7 @@ struct sinfonia_job_param {
 #define EXT_FLAG_DOUBLESLUG 0x04
 
 struct sinfonia_printjob {
-	size_t jobsize;
-	int copies;
-	int can_combine;
-
+	struct dyesub_job_common common;
 	struct sinfonia_job_param jp;
 
 	uint8_t *databuf;

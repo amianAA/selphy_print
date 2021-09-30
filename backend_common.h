@@ -227,7 +227,7 @@ struct dyesub_joblist {
 };
 #define MAX_JOBS_FROM_READ_PARSE 3
 
-/* This should be the start of every per-printer job struct! */
+/* This MUST be the start of every per-printer job struct! */
 struct dyesub_job_common {
 	size_t jobsize;
 	int copies;

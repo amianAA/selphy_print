@@ -89,8 +89,7 @@ struct mitsu9550_cmd {
 
 /* Private data structure */
 struct mitsu9550_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	uint32_t datalen;
@@ -464,8 +463,8 @@ static int mitsu9550_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	}
 	memset(job, 0, sizeof(*job));
 	job->is_raw = 1;
-	job->jobsize = sizeof(*job);
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 top:
 	/* Read in initial header */
@@ -723,12 +722,13 @@ hdr_done:
 	}
 
 	/* Update printjob header to reflect number of requested copies */
+	// XXX use larger?
 	if (job->hdr2_present) {
 		if (be16_to_cpu(job->hdr2.copies) < copies)
 			job->hdr2.copies = cpu_to_be16(copies);
 		copies = 1;
 	}
-	job->copies = copies;
+	job->common.copies = copies;
 
 	/* All further work is in main loop */
 	if (test_mode >= TEST_MODE_NOPRINT)
@@ -1612,7 +1612,7 @@ static const char *mitsu9550_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu9550_backend = {
 	.name = "Mitsubishi CP9xxx family",
-	.version = "0.62" " (lib " LIBMITSU_VER ")",
+	.version = "0.63" " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsu9550_prefixes,
 	.cmdline_usage = mitsu9550_cmdline,
 	.cmdline_arg = mitsu9550_cmdline_arg,

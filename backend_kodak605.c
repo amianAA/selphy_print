@@ -421,9 +421,9 @@ static int kodak605_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		return ret;
 	}
 
-	/* Printer handles generating copies.  Use larger of our options */
-	if (le16_to_cpu(job->jp.copies) < (uint16_t)copies)
-		job->jp.copies = cpu_to_le16(copies);
+	/* Use larger of our copy counts */
+	if (job->common.copies < copies)
+		job->common.copies = copies;
 
 	*vjob = job;
 
@@ -563,7 +563,7 @@ static int kodak605_main_loop(void *vctx, const void *vjob, int wait_for_return)
 	hdr.jobid = ctx->jobid;
 	hdr.rows = cpu_to_le16(job->jp.rows);
 	hdr.columns = cpu_to_le16(job->jp.columns);
-	hdr.copies = cpu_to_le16(job->jp.copies);
+	hdr.copies = cpu_to_le16(job->common.copies);
 	hdr.media = job->jp.media;
 	hdr.oc_mode = job->jp.oc_mode;
 	hdr.method = job->jp.method;

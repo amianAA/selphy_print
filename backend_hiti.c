@@ -357,8 +357,7 @@ struct hiti_matrix {
 
 /* Private data structure */
 struct hiti_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	uint32_t datalen;
@@ -1528,8 +1527,8 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* Read in header */
 	ret = read(data_fd, &job->hdr, sizeof(job->hdr));
@@ -1565,8 +1564,8 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 	}
 
 	/* Use whicever copy count is larger */
-	if (job->copies < (int)job->hdr.copies)
-		job->copies = job->hdr.copies;
+	if (job->common.copies < (int)job->hdr.copies)
+		job->common.copies = job->hdr.copies;
 
 	/* Sanity check printer type vs job type */
 	switch(ctx->conn->type)
@@ -1852,7 +1851,7 @@ static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 	sf.rows_offset = calc_offset(ctx->calibration.vert, 5, 8, 4);
 	sf.cols_offset = calc_offset(ctx->calibration.horiz, 6, 11, 4);
 	sf.colorSeq = 0x87 + (job->hdr.overcoat ? 0xc0 : 0);
-	sf.copies = job->copies;
+	sf.copies = job->common.copies;
 	sf.printMode = 0x08 + (job->hdr.quality ? 0x02 : 0);
 	ret = hiti_docmd(ctx, CMD_EFD_SF, (uint8_t*) &sf, sizeof(sf), &resplen);
 	if (ret)
@@ -2407,7 +2406,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.32",
+	.version = "0.33",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,

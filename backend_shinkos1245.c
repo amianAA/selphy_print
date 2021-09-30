@@ -988,6 +988,7 @@ static int shinkos1245_read_parse(void *vctx, const void **vjob, int data_fd, in
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
+	job->common.jobsize = sizeof(*job);
 
 	/* Common read/parse code */
 	ret = sinfonia_read_parse(data_fd, 1245, job);
@@ -997,10 +998,8 @@ static int shinkos1245_read_parse(void *vctx, const void **vjob, int data_fd, in
 	}
 
 	/* Use larger of our copy counts */
-	if ((int)job->jp.copies > copies)
-		job->copies = job->jp.copies;
-	else
-		job->copies = copies;
+	if (job->common.copies < copies)
+		job->common.copies = copies;
 
 	*vjob = job;
 	return CUPS_BACKEND_OK;
@@ -1019,7 +1018,7 @@ static int shinkos1245_main_loop(void *vctx, const void *vjob, int wait_for_retu
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* Make sure print size is supported */
 	for (i = 0 ; i < ctx->num_medias ; i++) {
@@ -1282,7 +1281,7 @@ static const char *shinkos1245_prefixes[] = {
 
 const struct dyesub_backend shinkos1245_backend = {
 	.name = "Shinko/Sinfonia CHC-S1245/E1",
-	.version = "0.34" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.35" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos1245_prefixes,
 	.cmdline_usage = shinkos1245_cmdline,
 	.cmdline_arg = shinkos1245_cmdline_arg,

@@ -42,10 +42,10 @@ struct selphyneo_readback {
 
 /* Private data structure */
 struct selphyneo_printjob {
+	struct dyesub_job_common common;
+
 	uint8_t *databuf;
 	uint32_t datalen;
-
-	int copies;
 };
 
 struct selphyneo_ctx {
@@ -240,7 +240,8 @@ static int selphyneo_read_parse(void *vctx, const void **vjob, int data_fd, int 
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* Read the header.. */
 	i = read(data_fd, &hdr, sizeof(hdr));
@@ -315,7 +316,7 @@ static int selphyneo_main_loop(void *vctx, const void *vjob, int wait_for_return
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* Read in the printer status to clear last state */
 	ret = read_data(ctx->conn,
@@ -502,7 +503,7 @@ static const char *canonselphyneo_prefixes[] = {
 
 const struct dyesub_backend canonselphyneo_backend = {
 	.name = "Canon SELPHY CP (new)",
-	.version = "0.21",
+	.version = "0.22",
 	.uri_prefixes = canonselphyneo_prefixes,
 	.cmdline_usage = selphyneo_cmdline,
 	.cmdline_arg = selphyneo_cmdline_arg,

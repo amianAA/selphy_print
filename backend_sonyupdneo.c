@@ -30,8 +30,7 @@
 
 /* Private data structures */
 struct updneo_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	int datalen;
@@ -389,7 +388,7 @@ static int updneo_read_parse(void *vctx, const void **vjob, int data_fd, int cop
 			break;
 		}
 	}
-	job->copies = 1;  /* Printer makes copies */
+	job->common.copies = 1;  /* Printer makes copies */
 
 	*vjob = job;
 
@@ -546,7 +545,7 @@ static int updneo_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 top:
 
@@ -699,7 +698,7 @@ static const char *sonyupdneo_prefixes[] = {
 
 const struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
-	.version = "0.17",
+	.version = "0.18",
 	.flags = BACKEND_FLAG_BADISERIAL, /* UP-D898MD at least */
 	.uri_prefixes = sonyupdneo_prefixes,
 	.cmdline_arg = updneo_cmdline_arg,

@@ -513,8 +513,8 @@ done:
 
 /* Private data structure */
 struct canonselphy_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
+
 	int16_t paper_code;
 	uint8_t bw_mode;
 
@@ -679,8 +679,8 @@ static int canonselphy_read_parse(void *vctx, const void **vjob, int data_fd, in
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->jobsize = sizeof(*job);
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* The CP900 job *may* have a 4-byte null footer after the
 	   job contents.  Ignore it if it comes through here.. */
@@ -828,7 +828,7 @@ static int canonselphy_main_loop(void *vctx, const void *vjob, int wait_for_retu
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* Read in the printer status to clear last state */
 	ret = read_data(ctx->conn,
@@ -1098,7 +1098,7 @@ static const char *canonselphy_prefixes[] = {
 
 const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
-	.version = "0.111",
+	.version = "0.112",
 	.uri_prefixes = canonselphy_prefixes,
 	.cmdline_usage = canonselphy_cmdline,
 	.cmdline_arg = canonselphy_cmdline_arg,

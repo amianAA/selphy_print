@@ -62,11 +62,9 @@ struct kodak1400_hdr {
 	uint8_t  null4[12];
 } __attribute__((packed));
 
-
 /* Private data structure */
 struct kodak1400_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	struct kodak1400_hdr hdr;
 	uint8_t *plane_r;
@@ -341,7 +339,8 @@ static int kodak1400_read_parse(void *vctx, const void **vjob, int data_fd, int 
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* Read in then validate header */
 	ret = read(data_fd, &job->hdr, sizeof(job->hdr));
@@ -431,7 +430,7 @@ static int kodak1400_main_loop(void *vctx, const void *vjob, int wait_for_return
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 top:
 	if (state != last_state) {
@@ -638,7 +637,7 @@ static const char *kodak1400_prefixes[] = {
 
 const struct dyesub_backend kodak1400_backend = {
 	.name = "Kodak 1400/805",
-	.version = "0.43",
+	.version = "0.44",
 	.uri_prefixes = kodak1400_prefixes,
 	.cmdline_usage = kodak1400_cmdline,
 	.cmdline_arg = kodak1400_cmdline_arg,

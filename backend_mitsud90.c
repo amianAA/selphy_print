@@ -449,8 +449,7 @@ static void mitsud90_dump_status(struct mitsud90_status_resp *resp)
 
 /* Private data structure */
 struct mitsud90_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	uint32_t datalen;
@@ -819,8 +818,8 @@ static int mitsud90_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->jobsize = sizeof(*job);
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	/* Read in header */
 	uint8_t *hptr = (uint8_t*) &job->hdr;
@@ -1069,7 +1068,7 @@ static int mitsud90_main_loop(void *vctx, const void *vjob, int wait_for_return)
 		return CUPS_BACKEND_FAILED;
 	if (!job)
 		return CUPS_BACKEND_FAILED;
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* Handle panorama state */
 	if (ctx->conn->type == P_MITSU_D90) {
@@ -1999,7 +1998,7 @@ static const char *mitsud90_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsud90_backend = {
 	.name = "Mitsubishi CP-D90/CP-M1",
-	.version = "0.36"  " (lib " LIBMITSU_VER ")",
+	.version = "0.37"  " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsud90_prefixes,
 	.cmdline_arg = mitsud90_cmdline_arg,
 	.cmdline_usage = mitsud90_cmdline,

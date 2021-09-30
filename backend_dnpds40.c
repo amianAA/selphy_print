@@ -46,9 +46,7 @@
 
 /* Private data structure */
 struct dnpds40_printjob {
-	size_t jobsize;
-	int copies;
-	int can_combine;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	int datalen;
@@ -339,7 +337,7 @@ static void *dnp_combine_jobs(const void *vjob1,
 	newjob->datalen = 0;
 	newjob->multicut = new_multicut;
 	newjob->can_rewind = 0;
-	newjob->can_combine = 0;
+	newjob->common.can_combine = 0;
 	if (!newjob->databuf) {
 		dnpds40_cleanup_job(newjob);
 		newjob = NULL;
@@ -1474,7 +1472,7 @@ static int dnpds40_read_parse(void *vctx, const void **vjob, int data_fd, int co
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->jobsize = sizeof(*job);
+	job->common.jobsize = sizeof(*job);
 	job->printspeed = -1;
 
 	/* There's no way to figure out the total job length in advance, we
@@ -1579,7 +1577,7 @@ static int dnpds40_read_parse(void *vctx, const void **vjob, int data_fd, int co
 		/* Check for some offsets */
 		if(!memcmp("CNTRL QTY", job->databuf + job->datalen+2, 9)) {
 			memcpy(buf, job->databuf + job->datalen + 32, 8);
-			job->copies = atoi(buf);
+			job->common.copies = atoi(buf);
 			continue;
 		}
 		if(!memcmp("CNTRL CUTTER", job->databuf + job->datalen+2, 12)) {
@@ -1700,8 +1698,8 @@ parsed:
 	}
 
 	/* Use the larger of the copy arguments */
-	if (job->copies < copies)
-		job->copies = copies;
+	if (job->common.copies < copies)
+		job->common.copies = copies;
 
 	/* Make sure advanced matte modes are supported */
 	if (job->matte > 100) {
@@ -2134,7 +2132,7 @@ static int dnpds40_main_loop(void *vctx, const void *vjob, int wait_on_return) {
 
 	buf_needed = job->buf_needed;
 	multicut = job->multicut;
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* If we switch major overcoat modes, we need both buffers */
 	if (!!job->matte != ctx->last_matte)
@@ -3484,7 +3482,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.143",
+	.version = "0.144",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
@@ -3674,7 +3672,7 @@ static int legacy_cw01_read_parse(struct dnpds40_printjob *job, int data_fd, int
 	job->cutter = 0;
 
 	/* Use job's copies */
-	job->copies = hdr.copies;
+	job->common.copies = hdr.copies;
 
 	return legacy_spool_helper(job, data_fd, read_data,
 				   sizeof(hdr), plane_len, 0);
@@ -3712,7 +3710,7 @@ static int legacy_dnp_read_parse(struct dnpds40_printjob *job, int data_fd, int 
 	}
 
 	/* Use job's copies */
-	job->copies = hdr.copies;
+	job->common.copies = hdr.copies;
 
 	/* Don't bother with FW version checks for legacy stuff */
 	job->multicut = hdr.type + 1;
@@ -3759,7 +3757,7 @@ static int legacy_dnp620_read_parse(struct dnpds40_printjob *job, int data_fd, i
 	}
 
 	/* Use job's copies */
-	job->copies = hdr.copies;
+	job->common.copies = hdr.copies;
 
 	/* Don't bother with FW version checks for legacy stuff */
 	job->multicut = hdr.type + 1;
@@ -3804,7 +3802,7 @@ static int legacy_dnp820_read_parse(struct dnpds40_printjob *job, int data_fd, i
 	}
 
 	/* Use job's copies */
-	job->copies = hdr.copies;
+	job->common.copies = hdr.copies;
 
 	/* Don't bother with FW version checks for legacy stuff */
 	job->multicut = hdr.type + 1;

@@ -77,8 +77,7 @@ struct sony_prints {
 
 /* Private data structures */
 struct upd_printjob {
-	size_t jobsize;
-	int copies;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	int datalen;
@@ -327,7 +326,8 @@ static int upd_read_parse(void *vctx, const void **vjob, int data_fd, int copies
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 	job->datalen = 0;
 	job->databuf = malloc(MAX_PRINTJOB_LEN);
@@ -483,7 +483,7 @@ static int upd_read_parse(void *vctx, const void **vjob, int data_fd, int copies
 			tmp = cpu_to_be16(copies);
 			memcpy(job->databuf + copies_offset, &tmp, sizeof(tmp));
 		}
-		job->copies = 1;
+		job->common.copies = 1;
 	}
 
 	/* Parse some other stuff */
@@ -524,7 +524,7 @@ static int upd_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 top:
 	/* Send Unknown CMD.  Resets? */
@@ -741,7 +741,7 @@ static const char *sonyupd_prefixes[] = {
 
 const struct dyesub_backend sonyupd_backend = {
 	.name = "Sony UP-D",
-	.version = "0.45",
+	.version = "0.46",
 	.uri_prefixes = sonyupd_prefixes,
 	.cmdline_arg = upd_cmdline_arg,
 	.cmdline_usage = upd_cmdline,

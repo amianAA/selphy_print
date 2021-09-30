@@ -976,17 +976,15 @@ static int shinkos6245_read_parse(void *vctx, const void **vjob, int data_fd, in
 		return ret;
 	}
 
-	/* Use whicever copy count is larger */
-	if ((int)job->jp.copies > copies)
-		job->copies = job->jp.copies;
-	else
-		job->copies = copies;
+	/* Use larger of our copy counts */
+	if (job->common.copies < copies)
+		job->common.copies = copies;
 
 	if (ctx->dev.conn->type == P_KODAK_8810 &&
 	    job->jp.rows > 3624) {
-		if (job->copies > 1) {
+		if (job->common.copies > 1) {
 			WARNING("Multiple copies of panorama prints is not supported!\n");
-			job->copies = 1;
+			job->common.copies = 1;
 		}
 
 		if (job->jp.media) {
@@ -1091,7 +1089,7 @@ static int shinkos6245_main_loop(void *vctx, const void *vjob, int wait_for_retu
 	struct sinfonia_printjob *job = (struct sinfonia_printjob*) vjob;
 	struct kodak8810_cutlist *cutlist = NULL;
 
-	copies = job->copies;
+	copies = job->common.copies;
 
 	/* Cap copies */
 	if (ctx->dev.conn->type == P_KODAK_8810) {
@@ -1469,7 +1467,7 @@ static const char *shinkos6245_prefixes[] = {
 
 const struct dyesub_backend shinkos6245_backend = {
 	.name = "Sinfonia CHC-S6245 / Kodak 8810",
-	.version = "0.42" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.43" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = shinkos6245_prefixes,
 	.cmdline_usage = shinkos6245_cmdline,
 	.cmdline_arg = shinkos6245_cmdline_arg,

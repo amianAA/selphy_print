@@ -34,6 +34,8 @@ int sinfonia_read_parse(int data_fd, uint32_t model,
 	int ret, i;
 	uint8_t tmpbuf[4];
 
+	job->common.jobsize = sizeof(*job);
+
 	/* Read in header */
 	ret = read(data_fd, hdr, SINFONIA_HDR_LEN);
 	if (ret < 0 || ret != SINFONIA_HDR_LEN) {
@@ -129,7 +131,7 @@ int sinfonia_read_parse(int data_fd, uint32_t model,
 	}
 	job->jp.columns = hdr[13];
 	job->jp.rows = hdr[14];
-	job->jp.copies = hdr[15];
+	job->common.copies = hdr[15];
 
 	if (hdr[1] == 2245 || hdr[1] == 6145)
 		job->jp.ext_flags = hdr[28];
@@ -141,6 +143,8 @@ int sinfonia_raw10_read_parse(int data_fd, struct sinfonia_printjob *job)
 {
 	struct sinfonia_printcmd10_hdr hdr;
 	int ret;
+
+	job->common.jobsize = sizeof(*job);
 
 	/* Read in header */
 	ret = read(data_fd, &hdr, sizeof(hdr));
@@ -158,7 +162,7 @@ int sinfonia_raw10_read_parse(int data_fd, struct sinfonia_printjob *job)
 		ERROR("Unrecognized data format!\n");
 		return CUPS_BACKEND_CANCEL;
 	}
-	job->jp.copies = le16_to_cpu(hdr.copies);
+	job->common.copies = le16_to_cpu(hdr.copies);
 	job->jp.rows = le16_to_cpu(hdr.rows);
 	job->jp.columns = le16_to_cpu(hdr.columns);
 	job->jp.media = hdr.media;
@@ -169,8 +173,8 @@ int sinfonia_raw10_read_parse(int data_fd, struct sinfonia_printjob *job)
 	job->datalen = job->jp.rows * job->jp.columns * 3;
 
 	/* Hack in backprinting */
-	if (job->jp.copies & 0x8000) {
-		job->jp.copies &= ~0x8000;
+	if (job->common.copies & 0x8000) {
+		job->common.copies &= ~0x8000;
 		job->datalen += (44 * 2);
 		job->jp.ext_flags = EXT_FLAG_BACKPRINT;
 	}
@@ -335,6 +339,8 @@ int sinfonia_raw18_read_parse(int data_fd, struct sinfonia_printjob *job)
 	struct sinfonia_printcmd18_hdr hdr;
 	int ret;
 
+	job->common.jobsize = sizeof(*job);
+
 	/* Read in header */
 	ret = read(data_fd, &hdr, sizeof(hdr));
 	if (ret < 0 || ret != sizeof(hdr)) {
@@ -351,7 +357,7 @@ int sinfonia_raw18_read_parse(int data_fd, struct sinfonia_printjob *job)
 		ERROR("Unrecognized data format!\n");
 		return CUPS_BACKEND_CANCEL;
 	}
-	job->jp.copies = le16_to_cpu(hdr.copies);
+	job->common.copies = le16_to_cpu(hdr.copies);
 	job->jp.rows = le16_to_cpu(hdr.rows);
 	job->jp.columns = le16_to_cpu(hdr.columns);
 	job->jp.media = hdr.media;
@@ -390,6 +396,8 @@ int sinfonia_raw28_read_parse(int data_fd, struct sinfonia_printjob *job)
 	struct sinfonia_printcmd28_hdr hdr;
 	int ret;
 
+	job->common.jobsize = sizeof(*job);
+
 	/* Read in header */
 	ret = read(data_fd, &hdr, sizeof(hdr));
 	if (ret < 0 || ret != sizeof(hdr)) {
@@ -406,7 +414,7 @@ int sinfonia_raw28_read_parse(int data_fd, struct sinfonia_printjob *job)
 		ERROR("Unrecognized data format!\n");
 		return CUPS_BACKEND_CANCEL;
 	}
-	job->jp.copies = le16_to_cpu(hdr.copies);
+	job->common.copies = le16_to_cpu(hdr.copies);
 	job->jp.rows = le16_to_cpu(hdr.rows);
 	job->jp.columns = le16_to_cpu(hdr.columns);
 	job->jp.media = hdr.media;

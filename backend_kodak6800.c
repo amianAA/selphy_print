@@ -837,11 +837,12 @@ static int kodak6800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 
 	hdr.copies = be16_to_cpu(hdr.copies);
 	hdr.copies = packed_bcd_to_uint32((char*)&hdr.copies, 2);
+	/* Use larger of our copy counts */
 	if (hdr.copies > copies)
 		copies = hdr.copies;
 
 	/* Fill out job structure */
-	job->jp.copies = copies;
+	job->common.copies = copies;
 	job->jp.rows = rows;
 	job->jp.columns = cols;
 	job->jp.media = hdr.size;
@@ -866,7 +867,7 @@ static int kodak6800_main_loop(void *vctx, const void *vjob, int wait_for_return
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->jp.copies;
+	copies = job->common.copies;
 
 	/* Validate against supported media list */
 	for (num = 0 ; num < ctx->media_count; num++) {
@@ -1062,7 +1063,7 @@ static const char *kodak6800_prefixes[] = {
 /* Exported */
 const struct dyesub_backend kodak6800_backend = {
 	.name = "Kodak 6800/6850",
-	.version = "0.80" " (lib " LIBSINFONIA_VER ")",
+	.version = "0.81" " (lib " LIBSINFONIA_VER ")",
 	.uri_prefixes = kodak6800_prefixes,
 	.cmdline_usage = kodak6800_cmdline,
 	.cmdline_arg = kodak6800_cmdline_arg,

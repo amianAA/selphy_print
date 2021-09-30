@@ -37,9 +37,7 @@
 
 /* Private data structure */
 struct mitsu70x_printjob {
-	size_t jobsize;
-	int copies;
-	int can_combine;
+	struct dyesub_job_common common;
 
 	uint8_t *databuf;
 	uint32_t datalen;
@@ -892,8 +890,8 @@ static int mitsu70x_read_parse(void *vctx, const void **vjob, int data_fd, int c
 		return CUPS_BACKEND_RETRY_CURRENT;
 	}
 	memset(job, 0, sizeof(*job));
-	job->jobsize = sizeof(*job);
-	job->copies = copies;
+	job->common.jobsize = sizeof(*job);
+	job->common.copies = copies;
 
 repeat:
 	/* Read in initial header */
@@ -1191,7 +1189,7 @@ bypass_raw:
 	}
 
 	/* 6x4 can be combined, only on 6x8/6x9" media. */
-	job->can_combine = 0;
+	job->common.can_combine = 0;
 	if (job->decks_exact[0] ||
 	    job->decks_exact[1]) {
 		/* Exact media match, don't combine. */
@@ -1201,12 +1199,12 @@ bypass_raw:
 		    ctx->medias[0] == 0x5 ||
 		    ctx->medias[1] == 0xf || /* Two decks possible */
 		    ctx->medias[1] == 0x5)
-			job->can_combine = !job->raw_format;
+			job->common.can_combine = !job->raw_format;
 	} else if (job->rows == 1076) {
 		if (ctx->conn->type == P_KODAK_305 ||
 		    ctx->conn->type == P_MITSU_K60) {
 			if (ctx->medias[0] == 0x4)  /* Only one deck */
-				job->can_combine = !job->raw_format;
+				job->common.can_combine = !job->raw_format;
 		}
 	}
 
@@ -1744,7 +1742,7 @@ static int mitsu70x_main_loop(void *vctx, const void *vjob, int wait_for_return)
 	if (!job)
 		return CUPS_BACKEND_FAILED;
 
-	copies = job->copies;
+	copies = job->common.copies;
 	hdr = (struct mitsu70x_hdr*) job->databuf;
 
 	/* Keep track of deck requested */
@@ -2585,7 +2583,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.105" " (lib " LIBMITSU_VER ")",
+	.version = "0.106" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
