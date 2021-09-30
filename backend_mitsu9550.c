@@ -249,7 +249,7 @@ static const char *cp30_media_types(uint16_t remain)
 	/* Sanity-check media response */				\
 	if ((media->remain == 0 && media->remain2 == 0) || media->max == 0) { \
 		ERROR("Printer out of media!\n");			\
-		return CUPS_BACKEND_HOLD;				\
+		return CUPS_BACKEND_STOP;				\
 	}								\
 
 #define QUERY_STATUS_II				\
@@ -1612,7 +1612,7 @@ static const char *mitsu9550_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu9550_backend = {
 	.name = "Mitsubishi CP9xxx family",
-	.version = "0.61" " (lib " LIBMITSU_VER ")",
+	.version = "0.62" " (lib " LIBMITSU_VER ")",
 	.uri_prefixes = mitsu9550_prefixes,
 	.cmdline_usage = mitsu9550_cmdline,
 	.cmdline_arg = mitsu9550_cmdline_arg,

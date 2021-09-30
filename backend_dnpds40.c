@@ -2234,7 +2234,7 @@ top:
 		return CUPS_BACKEND_CANCEL;
 	default:
 		ERROR("Fatal Printer Error: %d => %s, halting queue!\n", status, dnpds40_statuses(status));
-		return CUPS_BACKEND_HOLD;
+		return CUPS_BACKEND_STOP;
 	}
 
 	{
@@ -3484,7 +3484,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.142",
+	.version = "0.143",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,

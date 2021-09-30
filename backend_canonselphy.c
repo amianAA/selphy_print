@@ -860,7 +860,7 @@ top:
 			/* Try to clear error state */
 			if ((ret = send_data(ctx->conn, ctx->printer->clear_error, ctx->printer->clear_error_len)))
 				return CUPS_BACKEND_FAILED;
-		return CUPS_BACKEND_HOLD;
+		return CUPS_BACKEND_STOP;
 	}
 
 	if (memcmp(rdbuf, rdbuf2, READBACK_LEN)) {
@@ -1097,7 +1097,7 @@ static const char *canonselphy_prefixes[] = {
 
 const struct dyesub_backend canonselphy_backend = {
 	.name = "Canon SELPHY CP/ES (legacy)",
-	.version = "0.110",
+	.version = "0.111",
 	.uri_prefixes = canonselphy_prefixes,
 	.cmdline_usage = canonselphy_cmdline,
 	.cmdline_arg = canonselphy_cmdline_arg,
