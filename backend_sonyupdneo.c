@@ -493,7 +493,7 @@ static int updneo_get_status(struct updneo_ctx *ctx)
 			   !strcmp("CLS", dict[i].key)) {
 			/* Ignore standard IEEE1284 attributes! */
 		} else {
-			if (!strncmp("SC", dict[i].key, 2) && !strncmp("SP", dict[i].key, 2))
+			if (!strncmp("SC", dict[i].key, 2) || !strncmp("SP", dict[i].key, 2))
 				DEBUG("Extra/Unknown IEEE1284 field '%s' = '%s'\n",
 				      dict[i].key, dict[i].val);
 		}
@@ -699,7 +699,7 @@ static const char *sonyupdneo_prefixes[] = {
 
 const struct dyesub_backend sonyupdneo_backend = {
 	.name = "Sony UP-D Neo",
-	.version = "0.16",
+	.version = "0.17",
 	.flags = BACKEND_FLAG_BADISERIAL, /* UP-D898MD at least */
 	.uri_prefixes = sonyupdneo_prefixes,
 	.cmdline_arg = updneo_cmdline_arg,
