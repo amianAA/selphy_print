@@ -301,7 +301,7 @@ static int selphyneo_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	return CUPS_BACKEND_OK;
 }
 
-static int selphyneo_main_loop(void *vctx, const void *vjob) {
+static int selphyneo_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct selphyneo_ctx *ctx = vctx;
 	struct selphyneo_readback rdback;
 
@@ -410,7 +410,7 @@ top:
 			return CUPS_BACKEND_STOP;
 		}
 
-		if (rdback.data[0] > 0x02 && fast_return && copies <= 1) {
+		if (rdback.data[0] > 0x02 && !wait_for_return && copies <= 1) {
 			INFO("Fast return mode enabled.\n");
 			break;
 		}

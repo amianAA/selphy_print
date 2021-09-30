@@ -348,7 +348,7 @@ top:
 	goto top;
 }
 
-static int mitsup95d_main_loop(void *vctx, const void *vjob) {
+static int mitsup95d_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct mitsup95d_ctx *ctx = vctx;
 	uint8_t queryresp[QUERYRESP_SIZE_MAX];
 	int ret;
@@ -474,7 +474,7 @@ static int mitsup95d_main_loop(void *vctx, const void *vjob) {
 				break;
 
 			if (queryresp[7] > 0) {
-				if (fast_return) {
+				if (!wait_for_return) {
 					INFO("Fast return mode enabled.\n");
 					break;
 				}
@@ -487,7 +487,7 @@ static int mitsup95d_main_loop(void *vctx, const void *vjob) {
 			if (queryresp[6] == 0x30)
 				break;
 			if (queryresp[6] == 0x43 && queryresp[7] > 0) {
-				if (fast_return) {
+				if (!wait_for_return) {
 					INFO("Fast return mode enabled.\n");
 					break;
 				}

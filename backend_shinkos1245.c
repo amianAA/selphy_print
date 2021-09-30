@@ -1006,7 +1006,7 @@ static int shinkos1245_read_parse(void *vctx, const void **vjob, int data_fd, in
 	return CUPS_BACKEND_OK;
 }
 
-static int shinkos1245_main_loop(void *vctx, const void *vjob) {
+static int shinkos1245_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct shinkos1245_ctx *ctx = vctx;
 	int i, num, last_state = -1, state = S_IDLE;
 	struct shinkos1245_resp_status status1, status2;
@@ -1168,7 +1168,7 @@ top:
 		break;
 	}
 	case S_PRINTER_SENT_DATA:
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			state = S_FINISHED;
 		}

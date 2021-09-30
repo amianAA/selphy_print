@@ -2103,14 +2103,14 @@ skip_checks:
 	DEBUG("job->dpi %u matte %d mcut %u cutter %d/%d, bufs %d spd %d\n",
 	      job->dpi, job->matte, job->multicut, job->cutter, job->fullcut, job->buf_needed, job->printspeed);
 
-	job->can_combine = job->can_rewind; /* Any rewindable size can be stacked */
+	job->common.can_combine = job->can_rewind; /* Any rewindable size can be stacked */
 
 	*vjob = job;
 
 	return CUPS_BACKEND_OK;
 }
 
-static int dnpds40_main_loop(void *vctx, const void *vjob) {
+static int dnpds40_main_loop(void *vctx, const void *vjob, int wait_on_return) {
 	struct dnpds40_ctx *ctx = vctx;
 	int ret;
 	struct dnpds40_cmd cmd;
@@ -2384,7 +2384,7 @@ top:
 	if (ctx->partialmatte == 2)
 		ctx->partialmatte = 0;
 
-	if (fast_return && !manual_copies) {
+	if (!wait_on_return && !manual_copies) {
 		INFO("Fast return mode enabled.\n");
 	} else if (!ctx->partialmatte) {
 		INFO("Waiting for job to complete...\n");

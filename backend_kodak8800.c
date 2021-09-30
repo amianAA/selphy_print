@@ -706,7 +706,7 @@ static int kodak8800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	return CUPS_BACKEND_OK;
 }
 
-static int kodak8800_main_loop(void *vctx, const void *vjob) {
+static int kodak8800_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct kodak8800_ctx *ctx = vctx;
 
 	int ret;
@@ -797,7 +797,7 @@ static int kodak8800_main_loop(void *vctx, const void *vjob) {
 		if (sts.sts[0] == STATE_IDLE) {
 			break;
 		}
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			break;
 		}

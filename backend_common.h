@@ -289,7 +289,7 @@ struct dyesub_backend {
 	void (*cleanup_job)(const void *job);
 	void *(*combine_jobs)(const void *job1, const void *job2);
 	int  (*job_polarity)(void *ctx);
-	int  (*main_loop)(void *ctx, const void *job);
+	int  (*main_loop)(void *ctx, const void *job, int wait_on_return);
 	int  (*query_serno)(struct dyesub_connection *conn, char *buf, int buf_len); /* Optional */
 	int  (*query_markers)(void *ctx, struct marker **markers, int *count);
 	int  (*query_stats)(void *ctx, struct printerstats *stats); /* Optional */

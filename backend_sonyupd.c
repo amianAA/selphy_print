@@ -512,7 +512,7 @@ static int upd_read_parse(void *vctx, const void **vjob, int data_fd, int copies
 	return CUPS_BACKEND_OK;
 }
 
-static int upd_main_loop(void *vctx, const void *vjob) {
+static int upd_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct upd_ctx *ctx = vctx;
 	int i, ret;
 	int copies;
@@ -622,7 +622,7 @@ retry:
 		return CUPS_BACKEND_STOP;
 	}
 
-	if (fast_return && ctx->stsbuf.printing != UPD_PRINTING_IDLE) {
+	if (!wait_for_return && ctx->stsbuf.printing != UPD_PRINTING_IDLE) {
 		INFO("Fast return mode enabled.\n");
 	} else {
 		goto retry;

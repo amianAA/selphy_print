@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.119"
+#define BACKEND_VERSION "0.120"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -2000,6 +2000,10 @@ int dyesub_joblist_print(const struct dyesub_joblist *list, int *pagenum)
 
 	for (i = 0 ; i < list->copies ; i++) {
 		for (j = 0 ; j < list->num_entries ; j++) {
+			int wait_on_return = 0;
+			if (i == (list->copies - 1) && j == (list->num_entries -1))
+				wait_on_return = fast_return; /* only wait on the final iteration. */
+
 			if (list->entries[j]) {
 				int copies = ((const struct dyesub_job_common *)(list->entries[j]))->copies;
 
@@ -2010,7 +2014,7 @@ int dyesub_joblist_print(const struct dyesub_joblist *list, int *pagenum)
 				/* Print this page */
 				if (test_mode < TEST_MODE_NOPRINT ||
 				    list->backend->flags & BACKEND_FLAG_DUMMYPRINT) {
-					ret = list->backend->main_loop(list->ctx, list->entries[j]);
+					ret = list->backend->main_loop(list->ctx, list->entries[j], wait_on_return);
 					if (ret)
 						return ret;
 				}

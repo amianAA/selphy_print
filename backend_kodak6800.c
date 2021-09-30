@@ -853,7 +853,7 @@ static int kodak6800_read_parse(void *vctx, const void **vjob, int data_fd, int 
 	return CUPS_BACKEND_OK;
 }
 
-static int kodak6800_main_loop(void *vctx, const void *vjob) {
+static int kodak6800_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct kodak6800_ctx *ctx = vctx;
 
 	int num, ret;
@@ -980,7 +980,7 @@ static int kodak6800_main_loop(void *vctx, const void *vjob) {
 		if (ctx->sts.b2_jobid == hdr.jobid && ctx->sts.b2_complete == ctx->sts.b2_total)
 			break;
 
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			break;
 		}

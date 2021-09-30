@@ -1793,7 +1793,7 @@ static int calc_offset(int val, int mid, int max, int step)
 	return val;
 }
 
-static int hiti_main_loop(void *vctx, const void *vjob)
+static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 {
 	struct hiti_ctx *ctx = vctx;
 
@@ -1993,7 +1993,7 @@ resend_c:
 			return CUPS_BACKEND_FAILED;
 		}
 
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			break;
 		}

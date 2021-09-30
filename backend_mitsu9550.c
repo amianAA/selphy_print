@@ -202,7 +202,7 @@ struct mitsu9550_status2 {
 	uint8_t  unkb[4]; /* 0a 00 00 01 */
 } __attribute__((packed));
 
-static int mitsu9550_main_loop(void *vctx, const void *vjob);
+static int mitsu9550_main_loop(void *vctx, const void *vjob, int wait_for_return);
 
 static const char *cp30_errors(uint16_t err)
 {
@@ -732,7 +732,7 @@ hdr_done:
 
 	/* All further work is in main loop */
 	if (test_mode >= TEST_MODE_NOPRINT)
-		mitsu9550_main_loop(ctx, job);
+		mitsu9550_main_loop(ctx, job, 1);
 
 	*vjob = job;
 
@@ -1004,7 +1004,7 @@ static int validate_media(int type, int media, int cols, int rows)
 	return CUPS_BACKEND_OK;
 }
 
-static int mitsu9550_main_loop(void *vctx, const void *vjob) {
+static int mitsu9550_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct mitsu9550_ctx *ctx = vctx;
 	struct mitsu9550_cmd cmd;
 	uint8_t rdbuf[READBACK_LEN];
@@ -1333,9 +1333,9 @@ top:
 			if (sts30->sts == CP30_STS_IDLE)  /* If printer transitions to idle */
 				break;
 
-			// XXX if (fast_return && copies_remaining == 0) break...
+			// XXX if (!wait_for_return && copies_remaining == 0) break...
 
-			if (fast_return && sts30->sts != CP30_STS_IDLE) {
+			if (!wait_for_return && sts30->sts != CP30_STS_IDLE) {
 				INFO("Fast return mode enabled.\n");
 				break;
 			}
@@ -1351,12 +1351,12 @@ top:
 			if (!sts->sts1) /* If printer transitions to idle */
 				break;
 
-			if (fast_return && !be16_to_cpu(sts->copies)) { /* No remaining prints */
+			if (!wait_for_return && !be16_to_cpu(sts->copies)) { /* No remaining prints */
 				INFO("Fast return mode enabled.\n");
 				break;
 			}
 
-			if (fast_return && !sts->sts5) {
+			if (!wait_for_return && !sts->sts5) {
 				INFO("Fast return mode enabled.\n");
 				break;
 			}

@@ -817,10 +817,11 @@ static int magicard_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	return CUPS_BACKEND_OK;
 }
 
-static int magicard_main_loop(void *vctx, const void *vjob) {
+static int magicard_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct magicard_ctx *ctx = vctx;
 	int ret;
 	int copies;
+	(void)wait_for_return;
 
 	const struct magicard_printjob *job = vjob;
 

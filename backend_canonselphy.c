@@ -812,13 +812,14 @@ static int canonselphy_read_parse(void *vctx, const void **vjob, int data_fd, in
 	return CUPS_BACKEND_OK;
 }
 
-static int canonselphy_main_loop(void *vctx, const void *vjob) {
+static int canonselphy_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct canonselphy_ctx *ctx = vctx;
 
 	uint8_t rdbuf[READBACK_LEN], rdbuf2[READBACK_LEN];
 	int last_state = -1, state = S_IDLE;
 	int ret, num;
 	int copies;
+	(void)wait_for_return;
 
 	const struct canonselphy_printjob *job = vjob;
 

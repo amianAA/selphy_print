@@ -534,7 +534,7 @@ static void updneo_dump_status(struct updneo_ctx *ctx, struct updneo_sts *sts)
 	}
 }
 
-static int updneo_main_loop(void *vctx, const void *vjob) {
+static int updneo_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct updneo_ctx *ctx = vctx;
 	int ret;
 	int copies;
@@ -601,7 +601,7 @@ retry:
 
 	/* See if we're busy... */
 	if (ctx->sts.scprs != 0) {
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 		} else {
 			goto retry;

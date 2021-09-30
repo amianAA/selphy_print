@@ -1490,7 +1490,7 @@ done:
 	return newjob;
 }
 
-static int shinkos6145_main_loop(void *vctx, const void *vjob) {
+static int shinkos6145_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct shinkos6145_ctx *ctx = vctx;
 
 	int ret, num;
@@ -1802,7 +1802,7 @@ top:
 		break;
 	}
 	case S_PRINTER_SENT_DATA:
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			state = S_FINISHED;
 		} else if (sts.hdr.status == STATUS_READY) {

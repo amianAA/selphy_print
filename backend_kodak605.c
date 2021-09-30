@@ -430,7 +430,7 @@ static int kodak605_read_parse(void *vctx, const void **vjob, int data_fd, int c
 	return CUPS_BACKEND_OK;
 }
 
-static int kodak605_main_loop(void *vctx, const void *vjob) {
+static int kodak605_main_loop(void *vctx, const void *vjob, int wait_for_return) {
 	struct kodak605_ctx *ctx = vctx;
 
 	struct kodak605_status sts;
@@ -638,7 +638,7 @@ retry_print:
 		if (sts.hdr.status == STATUS_READY)
 			break;
 
-		if (fast_return) {
+		if (!wait_for_return) {
 			INFO("Fast return mode enabled.\n");
 			break;
 		}

@@ -412,7 +412,8 @@ static int kodak1400_read_parse(void *vctx, const void **vjob, int data_fd, int 
 static uint8_t idle_data[READBACK_LEN] = { 0xe4, 0x72, 0x00, 0x00,
 					   0x00, 0x00, 0x00, 0x00 };
 
-static int kodak1400_main_loop(void *vctx, const void *vjob) {
+static int kodak1400_main_loop(void *vctx, const void *vjob, int wait_for_return)
+{
 	struct kodak1400_ctx *ctx = vctx;
 
 	uint8_t rdbuf[READBACK_LEN], rdbuf2[READBACK_LEN];
@@ -421,6 +422,7 @@ static int kodak1400_main_loop(void *vctx, const void *vjob) {
 	int num, ret;
 	uint16_t temp16;
 	int copies;
+	(void)wait_for_return;
 
 	const struct kodak1400_printjob *job = vjob;
 
