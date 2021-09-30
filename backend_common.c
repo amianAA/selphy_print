@@ -1578,13 +1578,11 @@ bypass:
 		goto done_claimed;
 	}
 
-	ATTR("org.gutenprint.usb.backend=%s\n", backend_str ? backend_str : backend->name);
-	ATTR("org.gutenprint.usb.vid=%04x\n", conn.usb_vid);
-	ATTR("org.gutenprint.usb.pid=%04x\n", conn.usb_pid);
-	ATTR("org.gutenprint.usb.bus=%03d\n", conn.bus_num);
-	ATTR("org.gutenprint.usb.port=%03d\n", conn.port_num);
-
-//	STATE("+org.gutenprint.attached-to-device\n");
+	PPD("StpUsbBackend=\"%s\"\n", backend_str ? backend_str : backend->name);
+	PPD("StpUsbVid=%04x\n", conn.usb_vid);
+	PPD("StpUsbPid=%04x\n", conn.usb_pid);
+	PPD("StpUsbBus=%03d\n", conn.bus_num);
+	PPD("StpUsbPort=%03d\n", conn.port_num);
 
 	if (!uri || !strlen(uri)) {
 		if (backend->cmdline_arg(backend_ctx, argc, argv))
@@ -1613,7 +1611,6 @@ done:
 			backend->teardown(backend_ctx);
 		else
 			generic_teardown(backend_ctx);
-//		STATE("-org.gutenprint.attached-to-device");
 	}
 
 	if (list)
@@ -1720,6 +1717,7 @@ minimal:
 	if (full && getenv("DEVICE_URI")) {
 		for (i = 0 ; i < marker_count ; i++) {
 			PPD("StpMediaID%d=%d\n", i, markers[i].numtype);
+			PPD("StpMediaName%d=\"%s\"\n", i, markers[i].name);
 		}
 	}
 }
