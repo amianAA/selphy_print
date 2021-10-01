@@ -1,7 +1,7 @@
 /*
  *   Mitsubishi CP-9xxx Photo Printer Family CUPS backend
  *
- *   (c) 2014-2020 Solomon Peachy <pizza@shaftnet.org>
+ *   (c) 2014-2021 Solomon Peachy <pizza@shaftnet.org>
  *
  *   The latest version of this program can be found at:
  *
