@@ -787,6 +787,8 @@ static int dnpds40_query_mqty(struct dnpds40_ctx *ctx)
 			count++;
 
 		count -= ctx->mediaoffset;
+		if (count < 0) /* Just in case */
+			count = 0;
 	}
 
 	return count;
@@ -3482,7 +3484,7 @@ static const char *dnpds40_prefixes[] = {
 
 const struct dyesub_backend dnpds40_backend = {
 	.name = "DNP DS-series / Citizen C-series",
-	.version = "0.144",
+	.version = "0.145",
 	.uri_prefixes = dnpds40_prefixes,
 	.cmdline_usage = dnpds40_cmdline,
 	.cmdline_arg = dnpds40_cmdline_arg,
