@@ -2223,9 +2223,8 @@ top:
 	case 1200: /* Ribbon End */
 	case 1300: /* Paper Jam */
 	case 1400: /* Ribbon Error */
-		WARNING("Printer not ready: %s, please correct...\n", dnpds40_statuses(status));
-		sleep(1);
-		goto top;
+		ERROR("Printer not ready: %s, please correct...\n", dnpds40_statuses(status));
+		return CUPS_BACKEND_STOP;
 	case 1500: /* Paper definition error */
 		ERROR("Paper definition error, aborting job\n");
 		return CUPS_BACKEND_CANCEL;
