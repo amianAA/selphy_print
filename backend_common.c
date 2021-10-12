@@ -29,7 +29,7 @@
 #include <signal.h>
 #include <strings.h>  /* For strncasecmp */
 
-#define BACKEND_VERSION "0.120"
+#define BACKEND_VERSION "0.121"
 
 #ifndef CORRTABLE_PATH
 #ifdef PACKAGE_DATA_DIR
@@ -1473,11 +1473,11 @@ int main (int argc, char **argv)
 
 	if (found == -1) {
 		ERROR("Printer open failure (No matching printers found!)\n");
-		STATE("+offline-report");
+		STATE("+offline-report\n");
 		ret = CUPS_BACKEND_RETRY;
 		goto done;
 	}
-	STATE("-offline-report");
+	STATE("-offline-report\n");
 
 	if (test_mode) {
 		WARNING("**** TEST MODE %d!\n", test_mode);
