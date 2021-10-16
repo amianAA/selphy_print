@@ -94,6 +94,7 @@ endif
 # Debugging
 #CFLAGS += -fsanitize=address -fPIC
 #LDFLAGS += -lasan
+#CFLAGS += -fanalyzer -flto
 
 # Flags
 CFLAGS += -Wall -Wextra -Wformat-security -funit-at-a-time -g -Og -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -std=c99 -D_POSIX_C_SOURCE=200809L # -Wconversion
