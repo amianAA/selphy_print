@@ -58,8 +58,8 @@ ifneq ($(GUTENPRINT_MINOR),3)
 OLD_URI := -DOLD_URI=1
 endif
 
-# Fallthrough
-BACKEND_NAME ?= gutenprint5X+usb
+# Fallthrough, default to v5.3
+BACKEND_NAME ?= gutenprint53+usb
 
 # Libraries:
 LIBS6145_NAME = lib6145/libS6145ImageReProcess.$(LIB_SUFFIX)
@@ -143,7 +143,7 @@ DATAFILES_TMP = datafiles
 
 # And now the rules!
 .PHONY: config clean all install cppcheck
-all: config $(EXEC_NAME) $(BACKENDS) libraries $(DATAFILES_TMP) $(DATAFILES_TGT)
+all: config $(EXEC_NAME) $(BACKENDS) libraries data
 
 config:
 	@echo
@@ -182,18 +182,6 @@ cppcheck:
 	$(CPPCHECK) -q -v --std=c99 --enable=all --suppress=variableScope --suppress=selfAssignment --suppress=unusedStructMember -I. -I/usr/include $(CPPFLAGS) $(SOURCES) $(LIB70X_SOURCES) $(LIBS6145_SOURCES)
 
 # Test-related stuff
-$(DATAFILES_TMP)/%: hiti_data/% | $(DATAFILES_TMP)
-	@$(E) "      LN  " $@
-	$(Q)$(LN) -sf ../$< $@
-
-$(DATAFILES_TMP)/%: lib70x/data/% | $(DATAFILES_TMP)
-	@$(E) "      LN  " $@
-	$(Q)$(LN) -sf ../$< $@
-
-$(DATAFILES_TMP):
-	@$(E) "   MKDIR  " $@
-	$(Q)$(MKDIR) -p datafiles
-
 test: all
 	LD_LIBRARY_PATH=lib70x:lib6145:$(LD_LIBRARY_PATH) STP_VERBOSE=$(STP_VERBOSE) STP_PARALLEL=$(CPUS) CORRTABLE_PATH=$(DATAFILES_TMP) ./regression.pl regression.csv
 
@@ -206,16 +194,32 @@ testgp: all
 testgp_%: all
 	LD_LIBRARY_PATH=lib70x:lib6145:$(LD_LIBRARY_PATH) STP_VERBOSE=$(STP_VERBOSE) STP_PARALLEL=$(CPUS) CORRTABLE_PATH=$(DATAFILES_TMP) ./regression-gp.pl regression-gp.csv $(subst testgp_,,$@)
 
-# Install and cleanup
+# Backend data files
+data: $(DATAFILES_TMP) $(DATAFILES_TGT)
 
-install: all
+$(DATAFILES_TMP)/%: hiti_data/% | $(DATAFILES_TMP)
+	@$(E) "      LN  " $@
+	$(Q)$(LN) -sf ../$< $@
+
+$(DATAFILES_TMP)/%: lib70x/data/% | $(DATAFILES_TMP)
+	@$(E) "      LN  " $@
+	$(Q)$(LN) -sf ../$< $@
+
+$(DATAFILES_TMP):
+	@$(E) "   MKDIR  " $@
+	$(Q)$(MKDIR) -p datafiles
+
+# Install and cleanup
+install_data: data
+	$(MKDIR) -p $(BACKEND_DATA_DIR)
+	$(INSTALL) -o root -m 644 $(DATAFILES_TMP)/* $(BACKEND_DATA_DIR)
+
+install: all install_data
 	$(MKDIR) -p $(CUPS_BACKEND_DIR)
 	$(INSTALL) -o root -m 700 $(EXEC_NAME) $(CUPS_BACKEND_DIR)/$(BACKEND_NAME)
 	$(INSTALL) -o root -m 755 $(LIBRARIES) $(LIB_DIR)
 	$(MKDIR) -p $(CUPS_DATA_DIR)/usb
 	$(INSTALL) -o root -m 644 blacklist $(CUPS_DATA_DIR)/usb/net.sf.gimp-print.usb-quirks
-	$(MKDIR) -p $(BACKEND_DATA_DIR)
-	$(INSTALL) -o root -m 644 $(DATAFILES_TMP)/* $(BACKEND_DATA_DIR)
 
 clean:
 	@$(E) "   CLEAN  " all
