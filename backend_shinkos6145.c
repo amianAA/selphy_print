@@ -1982,7 +1982,7 @@ const struct dyesub_backend shinkos6145_backend = {
 		{ 0x10ce, 0x0039, P_SHINKO_S2245, NULL, "sinfonia-chcs2245"},
 		{ 0x29cc, 0x0003, P_KODAK_6900, NULL, "kodak-6900"},      /* aka CHC-S2245-6A */
 		{ 0x29cc, 0x0004, P_KODAK_6900, NULL, "kodak-6950"},      /* aka CHC-S2245-6C */
-		{ 0x0d16, 0x0010, P_SHINKO_S2245, NULL, "hiti-m610"},
+		{ 0x0d16, 0x0010, P_SHINKO_S2245, NULL, "hiti-m610"},     /* aka CHC-S2245-5F */
 		{ 0, 0, 0, NULL, NULL}
 	}
 };

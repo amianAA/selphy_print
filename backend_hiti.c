@@ -236,7 +236,7 @@ struct hiti_jc_qjc {
 #define PRINT_TYPE_5x7_2UP 11
 
 struct hiti_heattable {
-	uint8_t y[2050];
+	uint8_t y[2050]; /* 256 doubles, plus 2 byte checksum? */
 	uint8_t pad0[30];
 	uint8_t m[2050];
 	uint8_t pad1[30];
@@ -970,11 +970,11 @@ static int hiti_attach(void *vctx, struct dyesub_connection *conn, uint8_t jobid
 
 		switch (ctx->conn->type) {
 		case P_HITI_52X:
-			if (strncmp(ctx->version, "1.23", 4) < 0)
-				WARNING("Printer firmware %s out of date (vs %s), please update.\n", ctx->version, "v1.23");
-			else if (strncmp(ctx->version, "1.22", 4) < 0 &&
-				 strncmp(ctx->version, "1.17", 4) > 0)  /* V1.18 -> v1.21 have a known USB CLEAR_ENDPOINT_HALT issue */
+			if (strncmp(ctx->version, "1.22", 4) < 0 &&
+			    strncmp(ctx->version, "1.17", 4) > 0)  /* V1.18 -> v1.21 have a known USB CLEAR_ENDPOINT_HALT issue */
 				WARNING("Printer firmware %s has a known USB bug, please update to at least v1.22\n", ctx->version);
+			else if (strncmp(ctx->version, "1.27", 4) < 0)
+				WARNING("Printer firmware %s out of date (vs %s), please update.\n", ctx->version, "v1.27");
 			break;
 		default:
 			break;
@@ -1048,8 +1048,11 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 					fname = "P51x_CCQP2ra.bin";
 					break;
 				case 3:
-				default:
 					fname = "P51x_CCQP3ra.bin";
+					break;
+				case 4:
+				default:
+					fname = "P51x_CCQP4ra.bin";
 					break;
 				}
 			} else {
@@ -1064,15 +1067,44 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 					fname = "P51x_CCPP2ra.bin";
 					break;
 				case 3:
-				default:
 					fname = "P51x_CCPP3ra.bin";
+					break;
+				case 4:
+					fname = "P51x_CCPP4ra.bin";
+					break;
+				case 5:
+				default:
+					fname = "P51x_CCPP5ra.bin";
 					break;
 				}
 			}
 		}
 		break;
 	case P_HITI_52X:
-		fname = "P52x_CCPPri.bin";
+		switch(mediaver) {
+		case 0:
+			fname = "P52x_CCPPri.bin";
+			break;
+		case 1:
+			fname = "P52x_CCPP1ri.bin";
+			break;
+		case 2:
+			fname = "P52x_CCPP2ri.bin";
+			break;
+		case 3:
+			fname = "P52x_CCPP3ri.bin";
+			break;
+		case 4:
+			fname = "P52x_CCPP4ri.bin";
+			break;
+		case 5:
+			fname = "P52x_CCPP5ri.bin";
+			break;
+		case 6:
+		default:
+			fname = "P52x_CCPP6ri.bin";
+			break;
+		}
 		break;
 	case P_HITI_720:
 		if (!mediatype) {
@@ -1099,9 +1131,21 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 					fname = "P72x_CCQP3rd.bin";
 					break;
 				case 4:
-				default:
 					fname = "P72x_CCQP4rd.bin";
-				break;
+					break;
+				case 5:
+					fname = "P72x_CCQP5rd.bin";
+					break;
+				case 7:
+					fname = "P72x_CCQP7rd.bin";
+					break;
+				case 8:
+					fname = "P72x_CCQP8rd.bin";
+					break;
+				case 9:
+				default:
+					fname = "P72x_CCQP9rd.bin";
+					break;
 				}
 			} else {
 				switch(mediaver) {
@@ -1126,7 +1170,37 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 		}
 		break;
 	case P_HITI_750:
-		fname = "P75x_CCQPrh.bin";
+		if (mode) {
+			switch(mediaver) {
+			case 0:
+				fname = "P75x_CCQPrh.bin";
+				break;
+			case 1:
+				fname = "P75x_CCQP1rh.bin";
+				break;
+			case 2:
+				fname = "P75x_CCQP2rh.bin";
+				break;
+			case 3:
+				fname = "P75x_CCQP3rh.bin";
+				break;
+			case 4:
+				fname = "P75x_CCQP4rh.bin";
+				break;
+			case 5:
+				fname = "P75x_CCQP5rh.bin";
+				break;
+			case 6:
+				fname = "P75x_CCQP6rh.bin";
+				break;
+			case 7:
+			default:
+				fname = "P75x_CCQP7rh.bin";
+				break;
+			}
+		} else {
+			fname = "P75x_CCPPrh.bin";
+		}
 		break;
 	default:
 		fname = NULL;
@@ -2406,7 +2480,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.33",
+	.version = "0.34",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,

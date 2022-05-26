@@ -7,27 +7,30 @@ LUT filename Codes:
  C M Q P ? ra [ .bin ]
            --  model code, see below
          -     media version, 0..n (if not present, interpret as 0)
-       -       always P (or 'CL', or 'B')
+       -       ?? (usually P, but also seen B, C, CL, I)
      -         print quality, Q == fine, P == normal
    -           media type, M == DNP, C == CHC         (?)
- -             Always C
+ -             ?? (usually C, also seen RC)
 
   model codes:
 
-    cb = CS2xx
-    ra = P51x
-    rd = P72x
-    rh = P75x
-    ri = P52x (or 'ri1')
-    rk = P530
-    si = P11x
+    cd  = CS2xx
+    cl  = CS2xx (sub-model?)
+    cm  = CS2xx (sub-model?)
+    ra  = P51x
+    rd  = P72x
+    rh  = P75x
+    ri  = P52x  (520/525?)
+    ri1 = P52x  (528?)
+    rk  = P530
+    si  = P11x
 
 Heat table codes:
 
  hea 0 q c ra [.bin]
            -- model code, see above
          -    media type, h == DNP, c == CHC      (?)
-       -      print quality, q == fine, t == normal, (or p == ?)
+       -      print quality, q == fine, t == normal, (also seen p/r/o == ?)
      -        media version, 0..n (or 't')
   ---         always 'hea'
 
@@ -35,7 +38,26 @@ Heat table types:
 
   size
 
-  11108    (SEHT2 * 5 + CVD (Y + M + C + Gloss + Matte + CVD)
-  12568    ??
-  12603    ??
-  15732    ??
+  11108    ra (older)
+       SEHT2 * 5 (Y + M + C + Gloss + Matte)
+          256 doubles
+	  2 byte checksum
+	  30 bytes pad
+       CVD
+          582 bytes
+	  26 bytes pad
+  12568    ??  rd(qc/qh/pc/ph) / rh(qc) /rk/ri/ri1
+  12603    ??  rd(qc)
+  12753    ??  cd(ph) / cm cm(ph)
+  12917    ra (newer)
+        ?? * 5 (Y M C OG OM, presumably)
+	   256 doubles
+	     8 bytes pad (?)
+	?? Tone curve (SHPTC, maybe?)
+	   256 doubles
+	     7 bytes pad
+	CVD
+	    582 bytes
+  15732    ??  rd(th) / rh(pc/tc)
+  58170    ??  cd(oh/th)
+  77996    ??  cl / cm(oh/th)

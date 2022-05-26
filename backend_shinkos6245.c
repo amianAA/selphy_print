@@ -1482,7 +1482,7 @@ const struct dyesub_backend shinkos6245_backend = {
 	.devices = {
 		{ 0x10ce, 0x001d, P_SHINKO_S6245, NULL, "sinfonia-chcs6245"},
 		{ 0x10ce, 0x001d, P_SHINKO_S6245, NULL, "shinko-chcs6245"}, /* Duplicate */
-		{ 0x0d16, 0x000e, P_HITI_910, NULL, "hiti-p910l"},
+		{ 0x0d16, 0x000e, P_HITI_910, NULL, "hiti-p910l"}, /* aka CHC-S6245-5B */
 		{ 0x040a, 0x404d, P_KODAK_8810, NULL, "kodak-8810"},
 		{ 0, 0, 0, NULL, NULL}
 	}
