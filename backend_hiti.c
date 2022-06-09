@@ -68,8 +68,8 @@ struct hiti_cmd {
 #define CMD_RDS_RW     0x0407 /* Request Warnings */
 #define CMD_RDS_DSRA   0x0408 /* Request Device Serviced Alerts */
 #define CMD_RDS_SA     0x040A /* Request Service Alerts */
-#define CMD_RDS_RPS    0x040B /* Request Printer Statistics (*/
-#define CMD_RDS_RSUS   0x040C /* Request Supplies Status */
+#define CMD_RDS_RPS    0x040B /* Request Printer Statistics */
+#define CMD_RDS_RSUS   0x040C /* Request Supplies Status (not P51x) */
 
 /* Job Control */
 #define CMD_JC_SJ      0x0500 /* Start Job (3 arg) */
@@ -1717,6 +1717,8 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 	}
 
 	/* Sanity check against ribbon type */
+	if (ctx->conn->type != P_HITI_51X) {
+
 	switch (ctx->supplies[2]) {
 	case RIBBON_TYPE_4x6:
 		if (job->hdr.code != PRINT_TYPE_6x4 &&
@@ -1766,6 +1768,7 @@ static int hiti_read_parse(void *vctx, const void **vjob, int data_fd, int copie
 		ERROR("Unknown ribbon type!\n");
 		hiti_cleanup_job(job);
 		return CUPS_BACKEND_CANCEL;
+	}
 	}
 
 	/* Convert input packed BGR data into YMC planar, if needed */
@@ -2309,9 +2312,11 @@ static int hiti_query_supplies(struct hiti_ctx *ctx)
 	uint16_t len = 5;
 	uint8_t arg = 0;
 
-	ret = hiti_docmd_resp(ctx, CMD_RDS_RSUS, &arg, sizeof(arg), ctx->supplies, &len);
-	if (ret)
-		return ret;
+	if (ctx->conn->type != P_HITI_51X) {
+		ret = hiti_docmd_resp(ctx, CMD_RDS_RSUS, &arg, sizeof(arg), ctx->supplies, &len);
+		if (ret)
+			return ret;
+	}
 
 	len = 4;
 	ret = hiti_docmd_resp(ctx, CMD_RDS_RIS, &arg, sizeof(arg), ctx->supplies2, &len);
@@ -2480,7 +2485,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.34",
+	.version = "0.35",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,

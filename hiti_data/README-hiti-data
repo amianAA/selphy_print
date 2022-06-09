@@ -51,8 +51,9 @@ Heat table types:
   12753    ??  cd(ph) / cm cm(ph)
   12917    ra (newer)
         ?? * 5 (Y M C OG OM, presumably)
+	    4 bytes pad (?)
 	   256 doubles
-	     8 bytes pad (?)
+	    4 bytes pad (?)
 	?? Tone curve (SHPTC, maybe?)
 	   256 doubles
 	     7 bytes pad
