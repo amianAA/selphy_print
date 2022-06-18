@@ -435,7 +435,7 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 	__usleep(10*1000);
 
 	/* Read back command */
-	ret = read_data(ctx->conn, cmdbuf, 512, &num);
+	ret = read_data(ctx->conn, cmdbuf, 6, &num);
 	if (ret)
 		return ret;
 
@@ -485,18 +485,24 @@ static int hiti_docmd_resp(struct hiti_ctx *ctx, uint16_t cmdid,
 	__usleep(10*1000);
 
 	/* Read back the data*/
-	ret = read_data(ctx->conn, respbuf, *resplen, &num);
-	if (ret)
-		return ret;
+	int remain = *resplen;
+	int total = 0;
+	do {
+		ret = read_data(ctx->conn, respbuf + total, remain, &num);
+		if (ret)
+			return ret;
+		total += num;
+		remain -= num;
+	} while (remain > 0 && num == 64);
 
 	/* Sanity check */
-	if (num > *resplen) {
-		ERROR("Response too long for buffer (%d vs %d)!\n", num, *resplen);
+	if (total > *resplen) {
+		ERROR("Response too long for buffer (%d vs %d)!\n", total, *resplen);
 		*resplen = 0;
 		return CUPS_BACKEND_FAILED;
 	}
 
-	*resplen = num;
+	*resplen = total;
 
 	return CUPS_BACKEND_OK;
 }
@@ -2480,7 +2486,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.37",
+	.version = "0.38",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
