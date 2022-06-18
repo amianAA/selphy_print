@@ -435,7 +435,7 @@ static int hiti_docmd(struct hiti_ctx *ctx, uint16_t cmdid, uint8_t *buf, uint16
 	__usleep(10*1000);
 
 	/* Read back command */
-	ret = read_data(ctx->conn, cmdbuf, 6, &num);
+	ret = read_data(ctx->conn, cmdbuf, 512, &num);
 	if (ret)
 		return ret;
 
@@ -2307,8 +2307,9 @@ static int hiti_query_supplies(struct hiti_ctx *ctx)
 {
 	int ret;
 	uint16_t len = 5;
+	uint8_t arg = 0;
 
-	ret = hiti_docmd_resp(ctx, CMD_RDS_RSUS, NULL, 0, ctx->supplies, &len);
+	ret = hiti_docmd_resp(ctx, CMD_RDS_RSUS, &arg, sizeof(arg), ctx->supplies, &len);
 	if (ret)
 		return ret;
 
@@ -2479,7 +2480,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.36",
+	.version = "0.37",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
