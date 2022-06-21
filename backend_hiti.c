@@ -89,6 +89,7 @@ struct hiti_cmd {
 #define CMD_ERDC_RTLV  0x800E /* Request T/L Voltage */
 #define CMD_ERDC_RRVC  0x800F /* Read Ribbon Vendor Code */
 #define CMD_ERDC_UNK   0x8010 /* Unknown Query RE */
+#define CMD_ERDC_UNK2  0x8011 /* Unknown Query RE */
 #define CMD_ERDC_RHA   0x801C /* Read Highlight Adjustment (6 resp) RE */
 
 // 8008 seen in Windows Comm @ 3211  (0 len response)
@@ -126,6 +127,7 @@ struct hiti_cmd {
 #define CMD_ESD_SEHT2  0x8303 /* Send Ext Heating Table (2 arg) */
 #define CMD_ESD_SEHT   0x8304 /* Send Ext Heating Table XX */
 #define CMD_ESD_SEPD   0x8309 /* Send Ext Print Data (2 arg) + struct */
+#define CMD_ESD_UNK    0x830A /* Unknown, seen on P51x (4 byte payload) */
 #define CMD_ESD_SHPTC  0x830B /* Send Heating Parameters & Tone Curve XX (n arg) */
 #define CMD_ESD_C_SHPTC  0x830C /* CS Send Heating Parameters & Tone Curve XX (n arg) */
 
