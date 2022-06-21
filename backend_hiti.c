@@ -152,9 +152,9 @@ struct hiti_cmd {
 #define RESET_SOFT    0x02
 
 /* 801C --> 0 args
-        <-- 6 bytes: 00 YY MM CC 00 00  (YMC is +- 31d)
+        <-- 6 bytes: 00 YY MM CC 00 00  (YMC is +- 31 decimal)
 
-   040E --> 5 args:  YY MM CC 00 00 (YMC is +- 31d)
+   840E --> 5 args:  YY MM CC 00 00 (YMC is +- 31 decimal)
         <-- 1 arg:   00 (success, presumably)
 
   Highlight Correction.  Unclear if it's used by printer or by "driver"
@@ -1953,6 +1953,13 @@ static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 
 	if (ctx->conn->type == P_HITI_51X) {
 		ret = hiti_send_heat_data(ctx, job->hdr.quality, job->hdr.overcoat);
+		if (ret)
+			return CUPS_BACKEND_FAILED;
+
+		uint8_t esd_unk[4] = { 0x00, 0x87, 0x00, 0x02 }; // XXX figure me out eventually?
+		ret = hiti_docmd(ctx, CMD_ESD_UNK, esd_unk, sizeof(esd_unk), &resplen);
+		if (ret)
+			return CUPS_BACKEND_FAILED;
 	} else {
 		uint8_t chs[2] = { 0, 1 }; /* Fixed..? */
 		resplen = 0;
@@ -2486,7 +2493,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.38",
+	.version = "0.39",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,
