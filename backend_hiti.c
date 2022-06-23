@@ -237,7 +237,7 @@ struct hiti_jc_qjc {
 #define PRINT_TYPE_6x2     10
 #define PRINT_TYPE_5x7_2UP 11
 
-struct hiti_heattable {
+struct hiti_heattable_v1a { /* P51x (older) */
 	uint8_t y[2050]; /* 256 doubles, plus 2 byte checksum? */
 	uint8_t pad0[30];
 	uint8_t m[2050];
@@ -248,11 +248,30 @@ struct hiti_heattable {
 	uint8_t pad3[30];
 	uint8_t om[2050]; /* Overcoat Matte */
 	uint8_t pad4[30];
-	uint8_t cvd[582];
+	uint8_t cvd[582]; /* 58 u16 * 5 (y/m/c/o/om) + 2 byte checksum? */
 	uint8_t pad5[26];
 } __attribute__((packed));
 
-STATIC_ASSERT(sizeof(struct hiti_heattable) == 11008);
+STATIC_ASSERT(sizeof(struct hiti_heattable_v1a) == 11008);
+
+struct hiti_heattable_v1b {  /* P51x (newer) */
+	uint8_t y_hdr[5];  // 01 01 04 00 00
+	uint8_t y[2050]; /* 256 doubles, 2 checksum */
+	uint8_t m_hdr[5];  // 02 01 04 00 00
+	uint8_t m[2050]; /* 256 doubles, 2 checksum */
+	uint8_t c_hdr[5];  // 03 01 04 00 00
+	uint8_t c[2050]; /* 256 doubles, 2 checksum */
+	uint8_t o_hdr[5];  // 04 01 04 00 00
+	uint8_t o[2050]; /* 256 doubles, 2 checksum */
+	uint8_t om_hdr[5]; // 05 01 04 00 00
+	uint8_t om[2050]; /* 256 doubles, 2 checksum */
+	uint8_t u_hdr[5];  // 07 01 04 00 00           // Unknown purpose
+	uint8_t u[2050]; /* 256 doubles, 2 checksum */ // unknown purpose
+	uint8_t cvd_hdr[5]; // 00 00 00 00 00
+	uint8_t cvd[582]; /* 58 u16 * 5 (y/m/c/o/om) + 2 byte checksum? */
+} __attribute__((packed));
+
+STATIC_ASSERT(sizeof(struct hiti_heattable_v1b) == 12917);
 
 /* All fields are LE */
 struct hiti_gpjobhdr {
@@ -1277,6 +1296,8 @@ static int hiti_seht2(struct hiti_ctx *ctx, uint8_t plane,
 		ret = send_data(ctx->conn, buf, buf_len);
 	}
 
+	__usleep(200*1000);
+
 	return ret;
 }
 
@@ -1310,13 +1331,20 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 		ret = send_data(ctx->conn, buf, buf_len);
 	}
 
+	__usleep(200*1000);
+
 	return ret;
 }
 
 static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte)
 {
 	const char *fname = NULL;
-	struct hiti_heattable table;
+	union {
+		struct hiti_heattable_v1a v1a;
+		struct hiti_heattable_v1a v1b;
+	} table;
+	uint8_t *y, *m, *c, *o, *om, *cvd;
+
 	int ret, len;
 
 	int mediaver = ctx->ribbonvendor & 0x3f;
@@ -1381,34 +1409,57 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 		char full[2048];
 		snprintf(full, sizeof(full), "%s/%s", corrtable_path, fname);
 
-		ret = dyesub_read_file(full, (uint8_t*) &table, sizeof(struct hiti_heattable), &len);
+		ret = dyesub_read_file(full, (uint8_t*) &table, sizeof(table), &len);
 		if (ret) {
 			return ret;
 		}
-		if (len != sizeof(struct hiti_heattable)) {
+		switch(len) {
+		case sizeof(struct hiti_heattable_v1a):
+			y = table.v1a.y;
+			m = table.v1a.m;
+			c = table.v1a.c;
+			o = table.v1a.o;
+			om = table.v1a.om;
+			cvd = table.v1a.cvd;
+			break;
+		case sizeof(struct hiti_heattable_v1b):
+			y = table.v1b.y;
+			m = table.v1b.m;
+			c = table.v1b.c;
+			o = table.v1b.o;
+			om = table.v1b.om;
+			cvd = table.v1b.cvd;
+			break;
+		default:
 			ERROR("Heattable len mismatch (%d)\n", len);
 			return CUPS_BACKEND_FAILED;
 		}
 	} else {
 		memset(&table, 0, sizeof(table));
+		y = table.v1a.y;
+		m = table.v1a.m;
+		c = table.v1a.c;
+		o = table.v1a.o;
+		om = table.v1a.om;
+		cvd = table.v1a.cvd;
 	}
 
 	/* Send over the heat tables */
-	ret = hiti_seht2(ctx, 0, table.y, sizeof(table.y));
+	ret = hiti_seht2(ctx, 0, y, sizeof(table.v1a.om));
 	if (!ret)
-		ret = hiti_seht2(ctx, 1, table.m, sizeof(table.m));
+		ret = hiti_seht2(ctx, 1, m, sizeof(table.v1a.om));
 	if (!ret)
-		ret = hiti_seht2(ctx, 2, table.c, sizeof(table.c));
+		ret = hiti_seht2(ctx, 2, c, sizeof(table.v1a.om));
 	if (!ret) {
 		if (matte)
-			ret = hiti_seht2(ctx, 3, table.om, sizeof(table.om));
+			ret = hiti_seht2(ctx, 3, om, sizeof(table.v1a.om));
 		else
-			ret = hiti_seht2(ctx, 3, table.o, sizeof(table.o));
+			ret = hiti_seht2(ctx, 3, o, sizeof(table.v1a.o));
 	}
 
 	/* And finally, send over the CVD data */
 	if (!ret)
-		ret = hiti_cvd(ctx, table.cvd, sizeof(table.cvd));
+		ret = hiti_cvd(ctx, cvd, sizeof(table.v1a.cvd));
 
 	return ret;
 }
@@ -1958,10 +2009,12 @@ static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 		if (ret)
 			return CUPS_BACKEND_FAILED;
 
+#if 0
 		uint8_t esd_unk[4] = { 0x00, 0x87, 0x00, 0x02 }; // XXX figure me out eventually?
 		ret = hiti_docmd(ctx, CMD_ESD_UNK, esd_unk, sizeof(esd_unk), &resplen);
 		if (ret)
 			return CUPS_BACKEND_FAILED;
+#endif
 	} else {
 		uint8_t chs[2] = { 0, 1 }; /* Fixed..? */
 		resplen = 0;
@@ -2495,7 +2548,7 @@ static const char *hiti_prefixes[] = {
 
 const struct dyesub_backend hiti_backend = {
 	.name = "HiTi Photo Printers",
-	.version = "0.39",
+	.version = "0.40",
 	.uri_prefixes = hiti_prefixes,
 	.cmdline_usage = hiti_cmdline,
 	.cmdline_arg = hiti_cmdline_arg,

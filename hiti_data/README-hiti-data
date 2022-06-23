@@ -47,17 +47,17 @@ Heat table types:
           582 bytes
 	  26 bytes pad
   12568    ??  rd(qc/qh/pc/ph) / rh(qc) /rk/ri/ri1
+         these printers use ESD_SHPTC and ~7KB payload.
+
   12603    ??  rd(qc)
   12753    ??  cd(ph) / cm cm(ph)
   12917    ra (newer)
-        ?? * 5 (Y M C OG OM, presumably)
-	    4 bytes pad (?)
-	   256 doubles
-	    4 bytes pad (?)
-	?? Tone curve (SHPTC, maybe?)
-	   256 doubles
-	     7 bytes pad
+        SEHT2 * 6 (Y + M + C + OG + OM + UNK ?)
+	    5 byte header
+	    256 doubles
+	    2 byte checksum
 	CVD
+	    5 byte header
 	    582 bytes
   15732    ??  rd(th) / rh(pc/tc)
   58170    ??  cd(oh/th)
