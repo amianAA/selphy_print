@@ -37,6 +37,7 @@
    DNP DS820 / DS820A / Citizen CX-02W
    DNP QW410 / Citizen CZ-01
    Fujifilm ASK-300
+   HiTi P510 series
    HiTi P520L
    HiTi P525L
    Kodak Professional 1400
@@ -81,7 +82,6 @@
    DNP M4 / Q4
    DNP M8
    Fujifilm ASK-500
-   HiTi P510 series
    HiTi M610 (not X610!)
    HiTi P720L / P728L
    HiTi P750L
@@ -1273,12 +1273,12 @@ Notes:
 
    Verified supported printers:
 
+     HiTi P510 series
      HiTi P520L
      HiTi P525L
 
    Untested, but expected to work:
 
-     HiTi P510 series
      HiTi P518 series
      HiTi P720L / P728L
      HiTi P750L
