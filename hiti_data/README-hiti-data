@@ -7,7 +7,7 @@ LUT filename Codes:
  C M Q P ? ra [ .bin ]
            --  model code, see below
          -     media version, 0..n (if not present, interpret as 0)
-       -       ?? (usually P, but also seen B, C, CL, I)
+       -       ?? (usually P, but also seen B, C, CL, I, SO)
      -         print quality, Q == fine, P == normal
    -           media type, M == DNP, C == CHC         (?)
  -             ?? (usually C, also seen RC)
@@ -29,14 +29,12 @@ Heat table codes:
 
  hea 0 q c ra [.bin]
            -- model code, see above
-         -    media type, h == DNP, c == CHC      (?)
+         -    media type, h == DNP, c == CHC
        -      print quality, q == fine, t == normal, (also seen p/r/o == ?)
      -        media version, 0..n (or 't')
   ---         always 'hea'
 
 Heat table types:
-
-  size
 
   11108    ra (older)
        SEHT2 * 5 (Y + M + C + Gloss + Matte)
@@ -46,11 +44,6 @@ Heat table types:
        CVD
           582 bytes
 	  26 bytes pad
-  12568    ??  rd(qc/qh/pc/ph) / rh(qc) /rk/ri/ri1
-         these printers use ESD_SHPTC and ~7KB payload.
-
-  12603    ??  rd(qc)
-  12753    ??  cd(ph) / cm cm(ph)
   12917    ra (newer)
         SEHT2 * 6 (Y + M + C + OG + OM + UNK ?)
 	    5 byte header
@@ -59,6 +52,51 @@ Heat table types:
 	CVD
 	    5 byte header
 	    582 bytes
+
+  12568    ??  rd(qc/qh/pc/ph) / rh(qc) /rk/ri/ri1
+         these printers use ESD_SHPTC and ~7KB payload.
+  12603    ??  rd(qc)
   15732    ??  rd(th) / rh(pc/tc)
+
+  12753    ??  cd(ph) / cm cm(ph)
   58170    ??  cd(oh/th)
   77996    ??  cl / cm(oh/th)
+
+These are more complex.  Data format:
+
+XX    Number of data blobs, followed by XX headers:
+NN NN MM ZZ ZZ OO OO OO OO
+|     |  |     \---------- 32-bit offset from file start (LE)
+|     |  \---------------- Zero
+|     \------------------- Unknown
+\------------------------- 16-bit Block type (LE)
+
+  Observed block types, and guesses
+
+ NNNN MM  Length Meaning
+
+ 0250 00      4
+ 0251 00      4
+ 0501 01    522   Y  ?
+ 0502 01    522   M  ?
+ 0503 01    522   C  ?
+ 0520 01    522   O  ?
+ 0522 01    522   OM ?
+ 2340 01    582   CVD data
+ 0180 05   2562
+ 0181 05   2562
+ 0182 05   2562
+ 02af 03   1540
+ 02ae 03   1540
+ 02a7 03   1540
+ 02a8 03   1540
+ 0cbf 00     24
+ 0cbe 00     24
+ 0cb7 00     24
+ 0cb8 00     24
+ 0d90 00     26
+
+ 01f0 00      2   <- c? only
+ 18de 00  12732   <- c? only
+ 1900 2f  24114   <- c? only
+ 7520 42  34056   <- c? only

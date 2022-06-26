@@ -273,6 +273,21 @@ struct hiti_heattable_v1b {  /* P51x (newer) */
 
 STATIC_ASSERT(sizeof(struct hiti_heattable_v1b) == 12917);
 
+/* All fields are little endian */
+struct hiti_heattable_entry_v2 {
+	uint16_t  type;
+	uint8_t   unknown;
+	uint16_t  zero;
+	uint32_t  offset;
+} __attribute((packed));
+
+struct hiti_heattable_hdr_v2 {
+	uint8_t num_headers;
+	struct hiti_heattable_entry_v2 entries[];
+} __attribute((packed));
+
+#define HEATTABLE_V2_MAX_SIZE (1024*128)
+
 /* All fields are LE */
 struct hiti_gpjobhdr {
 	uint32_t cookie;  /* "GPHT" */
@@ -412,6 +427,14 @@ struct hiti_ctx {
 	struct hiti_rpidm rpidm;
 	uint16_t ribbonvendor; // low byte = media subtype, high byte = type.
 	uint32_t media_remain; // XXX could be array?
+
+	uint8_t *heattable_buf;
+	struct hiti_heattable_v2 {
+		uint16_t type;
+		uint8_t  *data;
+		uint32_t len;
+	} *heattable_v2;
+	uint8_t num_heattable_entries;
 };
 
 /* Prototypes */
@@ -1336,6 +1359,56 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 	return ret;
 }
 
+static const char* hiti_get_heat_file(struct hiti_ctx *ctx, uint8_t mode)
+{
+	int mediaver = ctx->ribbonvendor & 0x3f;
+	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
+
+	// XXX if field_0x70 != 100) send blank/empty tables..
+	// no idea what sets this field.
+	switch (ctx->conn->type) {
+	case P_HITI_51X:
+		if (!mediatype) { /* DNP media */
+			if (mode) {
+				return "P51x_heatqhra.bin";
+			} else {
+				return "P51x_heatthra.bin";
+			}
+		} else { /* CHC media */
+			if (mode) {
+				switch(mediaver) {
+				case 0:
+					return "P51x_hea0qcra.bin";
+				case 1:
+					return "P51x_hea1qcra.bin";
+				case 2:
+					return "P51x_hea2qcra.bin";
+				case 3:
+				default:
+					return "P51x_hea3qcra.bin";
+				}
+			} else {
+				switch(mediaver) {
+				case 0:
+					return "P51x_hea0tcra.bin";
+				case 1:
+					return "P51x_hea1tcra.bin";
+				case 2:
+					return "P51x_hea2tcra.bin";
+				case 3:
+				default:
+					return "P51x_hea3tcra.bin";
+				}
+			}
+		}
+		break;
+	case P_HITI_52X:
+	case P_HITI_720:
+	default:
+		return NULL;
+	}
+}
+
 static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte)
 {
 	const char *fname = NULL;
@@ -1347,64 +1420,8 @@ static int hiti_send_heat_data(struct hiti_ctx *ctx, uint8_t mode, uint8_t matte
 
 	int ret, len;
 
-	int mediaver = ctx->ribbonvendor & 0x3f;
-	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
+	fname = hiti_get_heat_file(ctx, mode);
 
-	// XXX if field_0x70 != 100) send blank/empty tables..
-	// no idea what sets this field.
-	switch (ctx->conn->type)
-	{
-	case P_HITI_51X:
-		if (!mediatype) { /* DNP media */
-			if (mode) {
-				fname = "P51x_heatqhra.bin";
-				break;
-			} else {
-				fname = "P51x_heatthra.bin";
-				break;
-			}
-		} else { /* CHC media */
-			if (mode) {
-				switch(mediaver) {
-				case 0:
-					fname = "P51x_hea0qcra.bin";
-					break;
-				case 1:
-					fname = "P51x_hea1qcra.bin";
-					break;
-				case 2:
-					fname = "P51x_hea2qcra.bin";
-					break;
-				case 3:
-				default:
-					fname = "P51x_hea3qcra.bin";
-					break;
-				}
-			} else {
-				switch(mediaver) {
-				case 0:
-					fname = "P51x_hea0tcra.bin";
-					break;
-				case 1:
-					fname = "P51x_hea1tcra.bin";
-					break;
-				case 2:
-					fname = "P51x_hea2tcra.bin";
-					break;
-				case 3:
-				default:
-					fname = "P51x_hea3tcra.bin";
-					break;
-				}
-			}
-		}
-		break;
-	case P_HITI_52X:
-	case P_HITI_720:
-	default:
-		fname = NULL;
-		break;
-	}
 	if (fname) {
 		char full[2048];
 		snprintf(full, sizeof(full), "%s/%s", corrtable_path, fname);
@@ -1990,7 +2007,7 @@ static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 
-	// XXX msg 8011 sent here..
+	// XXX msg 8011 sent here on P52x (and maybe others?)
 
 	/* XXX startjob returns actual jobid */
 	jobid.lun = 0;
@@ -2021,15 +2038,14 @@ static int hiti_main_loop(void *vctx, const void *vjob, int wait_for_return)
 		ret = hiti_docmd(ctx, CMD_EFD_CHS, chs, sizeof(chs), &resplen);
 		if (ret)
 			return CUPS_BACKEND_FAILED;
+
+		// XXX send CMD_ESD_SHTPC (Heating Parameters & Tone Curve, ~7KB payload) instead?
 	}
 
 	ret = hiti_docmd(ctx, CMD_EPC_SP, NULL, 0, &resplen);
 	if (ret)
 		return CUPS_BACKEND_FAILED;
 
-	// XXX send ESD_SHTPC  w/ heat table.  Unknown.
-	// CMD_ESD_SHPTC // Heating Parameters & Tone Curve (~7Kb, seen on windows..)
-	/* Send heat table data  */
 
 resend_y:
 	INFO("Sending yellow plane\n");
@@ -2539,6 +2555,59 @@ static int hiti_query_stats(void *vctx, struct printerstats *stats)
 	return CUPS_BACKEND_OK;
 }
 
+static int hiti_read_heattable_v2(struct hiti_ctx *ctx, char* fname) {
+	int len = 0;
+	int ret;
+	char full[2048];
+	int i;
+	struct hiti_heattable_hdr_v2 *hdr;
+
+	ctx->num_heattable_entries = 0;
+	if (ctx->heattable_buf) {
+		free(ctx->heattable_buf);
+		ctx->heattable_buf = NULL;
+	}
+	if (ctx->heattable_v2) {
+		free(ctx->heattable_v2);
+		ctx->heattable_v2 = NULL;
+	}
+
+	ctx->heattable_buf = malloc(HEATTABLE_V2_MAX_SIZE);
+	if (!ctx->heattable_buf) {
+		ERROR("Memory allocation failed!\n");
+		return CUPS_BACKEND_FAILED;
+	}
+	snprintf(full, sizeof(full), "%s/%s", corrtable_path, fname);
+	ret = dyesub_read_file(full, ctx->heattable_buf, HEATTABLE_V2_MAX_SIZE, &len);
+	if (ret) {
+		return ret;
+	}
+	hdr = (struct hiti_heattable_hdr_v2 *) ctx->heattable_buf;
+
+	ctx->heattable_v2 = malloc(hdr->num_headers * sizeof(struct hiti_heattable_v2));
+	if (!ctx->heattable_buf) {
+		ERROR("Memory allocation failed!\n");
+		return CUPS_BACKEND_FAILED;
+	}
+
+	ctx->num_heattable_entries = hdr->num_headers;
+
+	for (i = 0 ; i < hdr->num_headers ; i++) {
+		DEBUG("Found: %04x %02x @ %d\n",
+		      le16_to_cpu(hdr->entries[i].type),
+		      hdr->entries[i].unknown,
+		      le32_to_cpu(hdr->entries[i].offset));
+
+		ctx->heattable_v2[i].type = le16_to_cpu(hdr->entries[i].type);
+		ctx->heattable_v2[i].data = ctx->heattable_buf + hdr->entries[i].offset;
+		if (i > 0) {
+			ctx->heattable_v2[i-1].len = le32_to_cpu(hdr->entries[i].offset) - le32_to_cpu(hdr->entries[i-1].offset);
+		}
+	}
+	ctx->heattable_v2[i-1].len = len - le32_to_cpu(hdr->entries[i-1].offset);
+
+	return CUPS_BACKEND_OK;
+};
 
 static const char *hiti_prefixes[] = {
 	"hiti", // Family name
