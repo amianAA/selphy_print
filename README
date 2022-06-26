@@ -83,6 +83,7 @@
    DNP M8
    Fujifilm ASK-500
    HiTi M610 (not X610!)
+   HiTi P530D
    HiTi P720L / P728L
    HiTi P750L
    HiTi P910L
@@ -1266,7 +1267,7 @@ Notes:
 
       hiti-p510k hiti-p510l hiti-p510s hiti-p510si
       hiti-p518a hiti-p518s
-      hiti-p520l hiti-p525l hiti-p52x
+      hiti-p520l hiti-p525l hiti-p52x hiti-p530
       hiti-p720l hiti-p728l hiti-p750l
       hiti-cs200e hiti-cs220e hiti-cs230e
       hiti-cs250e hiti-cs290e
@@ -1280,6 +1281,7 @@ Notes:
    Untested, but expected to work:
 
      HiTi P518 series
+     HiTi P530D
      HiTi P720L / P728L
      HiTi P750L
 

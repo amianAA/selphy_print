@@ -1069,7 +1069,7 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 	int ret, len;
 
 	int mediaver = ctx->ribbonvendor & 0x3f;
-	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
+	int mediatype = ctx->ribbonvendor & 0xf000;
 
 	switch (ctx->conn->type)
 	{
@@ -1077,15 +1077,8 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 		fname = "CS2xx_CMPBcd.bin";
 		break;
 	case P_HITI_51X:
-		if (!mediatype) { /* DNP media */
-			if (mode) {
-				fname = "P51x_CMQPra.bin";
-				break;
-			} else {
-				fname = "P51x_CMPPra.bin";
-				break;
-			}
-		} else { /* CHC media */
+		if (mediatype == 0x1000) { /* CHC media */
+
 			if (mode) {
 				switch(mediaver) {
 				case 0:
@@ -1128,6 +1121,14 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 					break;
 				}
 			}
+		} else { /* DNP media */
+			if (mode) {
+				fname = "P51x_CMQPra.bin";
+				break;
+			} else {
+				fname = "P51x_CMPPra.bin";
+				break;
+			}
 		}
 		break;
 	case P_HITI_52X:
@@ -1156,16 +1157,11 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 			break;
 		}
 		break;
+	case P_HITI_530:
+		fname = "P53x_CCPPrk.bin";
+		break;
 	case P_HITI_720:
-		if (!mediatype) {
-			if (mode) {
-				fname = "P72x_CMQPrd.bin";
-				break;
-			} else {
-				fname = "P72x_CMPPrd.bin";
-				break;
-			}
-		} else {
+		if (mediatype == 0x1000) {
 			if (mode) {
 				switch(mediaver) {
 				case 0:
@@ -1216,6 +1212,14 @@ static uint8_t *hiti_get_correction_data(struct hiti_ctx *ctx, uint8_t mode)
 					fname = "P72x_CCPP4rd.bin";
 					break;
 				}
+			}
+		} else {
+			if (mode) {
+				fname = "P72x_CMQPrd.bin";
+				break;
+			} else {
+				fname = "P72x_CMPPrd.bin";
+				break;
 			}
 		}
 		break;
@@ -1362,19 +1366,14 @@ static int hiti_cvd(struct hiti_ctx *ctx, uint8_t *buf, uint32_t buf_len)
 static const char* hiti_get_heat_file(struct hiti_ctx *ctx, uint8_t mode)
 {
 	int mediaver = ctx->ribbonvendor & 0x3f;
-	int mediatype = ((ctx->ribbonvendor & 0xf000) == 0x1000);
+	int mediatype = ctx->ribbonvendor & 0xf000;
 
 	// XXX if field_0x70 != 100) send blank/empty tables..
 	// no idea what sets this field.
 	switch (ctx->conn->type) {
 	case P_HITI_51X:
-		if (!mediatype) { /* DNP media */
-			if (mode) {
-				return "P51x_heatqhra.bin";
-			} else {
-				return "P51x_heatthra.bin";
-			}
-		} else { /* CHC media */
+		if (mediatype == 0x1000) { /* CHC media */
+                        // what mode does 'P' (PC) match?
 			if (mode) {
 				switch(mediaver) {
 				case 0:
@@ -1384,8 +1383,11 @@ static const char* hiti_get_heat_file(struct hiti_ctx *ctx, uint8_t mode)
 				case 2:
 					return "P51x_hea2qcra.bin";
 				case 3:
-				default:
 					return "P51x_hea3qcra.bin";
+				case 4:
+					return "P51x_hea4qcra.bin";
+				default:
+					return "P51x_heatqcra.bin";
 				}
 			} else {
 				switch(mediaver) {
@@ -1396,14 +1398,33 @@ static const char* hiti_get_heat_file(struct hiti_ctx *ctx, uint8_t mode)
 				case 2:
 					return "P51x_hea2tcra.bin";
 				case 3:
-				default:
 					return "P51x_hea3tcra.bin";
+				case 4:
+					return "P51x_hea4tcra.bin";
+				case 5:
+					return "P51x_hea5tcra.bin";
+				default:
+					return "P51x_heattcra.bin";
 				}
+			}
+		} else { /* DNP media */
+                        // what mode does 'P' or 'R' (PH, RH) match?
+			if (mode) {
+				return "P51x_heatqhra.bin";
+			} else {
+				return "P51x_heatthra.bin";
 			}
 		}
 		break;
+	case P_HITI_530:
+		if (mode) {
+			return "P53x_heattcrk.bin";
+		} else {
+			return "P53x_heatpcrk.bin";
+		}
 	case P_HITI_52X:
 	case P_HITI_720:
+	case P_HITI_750:
 	default:
 		return NULL;
 	}
@@ -2643,6 +2664,7 @@ const struct dyesub_backend hiti_backend = {
 		{ 0x0d16, 0x0112, P_HITI_51X, NULL, "hiti-p518s"},
 		{ 0x0d16, 0x0502, P_HITI_52X, NULL, "hiti-p520l"},
 		{ 0x0d16, 0x0502, P_HITI_52X, NULL, "hiti-p525l"}, /* Duplicate */
+		{ 0x0d16, 0x000f, P_HITI_530, NULL, "hiti-p530d"},
 		{ 0x0d16, 0x0009, P_HITI_720, NULL, "hiti-p720l"},
 		{ 0x0d16, 0x000a, P_HITI_720, NULL, "hiti-p728l"},
 		{ 0x0d16, 0x0501, P_HITI_750, NULL, "hiti-p750l"},
@@ -2651,7 +2673,6 @@ const struct dyesub_backend hiti_backend = {
 };
 
 /*
-#define USB_PID_HITI_P530    0x000F
 #define USB_PID_HITI_P110S   0x0110
 #define USB_PID_HITI_P310L   0x0503
 #define USB_PID_HITI_P310W   0x050A
@@ -2687,7 +2708,6 @@ const struct dyesub_backend hiti_backend = {
    - Start research into P530D, X610
    - Incorporate changes for CS-series card printers
    - More "Matrix table" decoding work
-   - Investigate Suspicion that HiTi keeps tweaking LUTs and/or Heat tables
-   - Pull in heat tables & LUTs from windows drivers
+   - Pull in updated heat tables & LUTs from windows drivers
 
 */

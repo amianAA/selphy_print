@@ -316,6 +316,9 @@
 # HiTi P520L / P525L
 0x0d16 0x0502 blacklist
 
+# HiTi P530D
+0x0d16 0x000f blacklist
+
 # HiTi P720L
 0x0d16 0x0009 blacklist
 
