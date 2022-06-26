@@ -1418,13 +1418,73 @@ static const char* hiti_get_heat_file(struct hiti_ctx *ctx, uint8_t mode)
 		break;
 	case P_HITI_530:
 		if (mode) {
-			return "P53x_heattcrk.bin";
+			return "P53x_heatqcrk.bin";
 		} else {
 			return "P53x_heatpcrk.bin";
 		}
-	case P_HITI_52X:
 	case P_HITI_720:
+		if (mediatype == 0x1000) { /* CHC media */
+			if (mode) {
+				// what mode does 'P' (PC) match?
+				switch(mediaver) {
+				case 3:
+					return "P72x_hea3qcrd.bin";
+				case 4:
+					return "P72x_hea4qcrd.bin";
+				case 5:
+					return "P72x_hea5qcrd.bin";
+				case 7:
+					return "P72x_hea7qcrd.bin";
+				case 8:
+					return "P72x_hea8qcrd.bin";
+				case 9:
+					return "P72x_hea9qcrd.bin";
+				default:
+					return "P72x_heatqcrd.bin";
+				}
+			} else {
+				switch(mediaver) {
+				case 3:
+					return "P72x_hea3tcrd.bin";
+				case 4:
+					return "P72x_hea4tcrd.bin";
+				default:
+					return "P72x_heattcrd.bin";
+				}
+			}
+		} else {
+			// what mode does 'P' (PH) match?
+			if (mode) {
+				return "P72x_heatqhrd.bin";
+			} else {
+				return "P72x_heatthrd.bin";
+			}
+		}
+		break;
 	case P_HITI_750:
+		// what mode does 'P' (PC) match?
+		if (mode) {
+			switch(mediaver) {
+			case 1:
+				return "P75x_hea1qcrh.bin";
+			case 2:
+				return "P75x_hea2qcrh.bin";
+			case 3:
+				return "P75x_hea3qcrh.bin";
+			case 4:
+				return "P75x_hea4qcrh.bin";
+			case 5:
+				return "P75x_hea5qcrh.bin";
+			case 7:
+				return "P75x_hea7qcrh.bin";
+			default:
+				return "P75x_heatqcrh.bin";
+			}
+		} else {
+			return "P75x_heattcrh.bin";
+		}
+		break;
+	case P_HITI_52X:
 	default:
 		return NULL;
 	}
