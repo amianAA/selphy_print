@@ -47,6 +47,7 @@
    Kodak 6800 Photo Printer
    Kodak 6850 Photo Printer
    Kodak 7000 Photo Printer
+   Kodak 8800 / 9810
    Kodak 8810 Photo Printer
    Magicard Tango 2E
    Mitsubishi CP30DW
@@ -91,7 +92,6 @@
    ICI Imagedata OP900
    Kodak 6900 / 6950
    Kodak 7010 / 7015
-   Kodak 8800 / 9810
    Magicard Rio 2E (and other Magicard models)
    Mitsubishi CP3020D/DE and CP3020DA/DAE
    Mitsubishi CP9000DW, CP9500DW, and CP9600DW-S
@@ -605,7 +605,7 @@
 
      kodak-8800, kodak-9810
 
-   Work-in-progress printers:
+   Verified Supported printers:
 
      Kodak 8800/9810
 
