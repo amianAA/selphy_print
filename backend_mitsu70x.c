@@ -682,9 +682,10 @@ static int mitsu70x_attach(void *vctx, struct dyesub_connection *conn, uint8_t j
 		   v1.02: M 316E81 1433   (Add Ultrafine and matte support)
 		   v1.04: M 316F83 2878   (Add 2x6 strip and support new "Triton" media)
 		   v3.01: M 443A12 8908   (add 5" media support)
+		   v3.02: M 443B11 2647   (Unknown)
 		*/
-		if (strncmp(resp.vers[0].ver, "443A12", 6) < 0)
-			WARNING("Printer FW out of date. Highly recommend upgrading EK305 to v3.01 or newer!\n");
+		if (strncmp(resp.vers[0].ver, "443B11", 6) < 0)
+			WARNING("Printer FW out of date. Highly recommend upgrading EK305 to v3.02 or newer!\n");
 	} else if (ctx->conn->type == P_MITSU_K60) {
 		/* Known versions:
 		   v1.05: M 316M31 148C   (Add HG media support)
@@ -2583,7 +2584,7 @@ static const char *mitsu70x_prefixes[] = {
 /* Exported */
 const struct dyesub_backend mitsu70x_backend = {
 	.name = "Mitsubishi CP-D70 family",
-	.version = "0.106" " (lib " LIBMITSU_VER ")",
+	.version = "0.107" " (lib " LIBMITSU_VER ")",
 	.flags = BACKEND_FLAG_DUMMYPRINT,
 	.uri_prefixes = mitsu70x_prefixes,
 	.cmdline_usage = mitsu70x_cmdline,
